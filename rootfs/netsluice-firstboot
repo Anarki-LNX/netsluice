@@ -21,12 +21,19 @@ exec >>"$STATE/setup.log" 2>&1
 echo "=== $(date -Is) first-boot setup starts"
 
 ports() { ls /sys/class/net | grep -E '^(e|lan|wan)'; }
-led() { [ -w "/sys/class/leds/$1/trigger" ] && echo "$2" > "/sys/class/leds/$1/trigger" 2>/dev/null; [ -z "${3:-}" ] || echo "$3" > "/sys/class/leds/$1/brightness" 2>/dev/null; return 0; }
+led() {          # led <name> <trigger> [brightness]; a board without these LEDs is fine
+  [ -w "/sys/class/leds/$1/trigger" ] || return 0
+  { echo "$2" > "/sys/class/leds/$1/trigger"; [ -z "${3:-}" ] || echo "$3" > "/sys/class/leds/$1/brightness"; } 2>/dev/null
+  return 0
+}
+# SSH is off unless the owner put a key on the card (see netsluice-sshkey).
+ssh_off() { [ -s /boot/netsluice-ssh.pub ] || systemctl disable -q --now ssh ssh.socket 2>/dev/null || true; }
 # step <number> <text> [problem]: for the log and for the page
 step() {
   NOW="$1"; TEXT="$2"
   echo "--- $(date +%T) step $1: $2${3:+ | problem: $3}"
   printf '{"step": %s, "of": 4, "text": "%s", "problem": "%s"}\n' "$1" "$2" "${3:-}" > "$PAGE/status.json.tmp" && mv "$PAGE/status.json.tmp" "$PAGE/status.json"
+  sync "$STATE/setup.log" 2>/dev/null || true          # the log must survive somebody pulling the plug
 }
 fail() { rm -f "$NOSTART"; step "$NOW" "$TEXT" "$* Trying again in a minute."; led led_red none 1; sync; exit 1; }
 # While packages are installed, their services must not start by themselves: the web
@@ -36,33 +43,38 @@ NOSTART=/usr/sbin/policy-rc.d
 led led_red none 0
 led led_green heartbeat
 
-# Armbian ships with a public default password and a wizard that waits for a
-# login. An appliance has neither: lock the account, drop the wizard.
-passwd -l root >/dev/null 2>&1 || true
-rm -f /root/.not_logged_in_yet
-rm -f /etc/systemd/system/getty@.service.d/override.conf /etc/systemd/system/serial-getty@.service.d/override.conf
-systemctl daemon-reload
-# Armbian's own first-run step restarts SSH after making new host keys. Without a
-# key from the owner (see netsluice-sshkey) there is nobody to let in: switch it off.
-[ -s /boot/netsluice-ssh.pub ] || systemctl disable -q --now ssh ssh.socket 2>/dev/null || true
+# The page that says what is going on comes first and needs nothing but Python:
+# no service manager, no name lookups. It holds port 80 until the web server is ready.
+cp "$SETUP/setup-page.html" "$PAGE/index.html"
+step 1 "Waiting for the system to finish starting"
+if ! systemctl is-active -q caddy 2>/dev/null && ! { [ -f "$PAGE/page.pid" ] && kill -0 "$(cat "$PAGE/page.pid")" 2>/dev/null; }; then
+  python3 -m http.server 80 --directory "$PAGE" >/dev/null 2>&1 &
+  echo $! > "$PAGE/page.pid"
+fi
+# On its very first start Armbian is busy with itself (new host keys, growing the
+# file system to the size of the card). The service manager answers slowly or not
+# at all during that time, so wait for the start to be over. This unit does not
+# hold the start up (Type=exec), so the wait ends.
+timeout 600 systemctl is-system-running --wait >/dev/null 2>&1 || true
+echo "    system state: $(systemctl is-system-running 2>&1)"
 
-# Be findable from the first minute: the name, and a page that says what is going on.
-# The page is served by Python until the real web server takes over port 80.
+# Armbian's own first-run step makes new host keys and then restarts SSH, whether
+# it was enabled or not. Let it finish (it disables itself when done), then switch
+# SSH off; and once more at the end, in case it was slower than this wait.
+n=0; while [ -e /etc/systemd/system/multi-user.target.wants/armbian-firstrun.service ] && [ $n -lt 90 ]; do n=$((n+1)); sleep 2; done
+ssh_off
+
+# Be findable by name.
 if [ "$(hostname)" != netsluice ]; then
-  hostnamectl set-hostname netsluice
+  echo netsluice > /etc/hostname; hostname netsluice
   sed -i 's/^127\.0\.1\.1.*/127.0.1.1\tnetsluice/' /etc/hosts
 fi
-for i in $(ports); do resolvectl mdns "$i" yes 2>/dev/null || true; done
-cp "$SETUP/setup-page.html" "$PAGE/index.html"
+for i in $(ports); do timeout 10 resolvectl mdns "$i" yes 2>/dev/null || true; done
 step 1 "Unpacking"
-if ! systemctl is-active -q caddy && ! systemctl is-active -q netsluice-setup-page; then
-  systemctl reset-failed netsluice-setup-page 2>/dev/null
-  systemd-run --quiet --unit=netsluice-setup-page python3 -m http.server 80 --directory "$PAGE" || true
-fi
 
 if [ ! -f "$STATE/unpacked" ]; then
   T="$(mktemp -d)"
-  tar -C "$T" -xzf "$SETUP/netsluice.tar.gz" || fail "The NetSluice package in the image is damaged."
+  tar -C "$T" --warning=no-timestamp -xzf "$SETUP/netsluice.tar.gz" || fail "The NetSluice package in the image is damaged."
   SRC="$(echo "$T"/netsluice-*)"
   [ -f "$SRC/VERSION" ] && [ -f "$SRC/web/index.html" ] && [ -f "$SRC/service/netsluiced.py" ] || fail "The NetSluice package in the image is incomplete."
   mkdir -p /srv/netsluice /usr/share/netsluice
@@ -74,7 +86,7 @@ if [ ! -f "$STATE/unpacked" ]; then
 fi
 if [ -f "$SETUP/bundle.tar" ] && [ ! -f "$BUNDLE/SOURCES.txt" ]; then
   rm -rf "$BUNDLE"; mkdir -p "$BUNDLE"
-  tar -C "$BUNDLE" -xf "$SETUP/bundle.tar" || fail "The bundle in the image is damaged."
+  tar -C "$BUNDLE" --warning=no-timestamp -xf "$SETUP/bundle.tar" || fail "The bundle in the image is damaged."
 fi
 
 step 2 "Installing the web server"
@@ -122,24 +134,26 @@ fi
 
 step 3 "Setting up the filter"
 # avahi answers for the name from here on
-for i in $(ports); do resolvectl mdns "$i" no 2>/dev/null || true; done
+for i in $(ports); do timeout 10 resolvectl mdns "$i" no 2>/dev/null || true; done
 NETSLUICE_BUNDLE="$BUNDLE" sh "$SETUP/install-stack.sh" || fail "The setup stopped. Details are in $STATE/setup.log on the card."
 
 rm -f "$NOSTART"
 
 step 4 "Starting"
-systemctl stop netsluice-setup-page 2>/dev/null || true
+[ ! -f "$PAGE/page.pid" ] || kill "$(cat "$PAGE/page.pid")" 2>/dev/null || true
 systemctl is-active -q caddy || systemctl restart caddy
 n=0
-until curl -fsS -m 5 http://127.0.0.1:3002/auth/state | grep -q configured; do
+until curl -fsS -m 5 http://127.0.0.1:3002/auth/state 2>/dev/null | grep -q configured; do
   n=$((n+1)); [ $n -lt 30 ] || fail "The NetSluice service does not answer."
   sleep 2
 done
 curl -fsS -m 5 -o /dev/null http://127.0.0.1/ || fail "The web server does not answer."
 
+ssh_off
 if [ -f "$OWNDNS" ]; then rm -f "$OWNDNS"; systemctl restart systemd-resolved; fi
 rm -rf "$BUNDLE"
 touch "$STATE/done"
+systemctl start --no-block netsluice-lists 2>/dev/null || true      # filter lists, as soon as the internet is there
 led led_red none 0
 led led_green none 1
 echo "=== $(date -Is) done: http://$(hostname).local/"

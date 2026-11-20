@@ -22,8 +22,12 @@ the NanoPi R2S (Debian 13 "trixie"), with the device tree below, the NetSluice
 files and a first-boot script added by `scripts/build-image.sh`. Armbian and
 Debian packages in it keep their own licences; their sources are available
 from https://github.com/armbian/build and https://www.debian.org/distrib/packages.
-AdGuard Home and Caddy are not in the image; the device downloads them on its
-first start.
+The image also carries what the first start needs, collected by
+`scripts/fetch-bundle.py`: the Debian packages of Caddy and avahi with their
+dependencies, the AdGuard Home release for arm64 (GPL-3.0, source at
+https://github.com/AdguardTeam/AdGuardHome), the DB-IP country list and the
+IEEE list of network card makers. `SOURCES.txt` inside the bundle names the
+origin and checksum of every file.
 
 ## The device tree
 

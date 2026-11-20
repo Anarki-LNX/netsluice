@@ -6,7 +6,7 @@ After=netsluice-firstboot.service AdGuardHome.service network-online.target
 StartLimitIntervalSec=0
 
 [Service]
-Type=oneshot
+Type=exec
 ExecStart=/usr/local/sbin/netsluice-lists
 Restart=on-failure
 RestartSec=60

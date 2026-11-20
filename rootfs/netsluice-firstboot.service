@@ -7,9 +7,10 @@ After=network-online.target armbian-firstrun.service armbian-resize-filesystem.s
 StartLimitIntervalSec=0
 
 [Service]
-Type=oneshot
+# exec, not oneshot: the start of the system must not wait for this. It takes
+# minutes, and the script itself waits for the start to be over.
+Type=exec
 ExecStart=/usr/local/sbin/netsluice-firstboot
-TimeoutStartSec=45min
 # a failed step (no internet yet, a download that broke off) is tried again
 Restart=on-failure
 RestartSec=60

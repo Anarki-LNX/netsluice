@@ -99,6 +99,17 @@ if [[ $FULL == 1 ]]; then
   # until the owner puts a key on the card (see rootfs/netsluice-sshkey).
   put "$WORK/sshd.conf" /etc/ssh/sshd_config.d/10-netsluice.conf
   dbgw "rm /etc/systemd/system/multi-user.target.wants/ssh.service"
+  # Armbian logs root in on every console without a password until its first-login
+  # wizard has run. An appliance has no wizard: no automatic login, and no password
+  # that opens the account. This is done here and not on the device, because changing
+  # the consoles while somebody is logged in on them made the service manager hang.
+  dbgw "rm /etc/systemd/system/getty@.service.d/override.conf"
+  dbgw "rm /etc/systemd/system/serial-getty@.service.d/override.conf"
+  dbgw "rm /root/.not_logged_in_yet"
+  dbg "cat /etc/shadow" > "$WORK/shadow"
+  grep -q '^root:' "$WORK/shadow" || { echo "no root entry in /etc/shadow of the image" >&2; exit 1; }
+  sed -i -E 's/^root:[^:]*:/root:!:/' "$WORK/shadow"
+  put "$WORK/shadow" /etc/shadow 0100640; dbgw "sif /etc/shadow gid 42"
   enable netsluice-firstboot.service; enable netsluice-sshkey.service; enable netsluice-lists.service
   CHECK+=(/usr/share/netsluice/setup/bundle.tar /usr/local/sbin/netsluice-lists /etc/systemd/system/netsluice-lists.service /usr/share/netsluice/setup/setup-page.html /usr/share/netsluice/setup/netsluice.tar.gz /usr/share/netsluice/setup/install-stack.sh /usr/local/sbin/netsluice-firstboot
           /etc/systemd/system/netsluice-firstboot.service /usr/local/sbin/netsluice-sshkey /etc/systemd/system/netsluice-sshkey.service /etc/ssh/sshd_config.d/10-netsluice.conf)
@@ -114,6 +125,11 @@ for f in "${CHECK[@]}"; do
 done
 if [[ $FULL == 1 ]]; then
   dbg "stat /etc/systemd/system/multi-user.target.wants/ssh.service" | grep -q "Type:" && { echo "SSH is still enabled in the image" >&2; exit 1; }
+  for f in /root/.not_logged_in_yet /etc/systemd/system/getty@.service.d/override.conf /etc/systemd/system/serial-getty@.service.d/override.conf; do
+    dbg "stat $f" | grep -q "Type:" && { echo "still in the image: $f" >&2; exit 1; }
+  done
+  dbg "cat /etc/shadow" | grep -q '^root:!:' || { echo "the root account is not locked in the image" >&2; exit 1; }
+  dbg "stat /etc/shadow" | grep -Eq "User: +0 +Group: +42" || { echo "/etc/shadow has the wrong owner in the image" >&2; exit 1; }
   dbg "dump /usr/share/netsluice/setup/netsluice.tar.gz $WORK/check.tar.gz"
   cmp -s "$WORK/check.tar.gz" "$WORK/netsluice.tar.gz" || { echo "the NetSluice package in the image does not match" >&2; exit 1; }
   dbg "dump /usr/share/netsluice/setup/bundle.tar $WORK/check.tar"
@@ -121,7 +137,7 @@ if [[ $FULL == 1 ]]; then
 fi
 e2fsck -fn "$FS" >/dev/null 2>&1 || { echo "filesystem check failed" >&2; exit 1; }
 
-if [[ $FULL == 1 ]]; then
+if [[ $FULL == 1 && -z "${NETSLUICE_NO_XZ:-}" ]]; then
   echo "==> compressing (this takes a few minutes)"
   xz -T0 -6 -k -f "$OUT"
   ( cd "$(dirname "$OUT")" && sha256sum "$(basename "$OUT").xz" > "$(basename "$OUT").xz.sha256" )

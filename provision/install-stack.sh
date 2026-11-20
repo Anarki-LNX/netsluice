@@ -22,7 +22,7 @@ systemctl restart systemd-resolved
 if [ ! -x /opt/AdGuardHome/AdGuardHome ]; then
   echo "==> installing AdGuard Home $AGH_VER"
   if [ -f "$BUNDLE/AdGuardHome_linux_arm64.tar.gz" ]; then
-    tar -C /opt -xzf "$BUNDLE/AdGuardHome_linux_arm64.tar.gz"      # checked when the bundle was made
+    tar -C /opt --warning=no-timestamp -xzf "$BUNDLE/AdGuardHome_linux_arm64.tar.gz"      # checked when the bundle was made
   else
     T="$(mktemp -d)"
     curl -fsSL -o "$T/agh.tar.gz" "$AGH_URL/AdGuardHome_linux_arm64.tar.gz"
@@ -30,7 +30,7 @@ if [ ! -x /opt/AdGuardHome/AdGuardHome ]; then
     want="$(grep 'AdGuardHome_linux_arm64.tar.gz' "$T/checksums.txt" | awk '{print $1}')"
     have="$(sha256sum "$T/agh.tar.gz" | awk '{print $1}')"
     [ -n "$want" ] && [ "$want" = "$have" ] || { echo "checksum mismatch for AdGuard Home" >&2; exit 1; }
-    tar -C /opt -xzf "$T/agh.tar.gz"
+    tar -C /opt --warning=no-timestamp -xzf "$T/agh.tar.gz"
     rm -rf "$T"
   fi
   /opt/AdGuardHome/AdGuardHome -s install
@@ -186,7 +186,8 @@ systemctl enable -q caddy avahi-daemon netsluiced
 systemctl reset-failed netsluice-root.service netsluice-root.path 2>/dev/null || true
 systemctl enable -q netsluice-root.path && systemctl restart netsluice-root.path
 # on a first start from the ready-made image a small page holds port 80 until here
-systemctl stop netsluice-setup-page 2>/dev/null || true
+[ ! -f /run/netsluice-setup/page.pid ] || kill "$(cat /run/netsluice-setup/page.pid)" 2>/dev/null || true
+[ ! -f /run/netsluice-setup/page.pid ] || sleep 1
 systemctl restart caddy avahi-daemon
 [ ! -f /usr/share/netsluice/service/netsluiced.py ] || systemctl restart netsluiced
 

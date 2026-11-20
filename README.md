@@ -78,17 +78,18 @@ any computer to write the card.
 2. **Write it to the card** with [balenaEtcher](https://etcher.balena.io/) or
    the Raspberry Pi Imager ("Use custom"). Both take the `.xz` file as it is.
 3. **Unplug the Mini, insert the card, connect it to your router, power it up.**
-   The green LED blinks while NetSluice sets itself up. This takes about five
-   minutes and needs the internet, because it downloads the filter engine and
-   the web server. When the green LED is steady, it is ready. A steady red LED
-   means a step failed, most often no internet; it tries again every minute.
-   While it works, the device shows a page with the current step, and what is
-   wrong if one fails, at the same address as the interface later.
+   The green LED blinks while NetSluice sets itself up. This takes a few
+   minutes and needs no internet: the image brings everything along. When the
+   green LED is steady, it is ready. A steady red LED means a step failed; it
+   is tried again every minute. While it works, the device shows a page with
+   the current step, and what is wrong if one fails, at the same address as
+   the interface later.
 
 Then open **http://netsluice.local/** (or the address your router shows for
 the device "netsluice"). The first visitor chooses the password, so do this
 right away. Finally enter the device's address as the DNS server in your
-router, and every device at home is filtered.
+router, and every device at home is filtered. The filter lists are downloaded
+as soon as the device reaches the internet; until then nothing is stopped.
 
 Good to know:
 
