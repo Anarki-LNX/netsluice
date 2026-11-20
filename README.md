@@ -48,8 +48,8 @@ the board marking `mini_v21_20210521`. It runs that owner's home network.
 
 | | |
 |---|---|
-| Works | boot from microSD, installation to the internal eMMC, both Ethernet ports at 1 Gbit/s, LEDs, button, everything listed above |
-| Not built yet | a ready-made image that works without any setup, HTTPS, the WireGuard tunnel, backup and restore of the original system from the interface, inline ("sluice") and listening mode, changing the fixed address from the interface |
+| Works | a ready-made image for the microSD card, boot from microSD, installation to the internal eMMC, both Ethernet ports at 1 Gbit/s, LEDs, button, everything listed above |
+| Not built yet | HTTPS, the WireGuard tunnel, backup and restore of the original system from the interface, inline ("sluice") and listening mode, changing the fixed address from the interface |
 | Not working | USB-C as a data port (it still powers the device) |
 | Untested | other board revisions; the other Deeper models (Pico, Nano, Air) are different hardware |
 
@@ -66,7 +66,42 @@ original system comes back when you remove the card.
 A stock NanoPi R2S image does not boot, though. Three things differ on this
 board; `dts/patch_dts.py` corrects them. See [docs/hardware.md](docs/hardware.md).
 
-### Before you start
+There are two ways: the ready-made image, or building it yourself.
+
+## The easy way: the ready-made image
+
+You need a microSD card (8 GB or more), a network cable to your router, and
+any computer to write the card.
+
+1. **Download** `netsluice-<version>-deeper-connect-mini.img.xz` from the
+   [latest release](https://github.com/Anarki-LNX/netsluice/releases/latest).
+2. **Write it to the card** with [balenaEtcher](https://etcher.balena.io/) or
+   the Raspberry Pi Imager ("Use custom"). Both take the `.xz` file as it is.
+3. **Unplug the Mini, insert the card, connect it to your router, power it up.**
+   The green LED blinks while NetSluice sets itself up. This takes about five
+   minutes and needs the internet, because it downloads the filter engine and
+   the web server. When the green LED is steady, it is ready. A steady red LED
+   means a step failed, most often no internet; it tries again every minute.
+
+Then open **http://netsluice.local/** (or the address your router shows for
+the device "netsluice"). The first visitor chooses the password, so do this
+right away. Finally enter the device's address as the DNS server in your
+router, and every device at home is filtered.
+
+Good to know:
+
+- **Nothing on the device is changed.** NetSluice runs from the card. Remove
+  the card and the original system starts again, wallet included.
+- **There is no login to the system underneath.** SSH is off and the system
+  account is locked. If you want SSH, put your public key on the card as
+  `/boot/netsluice-ssh.pub` before a start (the card is ext4, so this needs a
+  Linux computer); SSH then accepts that key and no passwords.
+- **Updates** arrive through the interface, under Settings → Updates.
+- To check the download: `sha256sum -c netsluice-*.img.xz.sha256`.
+
+## The other way: build it yourself
+
+Before you start:
 
 - **Your wallet.** If your device holds a wallet, make sure you have its seed
   phrase or keystore first.

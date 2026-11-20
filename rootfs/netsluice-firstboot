@@ -1,0 +1,70 @@
+#!/bin/sh
+# NetSluice: set the device up on its first start from a ready-made image.
+# Nobody is logged in and nobody can be: there is no screen, and SSH is off.
+# So this runs by itself, writes what it does to /var/log/netsluice-setup.log
+# and shows its state on the LEDs:
+#   green blinking   setting up (about five minutes, needs the internet)
+#   green steady     ready, open http://netsluice.local/
+#   red steady       a step failed; it is tried again every minute
+# Safe to run again: finished steps are skipped.
+set -u
+SETUP=/usr/share/netsluice/setup
+STATE=/var/lib/netsluice-setup
+LOG=/var/log/netsluice-setup.log
+mkdir -p "$STATE"
+exec >>"$LOG" 2>&1
+echo "=== $(date -Is) first-boot setup starts"
+
+led() { [ -w "/sys/class/leds/$1/trigger" ] && echo "$2" > "/sys/class/leds/$1/trigger" 2>/dev/null; [ -z "${3:-}" ] || echo "$3" > "/sys/class/leds/$1/brightness" 2>/dev/null; return 0; }
+fail() { echo "FAILED: $*"; led led_red none 1; exit 1; }
+led led_red none 0
+led led_green heartbeat
+
+# Armbian ships with a public default password and a wizard that waits for a
+# login. An appliance has neither: lock the account, drop the wizard.
+passwd -l root >/dev/null 2>&1 || true
+rm -f /root/.not_logged_in_yet
+rm -f /etc/systemd/system/getty@.service.d/override.conf /etc/systemd/system/serial-getty@.service.d/override.conf
+systemctl daemon-reload
+# Armbian's own first-run step restarts SSH after making new host keys. Without a
+# key from the owner (see netsluice-sshkey) there is nobody to let in: switch it off.
+[ -s /boot/netsluice-ssh.pub ] || systemctl disable -q --now ssh ssh.socket 2>/dev/null || true
+
+echo "--- waiting for the internet (and with it for a correct clock)"
+n=0
+until curl -fsS -m 8 -o /dev/null https://github.com/; do
+  n=$((n+1)); [ $n -lt 60 ] || fail "no internet after five minutes: is the network cable plugged into the router?"
+  sleep 5
+done
+
+if [ ! -f "$STATE/unpacked" ]; then
+  echo "--- unpacking NetSluice"
+  T="$(mktemp -d)"
+  tar -C "$T" -xzf "$SETUP/netsluice.tar.gz" || fail "the package in the image is damaged"
+  SRC="$(echo "$T"/netsluice-*)"
+  [ -f "$SRC/VERSION" ] && [ -f "$SRC/web/index.html" ] && [ -f "$SRC/service/netsluiced.py" ] || fail "the package in the image is incomplete"
+  mkdir -p /srv/netsluice /usr/share/netsluice
+  rm -rf /srv/netsluice/www /usr/share/netsluice/service
+  cp -r "$SRC/web" /srv/netsluice/www && cp -r "$SRC/service" /usr/share/netsluice/service && cp "$SRC/VERSION" /usr/share/netsluice/VERSION || fail "could not copy the files"
+  chown -R root:root /srv/netsluice /usr/share/netsluice; chmod -R a+rX,go-w /srv/netsluice /usr/share/netsluice
+  rm -rf "$T"
+  touch "$STATE/unpacked"
+fi
+
+echo "--- package lists"
+apt-get -o DPkg::Lock::Timeout=600 update -q || fail "apt-get update"
+
+echo "--- installing the filter, the web server and the rest"
+sh "$SETUP/install-stack.sh" || fail "install-stack.sh"
+
+n=0
+until curl -fsS -m 5 http://127.0.0.1:3002/auth/state | grep -q configured; do
+  n=$((n+1)); [ $n -lt 30 ] || fail "the NetSluice service does not answer"
+  sleep 2
+done
+curl -fsS -m 5 -o /dev/null http://127.0.0.1/ || fail "the web server does not answer"
+
+touch "$STATE/done"
+led led_red none 0
+led led_green none 1
+echo "=== $(date -Is) done: http://$(hostname).local/"

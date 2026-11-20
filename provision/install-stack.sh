@@ -124,7 +124,7 @@ UNIT
 
 echo "==> installing Caddy and avahi"
 # ieee-data: who made a network card; avahi-utils: what devices announce about themselves
-DEBIAN_FRONTEND=noninteractive apt-get install -y -q caddy avahi-daemon avahi-utils ieee-data >/dev/null
+DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=600 install -y -q caddy avahi-daemon avahi-utils ieee-data >/dev/null
 
 cat > /etc/caddy/Caddyfile <<'CADDY'
 {

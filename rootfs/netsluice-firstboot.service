@@ -1,0 +1,18 @@
+[Unit]
+Description=NetSluice: set the device up on its first start
+ConditionPathExists=!/var/lib/netsluice-setup/done
+ConditionPathExists=/usr/share/netsluice/setup/netsluice.tar.gz
+Wants=network-online.target
+After=network-online.target armbian-firstrun.service armbian-resize-filesystem.service dcm-firstboot.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/netsluice-firstboot
+TimeoutStartSec=45min
+# a failed step (no internet yet, a download that broke off) is tried again
+Restart=on-failure
+RestartSec=60
+
+[Install]
+WantedBy=multi-user.target

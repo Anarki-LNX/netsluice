@@ -40,12 +40,12 @@
 | `service/` | `netsluiced.py` and the root helper |
 | `provision/install-stack.sh` | turns a running Armbian into a NetSluice; safe to run again |
 | `provision/install-to-emmc.sh` | moves the system from the card to the eMMC |
-| `scripts/build-image.sh` | adapts a stock Armbian image to this board |
+| `scripts/build-image.sh` | adapts a stock Armbian image to this board; with `--netsluice` it builds the ready-made image |
 | `scripts/deploy-dev.sh` | copies `web/` and `service/` to a device |
 | `scripts/demo.py` | the interface on your own computer, with made-up data |
 | `scripts/probe/` | boot script that reads out the bootloader |
 | `dts/patch_dts.py` | the device tree changes for this board |
-| `rootfs/` | files `build-image.sh` puts into the image |
+| `rootfs/` | files `build-image.sh` puts into the image, among them the first-boot setup of the ready-made image |
 | `tests/` | smoke tests that run on your own computer |
 | `docs/hardware.md` | what is known about the board |
 

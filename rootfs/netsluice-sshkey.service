@@ -1,0 +1,11 @@
+[Unit]
+Description=NetSluice: switch SSH on if a public key was put on the card
+ConditionPathExists=/boot/netsluice-ssh.pub
+After=local-fs.target armbian-firstrun.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/netsluice-sshkey
+
+[Install]
+WantedBy=multi-user.target

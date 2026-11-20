@@ -15,6 +15,16 @@ or downloaded by it.
 Filter lists are not shipped. They are downloaded by the device from their
 maintainers and keep their own licences.
 
+## The ready-made image
+
+The image attached to a release is an unmodified Armbian community image for
+the NanoPi R2S (Debian 13 "trixie"), with the device tree below, the NetSluice
+files and a first-boot script added by `scripts/build-image.sh`. Armbian and
+Debian packages in it keep their own licences; their sources are available
+from https://github.com/armbian/build and https://www.debian.org/distrib/packages.
+AdGuard Home and Caddy are not in the image; the device downloads them on its
+first start.
+
 ## The device tree
 
 The device tree produced by `dts/patch_dts.py` is a modified copy of the Linux

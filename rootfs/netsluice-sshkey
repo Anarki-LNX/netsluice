@@ -1,0 +1,16 @@
+#!/bin/sh
+# NetSluice: SSH is off unless the owner of the card asks for it.
+# Put your public key on the card as /boot/netsluice-ssh.pub (the card is ext4,
+# so this needs a Linux computer). On the next start it becomes the key of
+# root, and SSH is switched on for keys only. There is no password login.
+KEY=/boot/netsluice-ssh.pub
+[ -s "$KEY" ] || exit 0
+grep -Eq '^(ssh-(ed25519|rsa)|ecdsa-sha2-nistp[0-9]+|sk-(ssh-ed25519|ecdsa-sha2-nistp256)@openssh\.com) [A-Za-z0-9+/=]+' "$KEY" || { echo "netsluice-sshkey: $KEY is not a public key" >&2; exit 0; }
+install -d -m 700 /root/.ssh
+grep -E '^(ssh-|ecdsa-|sk-)' "$KEY" > /root/.ssh/authorized_keys
+chmod 600 /root/.ssh/authorized_keys
+mkdir -p /etc/ssh/sshd_config.d
+printf 'PasswordAuthentication no\nKbdInteractiveAuthentication no\nPermitRootLogin prohibit-password\n' > /etc/ssh/sshd_config.d/10-netsluice.conf
+rm -f /root/.not_logged_in_yet
+systemctl enable -q ssh
+systemctl start --no-block ssh

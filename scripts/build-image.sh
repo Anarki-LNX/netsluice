@@ -2,16 +2,24 @@
 # Turn a stock Armbian image for the NanoPi R2S into one that boots on the
 # Deeper Connect Mini. Needs no root: the image file is edited in place with debugfs.
 #
-#   scripts/build-image.sh Armbian_..._Nanopi-r2s_..._minimal.img[.xz] [output.img]
+#   scripts/build-image.sh [--netsluice] Armbian_..._Nanopi-r2s_..._minimal.img[.xz] [output.img]
+#
+# Without --netsluice the result is plain Armbian for this board: you log in over
+# SSH and install NetSluice yourself. With it the result is the ready-made image:
+# NetSluice sets itself up on the first start, SSH is off, and the output is also
+# compressed to <output>.xz with a .sha256 next to it.
 #
 # Requires: bash, python3, dtc (device-tree-compiler), debugfs and e2fsck (e2fsprogs),
 #           sfdisk (util-linux), xz.
 set -euo pipefail
 
+FULL=0
+if [[ "${1:-}" == "--netsluice" ]]; then FULL=1; shift; fi
 SRC="${1:-}"
-[[ -f "$SRC" ]] || { echo "usage: $0 <armbian-nanopi-r2s-image.img[.xz]> [output.img]" >&2; exit 2; }
+[[ -f "$SRC" ]] || { echo "usage: $0 [--netsluice] <armbian-nanopi-r2s-image.img[.xz]> [output.img]" >&2; exit 2; }
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-OUT="${2:-$PWD/deeper-connect-mini-armbian.img}"
+VERSION="$(tr -d '[:space:]' < "$HERE/VERSION")"
+if [[ $FULL == 1 ]]; then OUT="${2:-$PWD/netsluice-$VERSION-deeper-connect-mini.img}"; else OUT="${2:-$PWD/deeper-connect-mini-armbian.img}"; fi
 DTB_NAME=rk3328-nanopi-r2-rev00.dtb
 
 for tool in python3 dtc debugfs e2fsck sfdisk xz; do
@@ -32,6 +40,11 @@ START="$(sfdisk -d "$OUT" | awk -F'[=,]' '/start=/ {gsub(/ /,"",$2); print $2; e
 FS="$OUT?offset=$((START * 512))"
 dbg()  { debugfs -R "$1" "$FS" 2>/dev/null; }
 dbgw() { debugfs -w -R "$1" "$FS" >/dev/null 2>&1; }
+# debugfs keeps the owner of the file it copies, which is whoever builds the image.
+# Everything in the image belongs to root.
+put()  { dbgw "rm $2"; dbgw "write $1 $2"; dbgw "sif $2 uid 0"; dbgw "sif $2 gid 0"; dbgw "sif $2 mode ${3:-0100644}"; }
+mkd()  { dbg "stat $1" | grep -q "Type: directory" || { dbgw "mkdir $1"; dbgw "sif $1 uid 0"; dbgw "sif $1 gid 0"; dbgw "sif $1 mode 040755"; }; }
+enable() { dbgw "symlink /etc/systemd/system/multi-user.target.wants/$1 /etc/systemd/system/$1"; }
 
 echo "==> checking that this is a NanoPi R2S image"
 dbg "cat /boot/armbianEnv.txt" | grep -q "^fdtfile=rockchip/$DTB_NAME\$" \
@@ -49,24 +62,60 @@ dtc -I dts -O dtb -q -o "$WORK/dcm.dtb" "$WORK/dcm.dts"
 chmod 644 "$WORK/stock.dtb" "$WORK/dcm.dtb"
 
 echo "==> writing files into the image"
-dbgw "write $WORK/stock.dtb $RK/$DTB_NAME.armbian-original"
-dbgw "rm $RK/$DTB_NAME"
-dbgw "write $WORK/dcm.dtb $RK/$DTB_NAME"
-dbgw "write $WORK/dcm.dtb /boot/deeper-connect-mini.dtb"
-dbgw "write $HERE/rootfs/dcm-dtb-restore /usr/local/sbin/dcm-dtb-restore"
-dbgw "write $HERE/rootfs/dcm-firstboot /usr/local/sbin/dcm-firstboot"
-dbgw "write $HERE/rootfs/99-dcm-dtb /etc/apt/apt.conf.d/99-dcm-dtb"
-dbgw "write $HERE/rootfs/dcm-firstboot.service /etc/systemd/system/dcm-firstboot.service"
-dbgw "symlink /etc/systemd/system/multi-user.target.wants/dcm-firstboot.service /etc/systemd/system/dcm-firstboot.service"
+put "$WORK/stock.dtb" "$RK/$DTB_NAME.armbian-original"
+put "$WORK/dcm.dtb" "$RK/$DTB_NAME"
+put "$WORK/dcm.dtb" /boot/deeper-connect-mini.dtb
+put "$HERE/rootfs/dcm-dtb-restore" /usr/local/sbin/dcm-dtb-restore 0100755
+put "$HERE/rootfs/dcm-firstboot" /usr/local/sbin/dcm-firstboot 0100755
+put "$HERE/rootfs/99-dcm-dtb" /etc/apt/apt.conf.d/99-dcm-dtb
+put "$HERE/rootfs/dcm-firstboot.service" /etc/systemd/system/dcm-firstboot.service
+enable dcm-firstboot.service
+CHECK=(/usr/local/sbin/dcm-dtb-restore /usr/local/sbin/dcm-firstboot /etc/apt/apt.conf.d/99-dcm-dtb /etc/systemd/system/dcm-firstboot.service /boot/deeper-connect-mini.dtb)
+
+if [[ $FULL == 1 ]]; then
+  echo "==> adding NetSluice $VERSION and its first-boot setup"
+  # what a device runs: the same package a release carries
+  tar -C "$HERE" --owner=0 --group=0 --numeric-owner --mode='u+rwX,go+rX,go-w' --transform "s,^,netsluice-$VERSION/," \
+      --exclude=__pycache__ -czf "$WORK/netsluice.tar.gz" VERSION web service
+  printf 'PasswordAuthentication no\nKbdInteractiveAuthentication no\nPermitRootLogin prohibit-password\n' > "$WORK/sshd.conf"
+  mkd /usr/share/netsluice; mkd /usr/share/netsluice/setup; mkd /etc/ssh/sshd_config.d
+  put "$WORK/netsluice.tar.gz" /usr/share/netsluice/setup/netsluice.tar.gz
+  put "$HERE/provision/install-stack.sh" /usr/share/netsluice/setup/install-stack.sh 0100755
+  put "$HERE/rootfs/netsluice-firstboot" /usr/local/sbin/netsluice-firstboot 0100755
+  put "$HERE/rootfs/netsluice-firstboot.service" /etc/systemd/system/netsluice-firstboot.service
+  put "$HERE/rootfs/netsluice-sshkey" /usr/local/sbin/netsluice-sshkey 0100755
+  put "$HERE/rootfs/netsluice-sshkey.service" /etc/systemd/system/netsluice-sshkey.service
+  # Armbian's default password is public: no password logins, and SSH stays off
+  # until the owner puts a key on the card (see rootfs/netsluice-sshkey).
+  put "$WORK/sshd.conf" /etc/ssh/sshd_config.d/10-netsluice.conf
+  dbgw "rm /etc/systemd/system/multi-user.target.wants/ssh.service"
+  enable netsluice-firstboot.service; enable netsluice-sshkey.service
+  CHECK+=(/usr/share/netsluice/setup/netsluice.tar.gz /usr/share/netsluice/setup/install-stack.sh /usr/local/sbin/netsluice-firstboot
+          /etc/systemd/system/netsluice-firstboot.service /usr/local/sbin/netsluice-sshkey /etc/systemd/system/netsluice-sshkey.service /etc/ssh/sshd_config.d/10-netsluice.conf)
+fi
 
 echo "==> verifying"
 dbg "dump $RK/$DTB_NAME $WORK/check.dtb"
 cmp -s "$WORK/check.dtb" "$WORK/dcm.dtb" || { echo "device tree in the image does not match" >&2; exit 1; }
-for f in /usr/local/sbin/dcm-dtb-restore /usr/local/sbin/dcm-firstboot /etc/apt/apt.conf.d/99-dcm-dtb /etc/systemd/system/dcm-firstboot.service /boot/deeper-connect-mini.dtb; do
-  dbg "stat $f" | grep -q "Type: regular" || { echo "missing in image: $f" >&2; exit 1; }
+for f in "${CHECK[@]}"; do
+  st="$(dbg "stat $f")"
+  grep -q "Type: regular" <<<"$st" || { echo "missing in image: $f" >&2; exit 1; }
+  grep -Eq "User: +0 +Group: +0" <<<"$st" || { echo "not owned by root in image: $f" >&2; exit 1; }
 done
+if [[ $FULL == 1 ]]; then
+  dbg "stat /etc/systemd/system/multi-user.target.wants/ssh.service" | grep -q "Type:" && { echo "SSH is still enabled in the image" >&2; exit 1; }
+  dbg "dump /usr/share/netsluice/setup/netsluice.tar.gz $WORK/check.tar.gz"
+  cmp -s "$WORK/check.tar.gz" "$WORK/netsluice.tar.gz" || { echo "the NetSluice package in the image does not match" >&2; exit 1; }
+fi
 e2fsck -fn "$FS" >/dev/null 2>&1 || { echo "filesystem check failed" >&2; exit 1; }
 
-echo "==> done: $OUT"
+if [[ $FULL == 1 ]]; then
+  echo "==> compressing (this takes a few minutes)"
+  xz -T0 -6 -k -f "$OUT"
+  ( cd "$(dirname "$OUT")" && sha256sum "$(basename "$OUT").xz" > "$(basename "$OUT").xz.sha256" )
+  echo "==> done: $OUT.xz"
+else
+  echo "==> done: $OUT"
+fi
 echo "    write it to a microSD card, for example:"
 echo "    sudo dd if=$OUT of=/dev/sdX bs=4M conv=fsync status=progress"
