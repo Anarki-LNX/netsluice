@@ -37,6 +37,8 @@ a device: `python3 scripts/demo.py`, then open <http://127.0.0.1:8099/>.
 - **Settings** for encrypted DNS (DoH, DNSSEC), privacy, the board's LEDs and
   button, messages to a phone (ntfy or webhook), appearance, export and import,
   name and system updates.
+- **Updates of NetSluice itself** from the releases here on GitHub, by hand or
+  once a day. If the new version does not start, the old one is put back.
 - English and German.
 
 ## Status: early, tested on one device
@@ -47,7 +49,7 @@ the board marking `mini_v21_20210521`. It runs that owner's home network.
 | | |
 |---|---|
 | Works | boot from microSD, installation to the internal eMMC, both Ethernet ports at 1 Gbit/s, LEDs, button, everything listed above |
-| Not built yet | a ready-made image that works without any setup, HTTPS, the WireGuard tunnel, backup and restore of the original system from the interface, self-update, inline ("sluice") and listening mode, changing the fixed address from the interface |
+| Not built yet | a ready-made image that works without any setup, HTTPS, the WireGuard tunnel, backup and restore of the original system from the interface, inline ("sluice") and listening mode, changing the fixed address from the interface |
 | Not working | USB-C as a data port (it still powers the device) |
 | Untested | other board revisions; the other Deeper models (Pico, Nano, Air) are different hardware |
 

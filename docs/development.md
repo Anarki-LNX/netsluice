@@ -78,6 +78,17 @@ chromium --headless=new --hide-scrollbars --window-size=1440,960 --virtual-time-
   --screenshot=docs/screenshots/overview.png 'http://127.0.0.1:8099/?lang=en'
 ```
 
+## Releases
+
+A device updates itself from the releases of this repository. It takes the
+newest one by version number, pre-releases included, downloads the source
+archive of its tag and refuses it unless the `VERSION` file in it matches the
+tag. Only `web/` and `service/` are replaced; changes to `provision/` still
+need `install-stack.sh` by hand. So for a release:
+
+1. raise `VERSION` (`0.1.1`) and commit,
+2. tag it `v` plus the same number and publish the release on GitHub.
+
 ## Tests
 
 ```bash

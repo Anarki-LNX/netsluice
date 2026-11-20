@@ -17,6 +17,10 @@ Nothing in a request is trusted: only known commands, every argument validated.
     upd-check                       refresh the package lists, then upd-status
     upd-auto      { on }
     upd-run                         install pending updates in the background
+    app-status                      installed and newest NetSluice version
+    app-check                       ask GitHub for the newest release
+    app-run                         install it in the background (--app-update)
+    app-auto      { on }            look and install once a day (--app-auto)
 
 Called with --revert it ends a trial that nobody confirmed.
 """
@@ -195,11 +199,236 @@ def upd_run(_=None):
     return s
 
 
+# ---------- NetSluice itself ------------------------------------------------------
+# New versions come only from the releases of the project on GitHub, over HTTPS.
+# An update replaces the interface and the service, never the filter engine, so
+# name lookups keep working throughout. If the service does not answer afterwards,
+# the previous version is put back.
+REPO = "Anarki-LNX/netsluice"
+SHARE, WWW = "/usr/share/netsluice", "/srv/netsluice/www"
+VERSION_FILE, PREVIOUS = SHARE + "/VERSION", SHARE + "/previous"
+APP_LATEST, APP_LAST = BASE + "/app-latest.json", BASE + "/app-update.json"
+WORK = "/var/lib/netsluice-update"
+APP_UNIT = "netsluice-app-update"
+AUTO_TIMER = "/etc/systemd/system/netsluice-app-auto.timer"
+MAX_DOWNLOAD = 30 * 1024 * 1024
+
+
+def vtuple(v):
+    m = re.fullmatch(r"v?(\d{1,4})\.(\d{1,4})\.(\d{1,4})", str(v or "").strip())
+    return tuple(int(x) for x in m.groups()) if m else None
+
+
+def installed():
+    try:
+        v = open(VERSION_FILE).read().strip()
+        return v if vtuple(v) else None
+    except OSError:
+        return None
+
+
+def read_json(path, default=None):
+    try:
+        return json.load(open(path))
+    except (OSError, ValueError):
+        return default
+
+
+def write_json(path, data):
+    with open(path + ".tmp", "w") as f:
+        json.dump(data, f)
+    os.chmod(path + ".tmp", 0o644)
+    os.replace(path + ".tmp", path)
+
+
+def fetch(url, limit, timeout=30):
+    import urllib.request
+    if not url.startswith(("https://api.github.com/", "https://codeload.github.com/", "https://github.com/")):
+        raise ValueError("refusing to download from " + url[:80])
+    req = urllib.request.Request(url, headers={"User-Agent": "NetSluice/" + (installed() or "0"), "Accept": "application/vnd.github+json"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        if not r.geturl().startswith(("https://api.github.com/", "https://codeload.github.com/", "https://github.com/")):
+            raise ValueError("redirected away from GitHub")
+        data = r.read(limit + 1)
+    if len(data) > limit:
+        raise ValueError("download too large")
+    return data
+
+
+def latest_release():
+    """The newest published release, pre-releases included (the project is young)."""
+    best = None
+    for r in json.loads(fetch("https://api.github.com/repos/%s/releases?per_page=30" % REPO, 2 * 1024 * 1024)):
+        v = vtuple(r.get("tag_name"))
+        if r.get("draft") or not v:
+            continue
+        if best is None or v > best[0]:
+            best = (v, r)
+    if not best:
+        return None
+    r = best[1]
+    return {"tag": r["tag_name"], "version": ".".join(map(str, best[0])), "name": (r.get("name") or "")[:120],
+            "url": r.get("html_url", ""), "published": r.get("published_at", ""), "prerelease": bool(r.get("prerelease")),
+            "notes": (r.get("body") or "")[:1500]}
+
+
+def app_status(_=None):
+    latest = read_json(APP_LATEST, {})
+    cur, new = installed(), (latest.get("release") or {}).get("version")
+    return {"version": cur, "latest": latest.get("release"), "checked": latest.get("checked", 0), "error": latest.get("error"),
+            "available": bool(new and (cur is None or vtuple(new) > vtuple(cur))),
+            "running": sh(["systemctl", "is-active", APP_UNIT + ".service"])[1] == "active",
+            "auto": os.path.exists(AUTO_TIMER), "last": read_json(APP_LAST)}
+
+
+def app_check(_=None):
+    try:
+        write_json(APP_LATEST, {"release": latest_release(), "checked": int(time.time())})
+    except Exception as e:
+        old = read_json(APP_LATEST, {})
+        old.update(error=str(e)[:200], checked=int(time.time()))
+        write_json(APP_LATEST, old)
+    return app_status()
+
+
+def app_run(_=None):
+    if app_status()["running"]:
+        return {"error": "running"}
+    sh(["systemctl", "reset-failed", APP_UNIT + ".service"])
+    code, out = sh(["systemd-run", "--quiet", "--unit=" + APP_UNIT, sys.executable, os.path.abspath(__file__), "--app-update"])
+    s = app_status()
+    if code:
+        s["error"] = out[-200:]
+    return s
+
+
+def app_auto(a):
+    if a.get("on"):
+        with open("/etc/systemd/system/netsluice-app-auto.service", "w") as f:
+            f.write("[Unit]\nDescription=NetSluice: install a new version if there is one\n\n[Service]\nType=oneshot\n"
+                    "ExecStart=/usr/bin/python3 %s/service/netsluice-root.py --app-auto\n" % SHARE)
+        with open(AUTO_TIMER, "w") as f:
+            f.write("[Unit]\nDescription=NetSluice: look for a new version once a day\n\n[Timer]\nOnCalendar=*-*-* 04:00\n"
+                    "RandomizedDelaySec=2h\nPersistent=true\n\n[Install]\nWantedBy=timers.target\n")
+        sh(["systemctl", "daemon-reload"])
+        code, out = sh(["systemctl", "enable", "--now", "netsluice-app-auto.timer"])
+    else:
+        sh(["systemctl", "disable", "--now", "netsluice-app-auto.timer"])
+        for p in (AUTO_TIMER, "/etc/systemd/system/netsluice-app-auto.service"):
+            try:
+                os.remove(p)
+            except OSError:
+                pass
+        code, out = sh(["systemctl", "daemon-reload"])
+    s = app_status()
+    if code:
+        s["error"] = out[-200:]
+    return s
+
+
+def service_answers(seconds=40):
+    import urllib.request
+    end = time.time() + seconds
+    while time.time() < end:
+        try:
+            with urllib.request.urlopen("http://127.0.0.1:3002/auth/state", timeout=3) as r:
+                if r.status == 200 and "configured" in json.loads(r.read(4096)):
+                    return True
+        except Exception:
+            pass
+        time.sleep(1)
+    return False
+
+
+def swap_in(src, dst):
+    """Replace directory dst by a copy of src in one rename."""
+    import shutil
+    new, old = dst + ".new", dst + ".old"
+    shutil.rmtree(new, ignore_errors=True); shutil.rmtree(old, ignore_errors=True)
+    shutil.copytree(src, new)
+    sh(["chmod", "-R", "a+rX,go-w", new])
+    if os.path.isdir(dst):
+        os.rename(dst, old)
+    os.rename(new, dst)
+    shutil.rmtree(old, ignore_errors=True)
+
+
+def app_update():
+    """Runs in the background (systemd-run): download, check, install, verify, or roll back."""
+    import io, shutil, tarfile
+    last = {"at": int(time.time()), "from": installed()}
+    try:
+        rel = latest_release()
+        write_json(APP_LATEST, {"release": rel, "checked": int(time.time())})
+        if not rel:
+            raise ValueError("no release found")
+        cur = installed()
+        if cur and vtuple(rel["version"]) <= vtuple(cur):
+            last.update(result="current", to=cur); return
+        last["to"] = rel["version"]
+        blob = fetch("https://codeload.github.com/%s/tar.gz/refs/tags/%s" % (REPO, rel["tag"]), MAX_DOWNLOAD, 120)
+        shutil.rmtree(WORK, ignore_errors=True)
+        os.makedirs(WORK, mode=0o700)
+        with tarfile.open(fileobj=io.BytesIO(blob), mode="r:gz") as tf:
+            tf.extractall(WORK, filter="data")                       # no links out, no absolute paths, no devices
+        tops = os.listdir(WORK)
+        if len(tops) != 1:
+            raise ValueError("unexpected archive layout")
+        src = os.path.join(WORK, tops[0])
+        if not os.path.isfile(os.path.join(src, "VERSION")):
+            raise ValueError("release %s cannot be installed from the interface" % rel["tag"])
+        if open(os.path.join(src, "VERSION")).read().strip() != rel["version"]:
+            raise ValueError("the archive does not contain version " + rel["version"])
+        for need in ("web/index.html", "web/app.js", "service/netsluiced.py", "service/netsluice-root.py"):
+            if not os.path.isfile(os.path.join(src, need)):
+                raise ValueError("missing in the archive: " + need)
+        for py in ("netsluiced.py", "netsluice-root.py"):
+            code, out = sh([sys.executable, "-m", "py_compile", os.path.join(src, "service", py)])
+            if code:
+                raise ValueError("%s does not compile: %s" % (py, out[-120:]))
+        # keep what runs now, to go back to
+        shutil.rmtree(PREVIOUS, ignore_errors=True)
+        os.makedirs(PREVIOUS)
+        shutil.copytree(WWW, PREVIOUS + "/www"); shutil.copytree(SHARE + "/service", PREVIOUS + "/service")
+        if cur:
+            shutil.copy2(VERSION_FILE, PREVIOUS + "/VERSION")
+        swap_in(os.path.join(src, "web"), WWW)
+        swap_in(os.path.join(src, "service"), SHARE + "/service")
+        shutil.copy2(os.path.join(src, "VERSION"), VERSION_FILE + ".tmp"); os.chmod(VERSION_FILE + ".tmp", 0o644)
+        os.replace(VERSION_FILE + ".tmp", VERSION_FILE)
+        sh(["systemctl", "restart", "netsluiced"])
+        if service_answers():
+            last.update(result="ok"); return
+        # the new version does not come up: put the old one back
+        swap_in(PREVIOUS + "/www", WWW)
+        swap_in(PREVIOUS + "/service", SHARE + "/service")
+        if os.path.exists(PREVIOUS + "/VERSION"):
+            shutil.copy2(PREVIOUS + "/VERSION", VERSION_FILE)
+        else:
+            os.remove(VERSION_FILE)
+        sh(["systemctl", "restart", "netsluiced"])
+        last.update(result="rolled-back", error="the service did not answer after the update")
+    except Exception as e:
+        last.update(result="failed", error=str(e)[:200])
+    finally:
+        shutil.rmtree(WORK, ignore_errors=True)
+        last["done"] = int(time.time())
+        write_json(APP_LAST, last)
+
+
 COMMANDS = {"net-status": net_status, "hostname": set_hostname, "addr-try": addr_try, "addr-confirm": lambda a: addr_end(True),
-            "addr-revert": lambda a: addr_end(False), "upd-status": upd_status, "upd-check": upd_check, "upd-auto": upd_auto, "upd-run": upd_run}
+            "addr-revert": lambda a: addr_end(False), "upd-status": upd_status, "upd-check": upd_check, "upd-auto": upd_auto, "upd-run": upd_run,
+            "app-status": app_status, "app-check": app_check, "app-run": app_run, "app-auto": app_auto}
 
 
 def main():
+    if "--app-update" in sys.argv:
+        app_update(); return
+    if "--app-auto" in sys.argv:
+        s = app_check()
+        if s["available"] and not s["running"]:
+            app_update()
+        return
     if "--revert" in sys.argv:
         t = trial()
         if t and t["expires"] <= time.time() + 5:

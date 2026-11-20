@@ -25,6 +25,7 @@ HTTP interface (all JSON, localhost only, the web server in front checks the ses
     GET  /api/settings                      POST /api/settings | /api/notify/test
     GET  /api/system                        POST /api/system/hostname | address[/confirm|/revert]
                                                  /api/system/updates/check | auto | run
+                                                 /api/system/app/check | auto | run
 
 Standard library only.
 """
@@ -890,7 +891,7 @@ def main():
             if path == "/api/settings":
                 self.reply(cfg.public()); return
             if path == "/api/system":
-                self.reply({"net": root_call("net-status"), "updates": root_call("upd-status", timeout=90)}); return
+                self.reply({"net": root_call("net-status"), "updates": root_call("upd-status", timeout=90), "app": root_call("app-status")}); return
             if path != "/api/geo":
                 self.send_error(404); return
             since = 0
@@ -941,7 +942,8 @@ def main():
                 self.reply(cfg.public()); return
             system = {"/api/system/hostname": ("hostname", 30), "/api/system/address": ("addr-try", 60), "/api/system/address/confirm": ("addr-confirm", 60),
                       "/api/system/address/revert": ("addr-revert", 60), "/api/system/updates/check": ("upd-check", 280),
-                      "/api/system/updates/auto": ("upd-auto", 320), "/api/system/updates/run": ("upd-run", 60)}
+                      "/api/system/updates/auto": ("upd-auto", 320), "/api/system/updates/run": ("upd-run", 60),
+                      "/api/system/app/check": ("app-check", 60), "/api/system/app/auto": ("app-auto", 30), "/api/system/app/run": ("app-run", 30)}
             if path in system:
                 cmd, wait = system[path]
                 res = root_call(cmd, {k: data[k] for k in ("name", "ip", "on") if k in data}, timeout=wait)

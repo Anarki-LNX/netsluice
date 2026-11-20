@@ -84,7 +84,9 @@ def reply_for(path, query):
                 "notify": {"kind": "ntfy", "url": "https://ntfy.sh/your-topic", "newdev": True, "malware": True, "down": True}, "hardware": {"leds": True, "button": True}, "ok": True}
     if path.startswith("/api/system"):
         return {"net": {"hostname": "netsluice", "fixed": ["192.168.0.2/24"], "dhcp": ["192.168.0.117"], "trial": None},
-                "updates": {"pending": [], "held": ["linux-image-current-rockchip64"], "auto": True, "checked": int(time.time()) - 3600, "running": False}}
+                "updates": {"pending": [], "held": ["linux-image-current-rockchip64"], "auto": True, "checked": int(time.time()) - 3600, "running": False},
+                "app": {"version": "0.1.1", "latest": {"tag": "v0.1.1", "version": "0.1.1"}, "checked": int(time.time()) - 600, "available": False,
+                        "running": False, "auto": True, "last": {"result": "ok", "from": "0.1.0", "to": "0.1.1", "done": int(time.time()) - 86400}}}
     if path.startswith("/control/") or path.startswith("/auth/"): return {"ok": True}
     return None
 

@@ -53,10 +53,16 @@ const T = {
     'ex.in': 'Load a file', 'ex.inSub': 'Adds what is missing and overwrites the settings named in the file. Lists you added since are kept.', 'ex.done': (n) => `Imported: ${n} parts applied.`, 'ex.bad': 'This is not a NetSluice settings file.',
     'nw.title': 'Network', 'nw.sub': 'Name and addresses of this device', 'nw.name': 'Name on the network', 'nw.save': 'Change name', 'nw.fixed': 'Fixed address', 'nw.dhcp': 'Address from the router', 'nw.open': 'Reachable as',
     'nw.later': 'Changing the fixed address and switching to sluice or listening mode are not offered here yet. Your whole network asks this address, and a change that goes wrong takes the house offline.', 'nw.badName': 'Only letters, digits and hyphens, no hyphen at the start or end.',
-    'up.title': 'Updates', 'up.sub': 'Security fixes for the system underneath', 'up.now': 'Update now', 'up.check': 'Look for updates', 'up.run': 'Install', 'up.auto': 'Install security updates automatically', 'up.autoSub': 'Debian then installs security fixes by itself every night.',
+    'up.title': 'Updates', 'up.sub': 'New versions of NetSluice and security fixes', 'up.now': 'Update now', 'up.check': 'Look for updates', 'up.run': 'Install', 'up.auto': 'Install security updates automatically', 'up.autoSub': 'Debian then installs security fixes by itself every night.',
     'up.none': 'The system is up to date.', 'up.some': (n) => n === 1 ? 'One update is waiting.' : `${n} updates are waiting.`, 'up.badge': (n) => n ? `${n} waiting` : 'up to date', 'up.checked': (d) => d ? `last looked ${d}` : 'never looked',
     'up.held': 'Held back on purpose: the system core. It only works on this board together with the adapted hardware description, so it is updated by hand.', 'up.running': 'Updates are being installed. This can take a few minutes; the filter keeps working.', 'up.started': 'Installation started.',
-    'up.self': 'NetSluice itself cannot update yet: the project is not published, so there is nowhere to fetch a new version from.', 'up.checking': 'Looking for updates, this takes up to a minute',
+    'up.system': 'System underneath (Debian)',
+    'ap.check': 'Look for a new version', 'ap.run': (v) => `Install ${v}`, 'ap.current': 'Up to date', 'ap.version': (v) => v ? `Installed: version ${v}` : 'Installed: a version from before updates existed',
+    'ap.available': (v) => `Version ${v} is available on GitHub.`, 'ap.none': 'This is the newest version.', 'ap.never': 'Not looked yet.', 'ap.checked': (d) => `last looked ${d}`,
+    'ap.running': 'Installing the new version. The filter keeps working; this page reloads by itself when it is done.', 'ap.started': 'Update started.', 'ap.done': (v) => `Updated to version ${v}. Reloading.`,
+    'ap.failed': (m) => `The last update did not work: ${m}. The previous version is still running.`, 'ap.rolledBack': 'The last update was undone: the new version did not start, so the previous one was put back.',
+    'ap.auto': 'Install new versions automatically', 'ap.autoSub': 'Looks on GitHub once a day, early in the morning. The filter keeps working during an update.',
+    'ap.badge': (a) => a ? 'new version' : 'up to date', 'up.checking': 'Looking for updates, this takes up to a minute',
     'st.title': 'Settings', 'st.sub': 'Open a tile to change it. Changes apply at once.',
     'st.dns': 'Secure DNS', 'st.dnsSub': 'Who the filter itself asks, and how', 'st.dnsText': 'The filter forwards what it lets through to a resolver. With DNS over HTTPS (DoH) that question is encrypted, so neither your internet provider nor anyone on the line can read or alter it.',
     'st.dnssec': 'Verify answers (DNSSEC)', 'st.dnssecSub': 'Reject forged answers for domains that are signed.', 'st.dnsOk': 'Resolver changed and tested.', 'st.dnsFail': (m) => `This resolver did not answer, nothing was changed: ${m}`, 'st.dnsTesting': 'Testing the resolver', 'st.encrypted': 'encrypted', 'st.saved': 'Saved.',
@@ -72,7 +78,6 @@ const T = {
     'pl.led': 'Button and LEDs', 'pl.ledText': 'The button on the device pauses the filter for ten minutes. The red LED flashes for every stopped request. Night mode turns the LEDs off.',
     'pl.notify': 'Messages to your phone', 'pl.notifyText': 'A new device joined, a device tried to reach a malware host, the filter stopped, an update is ready.',
     'pl.backup': 'Back up and install', 'pl.backupText': 'Back up the original system, download it, restore it, and install NetSluice permanently. It can only be built and tested on a device that still runs from the card; this one is already installed.',
-    'pl.update': 'Updates', 'pl.updateText': 'New versions from GitHub, checked for authenticity. There is nothing to fetch until the project is published there.',
     'pl.net': 'Network', 'pl.netText': 'Change address and name here, and choose between filter, sluice and listening mode. A wrong entry would cut the device off, so this needs a safe way back first.',
     'pl.look': 'Appearance', 'pl.lookText': 'Light or dark, accent colour, animations on or off.',
     'pl.export': 'Export and import', 'pl.exportText': 'Save all settings, lists and device names to a file and load them on another device.',
@@ -130,10 +135,16 @@ const T = {
     'ex.in': 'Datei einlesen', 'ex.inSub': 'Ergänzt, was fehlt, und überschreibt die Einstellungen, die in der Datei stehen. Seitdem hinzugefügte Listen bleiben.', 'ex.done': (n) => `Eingelesen: ${n} Teile übernommen.`, 'ex.bad': 'Das ist keine NetSluice-Einstellungsdatei.',
     'nw.title': 'Netzwerk', 'nw.sub': 'Name und Adressen dieses Geräts', 'nw.name': 'Name im Netz', 'nw.save': 'Namen ändern', 'nw.fixed': 'Feste Adresse', 'nw.dhcp': 'Adresse vom Router', 'nw.open': 'Erreichbar unter',
     'nw.later': 'Die feste Adresse ändern und auf Schleuse oder Mithören umstellen lässt sich hier noch nicht. Dein ganzes Netz fragt diese Adresse, und eine Änderung, die schiefgeht, legt das Haus lahm.', 'nw.badName': 'Nur Buchstaben, Ziffern und Bindestriche, kein Bindestrich am Anfang oder Ende.',
-    'up.title': 'Updates', 'up.sub': 'Sicherheitskorrekturen für das System darunter', 'up.now': 'Jetzt aktualisieren', 'up.check': 'Nach Updates suchen', 'up.run': 'Installieren', 'up.auto': 'Sicherheitsupdates automatisch einspielen', 'up.autoSub': 'Debian installiert Sicherheitskorrekturen dann jede Nacht selbst.',
+    'up.title': 'Updates', 'up.sub': 'Neue NetSluice-Versionen und Sicherheitskorrekturen', 'up.now': 'Jetzt aktualisieren', 'up.check': 'Nach Updates suchen', 'up.run': 'Installieren', 'up.auto': 'Sicherheitsupdates automatisch einspielen', 'up.autoSub': 'Debian installiert Sicherheitskorrekturen dann jede Nacht selbst.',
     'up.none': 'Das System ist aktuell.', 'up.some': (n) => n === 1 ? 'Ein Update wartet.' : `${n} Updates warten.`, 'up.badge': (n) => n ? `${n} warten` : 'aktuell', 'up.checked': (d) => d ? `zuletzt gesucht ${d}` : 'noch nie gesucht',
     'up.held': 'Absichtlich zurückgehalten: der Systemkern. Er läuft auf dieser Platine nur zusammen mit der angepassten Hardware-Beschreibung und wird deshalb von Hand aktualisiert.', 'up.running': 'Updates werden installiert. Das kann einige Minuten dauern; der Filter arbeitet weiter.', 'up.started': 'Installation gestartet.',
-    'up.self': 'NetSluice selbst kann sich noch nicht aktualisieren: Das Projekt ist nicht veröffentlicht, es gibt also keinen Ort, von dem eine neue Fassung käme.', 'up.checking': 'Suche nach Updates, das dauert bis zu einer Minute',
+    'up.system': 'System darunter (Debian)',
+    'ap.check': 'Nach neuer Version suchen', 'ap.run': (v) => `${v} installieren`, 'ap.current': 'Aktuell', 'ap.version': (v) => v ? `Installiert: Version ${v}` : 'Installiert: eine Fassung von vor den Updates',
+    'ap.available': (v) => `Version ${v} ist auf GitHub verfügbar.`, 'ap.none': 'Das ist die neueste Version.', 'ap.never': 'Noch nicht gesucht.', 'ap.checked': (d) => `zuletzt gesucht ${d}`,
+    'ap.running': 'Die neue Version wird installiert. Der Filter arbeitet weiter; die Seite lädt neu, sobald es fertig ist.', 'ap.started': 'Update gestartet.', 'ap.done': (v) => `Auf Version ${v} aktualisiert. Lade neu.`,
+    'ap.failed': (m) => `Das letzte Update hat nicht geklappt: ${m}. Die bisherige Version läuft weiter.`, 'ap.rolledBack': 'Das letzte Update wurde rückgängig gemacht: Die neue Version startete nicht, also läuft wieder die bisherige.',
+    'ap.auto': 'Neue Versionen automatisch installieren', 'ap.autoSub': 'Sieht einmal am Tag frühmorgens auf GitHub nach. Der Filter arbeitet während eines Updates weiter.',
+    'ap.badge': (a) => a ? 'neue Version' : 'aktuell', 'up.checking': 'Suche nach Updates, das dauert bis zu einer Minute',
     'st.title': 'Einstellungen', 'st.sub': 'Klapp eine Kachel auf, um etwas zu ändern. Änderungen gelten sofort.',
     'st.dns': 'Sicheres DNS', 'st.dnsSub': 'Wen der Filter selbst fragt, und wie', 'st.dnsText': 'Was der Filter durchlässt, reicht er an einen Auflöser weiter. Mit DNS über HTTPS (DoH) ist diese Frage verschlüsselt: Weder dein Internetanbieter noch jemand auf der Leitung kann sie mitlesen oder verändern.',
     'st.dnssec': 'Antworten prüfen (DNSSEC)', 'st.dnssecSub': 'Gefälschte Antworten für signierte Adressen werden verworfen.', 'st.dnsOk': 'Auflöser gewechselt und getestet.', 'st.dnsFail': (m) => `Dieser Auflöser hat nicht geantwortet, es wurde nichts geändert: ${m}`, 'st.dnsTesting': 'Auflöser wird getestet', 'st.encrypted': 'verschlüsselt', 'st.saved': 'Gespeichert.',
@@ -149,7 +160,6 @@ const T = {
     'pl.led': 'Taster und LEDs', 'pl.ledText': 'Der Knopf am Gerät pausiert den Filter für zehn Minuten. Die rote LED blitzt bei jeder aufgehaltenen Anfrage. Der Nachtmodus schaltet die LEDs ab.',
     'pl.notify': 'Meldungen aufs Handy', 'pl.notifyText': 'Ein neues Gerät ist im Netz, ein Gerät wollte eine Schadseite aufrufen, der Filter steht, ein Update liegt bereit.',
     'pl.backup': 'Sichern und Installieren', 'pl.backupText': 'Das Originalsystem sichern, herunterladen, zurückspielen und NetSluice fest installieren. Das lässt sich nur auf einem Gerät bauen und testen, das noch von der Karte läuft; dieses ist schon installiert.',
-    'pl.update': 'Updates', 'pl.updateText': 'Neue Fassungen von GitHub, auf Echtheit geprüft. Solange das Projekt dort nicht veröffentlicht ist, gibt es nichts abzuholen.',
     'pl.net': 'Netzwerk', 'pl.netText': 'Adresse und Name hier ändern und zwischen Filter, Schleuse und Mithören wählen. Eine falsche Eingabe würde das Gerät abschneiden, deshalb braucht das erst einen sicheren Rückweg.',
     'pl.look': 'Aussehen', 'pl.lookText': 'Hell oder dunkel, Akzentfarbe, Animationen an oder aus.',
     'pl.export': 'Export und Import', 'pl.exportText': 'Alle Einstellungen, Listen und Gerätenamen in eine Datei speichern und auf einem anderen Gerät einlesen.',
@@ -759,6 +769,28 @@ function renderSystem() {
   $('upChecked').textContent = t('up.checked', u.checked ? new Date(u.checked * 1000).toLocaleString(lang === 'de' ? 'de-DE' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' }) : '');
   $('upRun').disabled = !pending.length || u.running || sys.busy; $('upCheck').disabled = !!u.running || sys.busy;
   setSwitch($('upAuto'), !!u.auto); $('upAuto').disabled = sys.busy;
+  renderApp();
+}
+const when = (s) => new Date(s * 1000).toLocaleString(lang === 'de' ? 'de-DE' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' });
+function renderApp() {
+  const a = (sys.d && sys.d.app) || {}, l = a.latest || {}, last = a.last || {};
+  if (sys.appFrom === undefined && !a.error) sys.appFrom = a.version || null;
+  // the service restarts during an update: once it reports a newer version, load the new interface
+  if (sys.appWatch && !a.running && a.version && a.version !== sys.appFrom) { say('apNote', 'ok', t('ap.done', a.version)); setTimeout(() => location.reload(), 1500); }
+  $('upBadge').textContent = a.running || (sys.d.updates || {}).running ? '…' : a.available ? t('ap.badge', true) : t('up.badge', ((sys.d.updates || {}).pending || []).length);
+  if (a.available) $('upBadge').className = 'badge no';
+  $('apVersion').textContent = t('ap.version', a.version);
+  $('apChecked').textContent = a.checked ? t('ap.checked', when(a.checked)) : t('ap.never');
+  $('apText').textContent = a.running ? t('ap.running') : last.result === 'failed' && !a.available ? '' : a.available ? t('ap.available', l.version) : a.checked ? t('ap.none') : '';
+  if (!a.running && last.done && last.done > (sys.appSeen || 0)) {
+    if (last.result === 'failed') say('apNote', 'bad', t('ap.failed', last.error || '?'));
+    else if (last.result === 'rolled-back') say('apNote', 'bad', t('ap.rolledBack'));
+  }
+  $('apRun').textContent = a.available ? t('ap.run', l.version) : t('ap.current');
+  $('apRun').disabled = !a.available || a.running || sys.busy; $('apCheck').disabled = !!a.running || sys.busy;
+  setSwitch($('apAuto'), !!a.auto); $('apAuto').disabled = sys.busy;
+  clearTimeout(sys.appTimer);
+  if (a.running || sys.appWatch) sys.appTimer = setTimeout(async () => { try { sys.d = await svc('system'); } catch { /* restarting */ } renderSystem(); }, 3000);
 }
 async function sysCall(path, body, noteId, okKey) {
   if (sys.busy) return;
@@ -778,6 +810,9 @@ $('nwForm').addEventListener('submit', (e) => { e.preventDefault(); sysCall('hos
 $('upCheck').addEventListener('click', () => { say('upNote', '', t('up.checking')); sysCall('updates/check', {}, 'upNote', 'st.saved'); });
 $('upRun').addEventListener('click', () => sysCall('updates/run', {}, 'upNote', 'up.started'));
 $('upAuto').addEventListener('click', () => sys.d && sysCall('updates/auto', { on: !sys.d.updates.auto }, 'upNote', 'st.saved'));
+$('apCheck').addEventListener('click', () => { say('apNote', '', t('up.checking')); sysCall('app/check', {}, 'apNote', 'st.saved'); });
+$('apRun').addEventListener('click', () => { sys.appWatch = true; sys.appSeen = Date.now() / 1000; sysCall('app/run', {}, 'apNote', 'ap.started'); });
+$('apAuto').addEventListener('click', () => sys.d && sysCall('app/auto', { on: !(sys.d.app || {}).auto }, 'apNote', 'st.saved'));
 
 async function loadSettings() {
   svc('system').then((d) => { sys.d = d; renderSystem(); }).catch(() => { /* shown by the status dot */ });
