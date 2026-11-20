@@ -14,3 +14,9 @@ or downloaded by it.
 
 Filter lists are not shipped. They are downloaded by the device from their
 maintainers and keep their own licences.
+
+## The device tree
+
+The device tree produced by `dts/patch_dts.py` is a modified copy of the Linux
+kernel's `rk3328-nanopi-r2` device tree and stays under that file's licence
+(GPL-2.0-or-later OR MIT).
