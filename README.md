@@ -11,6 +11,16 @@ device, stops the ones on your block lists, and shows you what happened.
 > Network. "Deeper Connect" is their trademark and is used here only to say
 > which hardware this runs on.
 
+![Overview: requests arrive, are checked in the sluice, and pass or are stopped](docs/screenshots/overview.png)
+
+| | |
+|---|---|
+| ![World map of where the network talks to](docs/screenshots/map.png) | ![Devices sorted by activity](docs/screenshots/devices.png) |
+| ![Filter lists with one switch each](docs/screenshots/filters.png) | ![Settings](docs/screenshots/settings.png) |
+
+The pictures show the demo with made-up data. You can run it yourself, without
+a device: `python3 scripts/demo.py`, then open <http://127.0.0.1:8099/>.
+
 ## What it does
 
 - **Filter** for the whole network, with the block lists known from AdGuard

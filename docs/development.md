@@ -42,6 +42,7 @@
 | `provision/install-to-emmc.sh` | moves the system from the card to the eMMC |
 | `scripts/build-image.sh` | adapts a stock Armbian image to this board |
 | `scripts/deploy-dev.sh` | copies `web/` and `service/` to a device |
+| `scripts/demo.py` | the interface on your own computer, with made-up data |
 | `scripts/probe/` | boot script that reads out the bootloader |
 | `dts/patch_dts.py` | the device tree changes for this board |
 | `rootfs/` | files `build-image.sh` puts into the image |
@@ -61,6 +62,21 @@ version. The service restarts only when its files changed.
 On the device the service answers on `http://127.0.0.1:3002` and the engine on
 `http://127.0.0.1:3001`, both without a session, which is handy for testing
 over SSH.
+
+## Trying the interface without a device
+
+```bash
+python3 scripts/demo.py        # then open http://127.0.0.1:8099/  (add ?lang=de for German)
+```
+
+It serves `web/` and answers every request of the interface with invented
+data. Switches answer but change nothing. The screenshots in the README were
+taken from it with a headless browser:
+
+```bash
+chromium --headless=new --hide-scrollbars --window-size=1440,960 --virtual-time-budget=9000 \
+  --screenshot=docs/screenshots/overview.png 'http://127.0.0.1:8099/?lang=en'
+```
 
 ## Tests
 

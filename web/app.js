@@ -177,7 +177,9 @@ const CATALOG = [
   { name: 'HaGeZi Threat Intelligence (full)', rules: 1510000, heavy: true, en: 'The complete feed. Needs about 500 MB of memory on its own.', de: 'Der komplette Bestand. Braucht allein rund 500 MB Arbeitsspeicher.', url: 'https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/adblock/tif.txt' },
 ];
 
-let lang = (() => { try { return localStorage.getItem('netsluice.lang'); } catch { return null; } })()
+// ?lang=en or ?lang=de in the address wins, then what this browser chose before, then the browser's language
+let lang = (() => { const q = new URLSearchParams(location.search).get('lang'); return q === 'en' || q === 'de' ? q : null; })()
+  || (() => { try { return localStorage.getItem('netsluice.lang'); } catch { return null; } })()
   || ((navigator.language || 'en').toLowerCase().startsWith('de') ? 'de' : 'en');
 let screen = 'overview';
 const state = { stats: null, status: null, clients: {}, devices: {}, filters: [], recent: [], reachable: true, last: null };
