@@ -786,7 +786,7 @@ function renderApp() {
     if (last.result === 'failed') say('apNote', 'bad', t('ap.failed', last.error || '?'));
     else if (last.result === 'rolled-back') say('apNote', 'bad', t('ap.rolledBack'));
   }
-  $('apRun').textContent = a.available ? t('ap.run', l.version) : t('ap.current');
+  $('apRun').textContent = t('ap.run', l.version || ''); $('apRun').hidden = !a.available;   // nothing to install: no button that looks like one
   $('apRun').disabled = !a.available || a.running || sys.busy; $('apCheck').disabled = !!a.running || sys.busy;
   setSwitch($('apAuto'), !!a.auto); $('apAuto').disabled = sys.busy;
   clearTimeout(sys.appTimer);

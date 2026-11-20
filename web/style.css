@@ -118,6 +118,7 @@ main, .screen { display: flex; flex-direction: column; gap: 20px; }
 .form label.wide { flex: 3 1 320px; }
 .form input { min-height: 44px; padding: 0 12px; border: 1px solid rgba(255, 255, 255, .22); border-radius: 13px; background: var(--panel); color: var(--text); }
 .note { min-height: 1.5em; color: var(--muted); font-weight: 600; }
+#apNote:empty { display: none; }
 .note.ok { color: var(--ok); } .note.bad { color: #FF9A8D; }
 
 .map-tile { container-type: normal; }
