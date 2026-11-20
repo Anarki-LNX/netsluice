@@ -189,10 +189,49 @@ def upd_auto(a):
     return upd_status()
 
 
+SYS_PROGRESS = BASE + "/sys-progress.json"           # read directly by the service, for the progress bar
+
+
+def sys_progress(phase, percent=None, pkg=None, error=None):
+    try:
+        write_json(SYS_PROGRESS, {"phase": phase, "percent": percent, "pkg": pkg, "error": error, "at": time.time()})
+    except OSError:
+        pass
+
+
+def sys_upgrade():
+    """Runs in the background (systemd-run). apt reports its progress on a status channel;
+    lists count for the first 10 %, downloads up to 50 %, unpacking and setting up the rest."""
+    env = dict(os.environ, DEBIAN_FRONTEND="noninteractive")
+    sys_progress("lists", 2)
+    code, out = sh(["apt-get", "update", "-q"], 300)
+    if code:
+        sys_progress("failed", error=out[-200:]); return
+    sys_progress("download", 10)
+    p = subprocess.Popen(["apt-get", "-y", "-q", "-o", "Dpkg::Options::=--force-confold", "-o", "APT::Status-Fd=1", "upgrade"],
+                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=env)
+    tail, shown = [], 0
+    for line in p.stdout:
+        tail = (tail + [line.rstrip()])[-6:]
+        m = re.match(r"(dlstatus|pmstatus):([^:]*):([\d.]+):", line)
+        if not m or time.time() - shown < 0.3:
+            continue
+        pct = float(m.group(3))
+        if m.group(1) == "dlstatus":
+            sys_progress("download", round(10 + pct * 0.4, 1))                     # its second field is a counter, not a name
+        else:
+            sys_progress("install", round(50 + pct * 0.49, 1), m.group(2).split(":")[0] or None)
+        shown = time.time()
+    if p.wait():
+        sys_progress("failed", error=" ".join(tail)[-200:])
+    else:
+        sys_progress("done", 100)
+
+
 def upd_run(_=None):
     sh(["systemctl", "reset-failed", "netsluice-upgrade.service"])
-    code, out = sh(["systemd-run", "--quiet", "--unit=netsluice-upgrade", "--setenv=DEBIAN_FRONTEND=noninteractive", "sh", "-c",
-                    "apt-get update -q && apt-get -y -q -o Dpkg::Options::=--force-confold upgrade"])
+    sys_progress("start", 1)
+    code, out = sh(["systemd-run", "--quiet", "--unit=netsluice-upgrade", sys.executable, os.path.abspath(__file__), "--sys-upgrade"])
     s = upd_status()
     if code:
         s["error"] = out[-200:]
@@ -456,6 +495,8 @@ COMMANDS = {"net-status": net_status, "hostname": set_hostname, "addr-try": addr
 
 
 def main():
+    if "--sys-upgrade" in sys.argv:
+        sys_upgrade(); return
     if "--app-update" in sys.argv:
         app_update(); return
     if "--app-auto" in sys.argv:

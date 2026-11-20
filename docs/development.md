@@ -87,7 +87,7 @@ tag. Only `web/` and `service/` are replaced; changes to `provision/` still
 need `install-stack.sh` by hand. So for a release:
 
 1. raise `VERSION` (for example `0.1.3`), commit and push,
-2. run `scripts/release.sh notes.md --prerelease`. It tags the commit and
+2. run `scripts/release.sh notes.md` (add `--prerelease` for a test version). It tags the commit and
    attaches `netsluice-<version>.tar.gz`, whose known size lets devices show
    how far the download is. Without it a device falls back to the source
    archive and shows the download without a percentage.

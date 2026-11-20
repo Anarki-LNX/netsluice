@@ -270,6 +270,10 @@ try {
         <h4 class="subhead" data-i18n="up.system"></h4>
         <p class="muted" id="upText"></p>
         <div id="upList" class="list"></div>
+        <div class="progress" id="upProgress" hidden>
+          <div class="pbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" id="upBarWrap"><span id="upBar"></span></div>
+          <div class="ptext"><span id="upPhase"></span><span id="upPct"></span></div>
+        </div>
         <div class="line"><span class="linetext"><b data-i18n="up.now"></b><small id="upChecked"></small></span><span class="pickrow"><button type="button" class="btn ghost" id="upCheck" data-i18n="up.check"></button><button type="button" class="btn" id="upRun" data-i18n="up.run"></button></span></div>
         <div class="line"><span class="linetext"><b data-i18n="up.auto"></b><small data-i18n="up.autoSub"></small></span><button type="button" class="switch" role="switch" id="upAuto"><span class="track"></span><span></span></button></div>
         <p class="note" id="upNote" role="status"></p>

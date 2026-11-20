@@ -64,6 +64,8 @@ const T = {
     'ap.auto': 'Install new versions automatically', 'ap.autoSub': 'Looks on GitHub once a day, early in the morning. The filter keeps working during an update.',
     'ap.badge': (a) => a ? 'new version' : 'up to date',
     'ap.p.start': 'Starting', 'ap.p.download': (d, t) => t ? `Downloading: ${d} of ${t}` : `Downloading: ${d}`, 'ap.p.check': 'Checking the download', 'ap.p.install': 'Installing',
+    'up.p.start': 'Starting', 'up.p.lists': 'Refreshing the package lists', 'up.p.download': (p) => p ? `Downloading ${p}` : 'Downloading', 'up.p.install': (p) => p ? `Installing ${p}` : 'Installing',
+    'up.p.done': 'Done. The system is up to date.', 'up.p.failed': (m) => `Did not work: ${m}`,
     'ap.p.restart': 'Restarting the service', 'ap.p.done': 'Done', 'ap.p.failed': 'Did not work', 'ap.p.rolled-back': 'Undone, the previous version runs', 'up.checking': 'Looking for updates, this takes up to a minute',
     'st.title': 'Settings', 'st.sub': 'Open a tile to change it. Changes apply at once.', 'st.back': 'All settings',
     'st.dns': 'Secure DNS', 'st.dnsSub': 'Who the filter itself asks, and how', 'st.dnsText': 'The filter forwards what it lets through to a resolver. With DNS over HTTPS (DoH) that question is encrypted, so neither your internet provider nor anyone on the line can read or alter it.',
@@ -148,6 +150,8 @@ const T = {
     'ap.auto': 'Neue Versionen automatisch installieren', 'ap.autoSub': 'Sieht einmal am Tag frühmorgens auf GitHub nach. Der Filter arbeitet während eines Updates weiter.',
     'ap.badge': (a) => a ? 'neue Version' : 'aktuell',
     'ap.p.start': 'Startet', 'ap.p.download': (d, t) => t ? `Lade herunter: ${d} von ${t}` : `Lade herunter: ${d}`, 'ap.p.check': 'Prüfe den Download', 'ap.p.install': 'Installiere',
+    'up.p.start': 'Startet', 'up.p.lists': 'Aktualisiere die Paketlisten', 'up.p.download': (p) => p ? `Lade ${p} herunter` : 'Lade herunter', 'up.p.install': (p) => p ? `Installiere ${p}` : 'Installiere',
+    'up.p.done': 'Fertig. Das System ist aktuell.', 'up.p.failed': (m) => `Hat nicht geklappt: ${m}`,
     'ap.p.restart': 'Starte den Dienst neu', 'ap.p.done': 'Fertig', 'ap.p.failed': 'Hat nicht geklappt', 'ap.p.rolled-back': 'Rückgängig gemacht, die bisherige Version läuft', 'up.checking': 'Suche nach Updates, das dauert bis zu einer Minute',
     'st.title': 'Einstellungen', 'st.sub': 'Öffne eine Kachel, um etwas zu ändern. Änderungen gelten sofort.', 'st.back': 'Alle Einstellungen',
     'st.dns': 'Sicheres DNS', 'st.dnsSub': 'Wen der Filter selbst fragt, und wie', 'st.dnsText': 'Was der Filter durchlässt, reicht er an einen Auflöser weiter. Mit DNS über HTTPS (DoH) ist diese Frage verschlüsselt: Weder dein Internetanbieter noch jemand auf der Leitung kann sie mitlesen oder verändern.',
@@ -791,6 +795,7 @@ function renderSystem() {
   $('upChecked').textContent = t('up.checked', u.checked ? new Date(u.checked * 1000).toLocaleString(lang === 'de' ? 'de-DE' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' }) : '');
   $('upRun').disabled = !pending.length || u.running || sys.busy; $('upCheck').disabled = !!u.running || sys.busy;
   setSwitch($('upAuto'), !!u.auto); $('upAuto').disabled = sys.busy;
+  if (u.running) watchSys();
   renderApp();
 }
 const when = (s) => new Date(s * 1000).toLocaleString(lang === 'de' ? 'de-DE' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' });
@@ -821,13 +826,40 @@ function showProgress(p) {
   if (p.phase === 'download') { if (p.total) pct = lo + (hi - lo) * Math.min(1, (p.done || 0) / p.total); else known = false; }
   if (p.phase === 'restart') pct = Math.min(hi, lo + (Date.now() / 1000 - (p.at || Date.now() / 1000)) * 1.5);   // a few seconds, no way to measure them
   if (bad) pct = 100;
-  $('apProgress').hidden = false;
-  $('apBarWrap').classList.toggle('unknown', !known); $('apBarWrap').classList.toggle('bad', bad);
-  $('apBar').style.width = pct + '%'; $('apBarWrap').setAttribute('aria-valuenow', Math.round(pct));
   const label = t('ap.p.' + p.phase, kb(p.done || 0), p.total ? kb(p.total) : '');
-  $('apPhase').textContent = (typeof label === 'string' ? label : '') + (p.to && !bad ? ' · ' + p.to : '');
-  $('apPct').textContent = known && !bad ? Math.round(pct) + ' %' : '';
+  drawBar('ap', pct, known, bad, (typeof label === 'string' ? label : '') + (p.to && !bad ? ' · ' + p.to : ''));
 }
+function drawBar(id, pct, known, bad, label) {
+  $(id + 'Progress').hidden = false;
+  $(id + 'BarWrap').classList.toggle('unknown', !known); $(id + 'BarWrap').classList.toggle('bad', bad);
+  $(id + 'Bar').style.width = (bad ? 100 : pct) + '%'; $(id + 'BarWrap').setAttribute('aria-valuenow', Math.round(pct));
+  $(id + 'Phase').textContent = label;
+  $(id + 'Pct').textContent = known && !bad ? Math.round(pct) + ' %' : '';
+}
+
+// Progress of the Debian updates, from apt's own status reports.
+async function watchSys() {
+  if (sys.sysWatching) return;
+  sys.sysWatching = true;
+  const began = Date.now();
+  let p = { phase: 'start', percent: 1 };
+  while (Date.now() - began < 30 * 60 * 1000) {
+    try { const r = await fetch('/api/system/updates/progress', { cache: 'no-store' }); if (r.status === 401) { gate('login'); break; } if (r.ok) p = await r.json(); } catch { /* try again */ }
+    const fresh = (p.at || 0) * 1000 > began - 3000;
+    if (fresh && (p.phase === 'done' || p.phase === 'failed')) {
+      drawBar('up', 100, true, p.phase === 'failed', p.phase === 'done' ? t('up.p.done') : t('up.p.failed', p.error || '?'));
+      break;
+    }
+    if (fresh && PHASES_UP.includes(p.phase)) drawBar('up', p.percent || 0, true, false, t('up.p.' + p.phase, p.pkg || ''));
+    else drawBar('up', 1, true, false, t('up.p.start'));
+    await new Promise((res) => setTimeout(res, 700));
+  }
+  sys.sysWatching = false;
+  try { sys.d = await svc('system'); } catch { /* keep */ }
+  renderSystem();
+  setTimeout(() => { if (!sys.sysWatching) $('upProgress').hidden = true; }, 8000);
+}
+const PHASES_UP = ['start', 'lists', 'download', 'install'];
 async function watchApp() {
   if (sys.watching) return;
   sys.watching = true;
@@ -872,8 +904,12 @@ async function sysCall(path, body, noteId, okKey) {
   renderSystem();
 }
 $('nwForm').addEventListener('submit', (e) => { e.preventDefault(); sysCall('hostname', { name: $('nwName').value.trim().toLowerCase() }, 'nwNote', 'st.saved'); });
-$('upCheck').addEventListener('click', () => { say('upNote', '', t('up.checking')); sysCall('updates/check', {}, 'upNote', 'st.saved'); });
-$('upRun').addEventListener('click', () => sysCall('updates/run', {}, 'upNote', 'up.started'));
+$('upCheck').addEventListener('click', async () => {
+  say('upNote', '', ''); drawBar('up', 0, false, false, t('up.checking'));        // no way to measure this one: a moving bar
+  await sysCall('updates/check', {}, 'upNote', 'st.saved');
+  $('upProgress').hidden = true;
+});
+$('upRun').addEventListener('click', () => { say('upNote', '', ''); drawBar('up', 1, true, false, t('up.p.start')); watchSys(); sysCall('updates/run', {}, 'upNote', 'up.started'); });
 $('upAuto').addEventListener('click', () => sys.d && sysCall('updates/auto', { on: !sys.d.updates.auto }, 'upNote', 'st.saved'));
 $('apCheck').addEventListener('click', () => { say('apNote', '', t('up.checking')); sysCall('app/check', {}, 'apNote', 'st.saved'); });
 $('apRun').addEventListener('click', () => { say('apNote', '', ''); showProgress({ phase: 'start' }); watchApp(); sysCall('app/run', {}, 'apNote', 'ap.started'); });
