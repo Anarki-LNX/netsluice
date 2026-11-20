@@ -1,0 +1,13 @@
+#!/bin/sh
+# Put the Deeper Connect Mini device tree back after package installs.
+# A kernel or dtb package upgrade replaces rk3328-nanopi-r2-rev00.dtb with the
+# stock NanoPi version; with that one the board finds neither SD card nor network.
+SRC=/boot/deeper-connect-mini.dtb
+[ -f "$SRC" ] || exit 0
+for d in /boot/dtb-*/rockchip; do
+  [ -d "$d" ] || continue
+  cmp -s "$SRC" "$d/rk3328-nanopi-r2-rev00.dtb" || {
+    cp "$SRC" "$d/rk3328-nanopi-r2-rev00.dtb" && echo "dcm-dtb-restore: restored $d"
+  }
+done
+exit 0

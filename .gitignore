@@ -1,0 +1,12 @@
+# Images, backups and anything read from a real device never belong in this repository
+*.img
+*.img.xz
+*.bin
+*.dtb
+*.scr
+build/
+backup/
+atomos-backup/
+probe-env*.txt
+__pycache__/
+*.pyc

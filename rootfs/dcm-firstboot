@@ -1,0 +1,8 @@
+#!/bin/sh
+# Runs once on the first boot: keep the kernel packages this device tree was
+# tested with until a newer combination has been tried on purpose.
+mkdir -p /var/lib/dcm
+for p in linux-image-current-rockchip64 linux-dtb-current-rockchip64 linux-u-boot-nanopi-r2s-current armbian-bsp-cli-nanopi-r2s-current; do
+  dpkg -s "$p" >/dev/null 2>&1 && apt-mark hold "$p"
+done
+touch /var/lib/dcm/firstboot-done

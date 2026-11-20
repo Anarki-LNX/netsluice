@@ -1,0 +1,11 @@
+[Unit]
+Description=Deeper Connect Mini first-boot setup
+ConditionPathExists=!/var/lib/dcm/firstboot-done
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/dcm-firstboot
+
+[Install]
+WantedBy=multi-user.target

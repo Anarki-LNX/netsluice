@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NetSluice</title>
+<link rel="stylesheet" href="style.css">
+<script>
+// applied before anything is drawn: accent colour and "no animations" from this browser
+try {
+  var a = localStorage.getItem('netsluice.accent');
+  if (a && /^#[0-9a-f]{6}$/i.test(a)) document.documentElement.style.setProperty('--gold', a);
+  if (localStorage.getItem('netsluice.still') === '1') document.documentElement.classList.add('still');
+} catch (e) {}
+</script>
+</head>
+<body>
+<div class="gate" id="gate" hidden>
+  <form class="tile gatebox" id="gateForm">
+    <div class="brand"><svg aria-hidden="true" viewBox="0 0 32 32" width="30" height="30" fill="none"><rect x="1.5" y="1.5" width="29" height="29" rx="9" stroke="#F5C451" stroke-width="2"/><path d="M6 16H13M19 16H26" stroke="#5EE6F2" stroke-width="2.4" stroke-linecap="round"/><path d="M16 9V23" stroke="#F5C451" stroke-width="2.4" stroke-linecap="round"/></svg><span>NetSluice</span></div>
+    <h1 id="gateTitle"></h1>
+    <p class="muted" id="gateSub"></p>
+    <label><span id="gateLabel1"></span><input type="password" id="gatePw" required minlength="8" autocomplete="current-password"></label>
+    <label id="gateRepeat"><span id="gateLabel2"></span><input type="password" id="gatePw2" minlength="8" autocomplete="new-password"></label>
+    <div class="gaterow"><button type="submit" class="btn" id="gateBtn"></button><button type="button" class="lang" id="gateLang"></button></div>
+    <p class="note" id="gateNote" role="alert"></p>
+  </form>
+</div>
+<div class="shell" id="shell" hidden>
+
+<header class="top">
+  <div class="brand">
+    <svg aria-hidden="true" viewBox="0 0 32 32" width="30" height="30" fill="none"><rect x="1.5" y="1.5" width="29" height="29" rx="9" stroke="#F5C451" stroke-width="2"/><path d="M6 16H13M19 16H26" stroke="#5EE6F2" stroke-width="2.4" stroke-linecap="round"/><path d="M16 9V23" stroke="#F5C451" stroke-width="2.4" stroke-linecap="round"/></svg>
+    <span>NetSluice</span>
+  </div>
+  <nav aria-label="Sections" id="nav">
+    <button type="button" data-screen="overview" data-i18n="nav.overview"></button>
+    <button type="button" data-screen="devices" data-i18n="nav.devices"></button>
+    <button type="button" data-screen="filters" data-i18n="nav.filters"></button>
+    <button type="button" data-screen="map" data-i18n="nav.map"></button>
+    <button type="button" data-screen="tunnel" data-i18n="nav.tunnel"></button>
+    <button type="button" data-screen="settings" data-i18n="nav.settings"></button>
+  </nav>
+  <div class="top-right">
+    <div class="status"><span class="dot" id="statusDot"><span class="ring" aria-hidden="true"></span></span><span id="statusText"></span></div>
+    <button type="button" class="lang" id="lang" aria-label="Sprache wechseln / switch language"></button>
+  </div>
+</header>
+
+<main>
+
+<section class="screen" id="screen-overview">
+  <div class="row">
+    <div class="tile hero grow2">
+      <div class="glow" aria-hidden="true"></div>
+      <h1><span id="numPassed">0</span> <span data-i18n="ov.passed"></span>, <span id="numBlocked">0</span> <span data-i18n="ov.blocked"></span></h1>
+      <p class="muted" data-i18n="ov.sub"></p>
+      <div class="flowrow">
+        <span class="flowlabel" data-i18n="ov.home"></span>
+        <div class="flow" role="img" data-i18n-aria="ov.flowAria"><canvas id="flow"></canvas></div>
+        <span class="flowlabel" data-i18n="ov.internet"></span>
+      </div>
+      <div class="legend">
+        <span><i class="sw in"></i><span data-i18n="lg.incoming"></span></span>
+        <span><i class="sw ok"></i><span data-i18n="lg.passed"></span></span>
+        <span><i class="sw no"></i><span data-i18n="lg.blocked"></span></span>
+      </div>
+    </div>
+    <div class="tile grow1">
+      <h2 data-i18n="ov.last24"></h2>
+      <div class="bars" id="bars" role="img" data-i18n-aria="ov.barsAria"></div>
+      <p class="muted" id="shareText"></p>
+    </div>
+  </div>
+  <div class="row">
+    <div class="tile grow1">
+      <div class="tilehead"><h2 data-i18n="ov.topDevices"></h2><button type="button" class="link" data-goto="devices" data-i18n="ov.allDevices"></button></div>
+      <div id="topDevices" class="list"></div>
+    </div>
+    <div class="tile grow1">
+      <h2 data-i18n="ov.recent"></h2>
+      <div id="recent" class="list"></div>
+    </div>
+    <div class="tile grow1">
+      <h2 data-i18n="ov.topBlocked"></h2>
+      <div id="topBlocked" class="list"></div>
+    </div>
+  </div>
+</section>
+
+<section class="screen" id="screen-devices" hidden>
+  <div class="pagehead"><h1 id="devicesTitle"></h1><p class="muted" data-i18n="dv.sub"></p></div>
+  <div class="grid" id="deviceGrid"></div>
+</section>
+
+<section class="screen" id="screen-filters" hidden>
+  <div class="pagehead"><h1 data-i18n="fl.title"></h1><p class="muted" data-i18n="fl.sub"></p></div>
+  <div class="tile">
+    <div class="tilehead">
+      <div><h2 data-i18n="fl.lists"></h2><p class="muted" id="listTotal"></p></div>
+      <button type="button" class="btn ghost" id="refreshLists" data-i18n="fl.refresh"></button>
+    </div>
+    <p class="note" id="filterNote" role="status"></p>
+    <div class="grid" id="listGrid"></div>
+  </div>
+  <div class="tile">
+    <h2 data-i18n="fl.custom"></h2>
+    <p class="muted" data-i18n="fl.customSub"></p>
+    <form id="customForm" class="form">
+      <label><span data-i18n="fl.name"></span><input type="text" id="customName" required maxlength="80"></label>
+      <label class="wide"><span data-i18n="fl.url"></span><input type="url" id="customUrl" required placeholder="https://"></label>
+      <button type="submit" class="btn" data-i18n="fl.add"></button>
+    </form>
+  </div>
+</section>
+
+<section class="screen" id="screen-map" hidden>
+  <div class="tile hero map-tile">
+    <div class="pagehead"><h1 id="mapTitle"></h1><p class="muted" data-i18n="mp.sub"></p></div>
+    <div class="mapbox">
+      <canvas id="map" role="img" data-i18n-aria="mp.aria"></canvas>
+      <div class="maptip" id="mapTip" hidden></div>
+    </div>
+    <div class="legend">
+      <span><i class="sw gold"></i><span data-i18n="mp.home"></span></span>
+      <span><i class="sw in"></i><span data-i18n="mp.leaving"></span></span>
+      <span><i class="sw ok"></i><span data-i18n="mp.arrived"></span></span>
+      <span><i class="sw no"></i><span data-i18n="mp.stopped"></span></span>
+    </div>
+  </div>
+  <div class="row">
+    <div class="tile grow2">
+      <h2 data-i18n="mp.rank"></h2>
+      <div id="mapRank" class="list"></div>
+    </div>
+    <div class="tile grow1">
+      <h2 data-i18n="mp.howTitle"></h2>
+      <p class="muted" data-i18n="mp.how"></p>
+      <p class="muted"><span data-i18n="mp.credit"></span> <a href="https://db-ip.com" rel="noopener">DB-IP</a>.</p>
+    </div>
+  </div>
+</section>
+<section class="screen" id="screen-tunnel" hidden>
+  <div class="tile soon"><h1 data-i18n="soon.tunnel"></h1><p class="muted" data-i18n="soon.tunnelSub"></p></div>
+</section>
+<section class="screen" id="screen-settings" hidden>
+  <div class="pagehead"><h1 data-i18n="st.title"></h1><p class="muted" data-i18n="st.sub"></p></div>
+  <div class="folds">
+
+    <details class="tile fold">
+      <summary><span class="foldtitle"><b data-i18n="kd.title"></b><small data-i18n="kd.sub"></small></span><span class="badge" id="kidsBadge"></span></summary>
+      <div class="foldbody">
+        <p class="muted" data-i18n="kd.text"></p>
+        <div class="kids" id="kidsList"></div>
+        <div class="line"><label class="linetext" for="kidPick"><b data-i18n="kd.add"></b><small data-i18n="kd.addSub"></small></label>
+          <span class="pickrow"><select id="kidPick"></select><button type="button" class="btn" id="kidAdd" data-i18n="kd.addBtn"></button></span></div>
+        <p class="note" id="kidsNote" role="status"></p>
+      </div>
+    </details>
+
+    <details class="tile fold">
+      <summary><span class="foldtitle"><b data-i18n="st.dns"></b><small data-i18n="st.dnsSub"></small></span><span class="badge" id="dnsBadge"></span></summary>
+      <div class="foldbody">
+        <p class="muted" data-i18n="st.dnsText"></p>
+        <div class="choices" id="dnsChoices" role="radiogroup"></div>
+        <div class="line"><span class="linetext"><b data-i18n="st.dnssec"></b><small data-i18n="st.dnssecSub"></small></span><button type="button" class="switch" role="switch" id="dnssec"><span class="track"></span><span></span></button></div>
+        <p class="note" id="dnsNote" role="status"></p>
+      </div>
+    </details>
+
+    <details class="tile fold">
+      <summary><span class="foldtitle"><b data-i18n="st.privacy"></b><small data-i18n="st.privacySub"></small></span><span class="badge" id="privacyBadge"></span></summary>
+      <div class="foldbody">
+        <div class="line"><label class="linetext" for="keepLog"><b data-i18n="st.keep"></b><small data-i18n="st.keepSub"></small></label>
+          <select id="keepLog"><option value="86400000" data-i18n="st.k1"></option><option value="604800000" data-i18n="st.k7"></option><option value="2592000000" data-i18n="st.k30"></option><option value="7776000000" data-i18n="st.k90"></option></select></div>
+        <div class="line"><span class="linetext"><b data-i18n="st.anon"></b><small data-i18n="st.anonSub"></small></span><button type="button" class="switch" role="switch" id="anon"><span class="track"></span><span></span></button></div>
+        <div class="line"><span class="linetext"><b data-i18n="st.wipe"></b><small data-i18n="st.wipeSub"></small></span><button type="button" class="btn ghost danger" id="wipe" data-i18n="st.wipeBtn"></button></div>
+        <p class="note" id="privacyNote" role="status"></p>
+      </div>
+    </details>
+
+    <details class="tile fold">
+      <summary><span class="foldtitle"><b data-i18n="st.access"></b><small data-i18n="st.accessSub"></small></span><span class="badge" data-i18n="st.protected"></span></summary>
+      <div class="foldbody">
+        <form class="form" id="pwForm">
+          <label><span data-i18n="st.pwOld"></span><input type="password" id="pwOld" required autocomplete="current-password"></label>
+          <label><span data-i18n="st.pwNew"></span><input type="password" id="pwNew" required minlength="8" autocomplete="new-password"></label>
+          <button type="submit" class="btn" data-i18n="st.pwBtn"></button>
+        </form>
+        <p class="note" id="pwNote" role="status"></p>
+        <div class="line"><span class="linetext"><b data-i18n="st.logout"></b><small data-i18n="st.logoutSub"></small></span><button type="button" class="btn ghost" id="logout" data-i18n="st.logoutBtn"></button></div>
+      </div>
+    </details>
+
+    <details class="tile fold">
+      <summary><span class="foldtitle"><b data-i18n="ld.title"></b><small data-i18n="ld.sub"></small></span><span class="badge" id="ledBadge"></span></summary>
+      <div class="foldbody">
+        <p class="muted" id="ledHw"></p>
+        <div class="line"><span class="linetext"><b data-i18n="ld.mode"></b><small data-i18n="ld.modeSub"></small></span><span class="seg" id="ledMode" role="radiogroup"></span></div>
+        <div class="line" id="ledNight"><span class="linetext"><b data-i18n="ld.night"></b><small data-i18n="ld.nightSub"></small></span>
+          <span class="plan"><input type="time" id="ledFrom"><span data-i18n="kd.to"></span><input type="time" id="ledTo"></span></div>
+        <div class="line"><span class="linetext"><b data-i18n="ld.flash"></b><small data-i18n="ld.flashSub"></small></span><button type="button" class="switch" role="switch" id="ledFlash"><span class="track"></span><span></span></button></div>
+        <div class="line"><span class="linetext"><b data-i18n="ld.button"></b><small data-i18n="ld.buttonSub"></small></span><button type="button" class="switch" role="switch" id="btnOn"><span class="track"></span><span></span></button></div>
+        <p class="note" id="ledNote" role="status"></p>
+      </div>
+    </details>
+
+    <details class="tile fold">
+      <summary><span class="foldtitle"><b data-i18n="nt.title"></b><small data-i18n="nt.sub"></small></span><span class="badge" id="ntBadge"></span></summary>
+      <div class="foldbody">
+        <p class="muted" data-i18n="nt.text"></p>
+        <div class="line"><span class="linetext"><b data-i18n="nt.way"></b><small id="ntHint"></small></span><span class="seg" id="ntKind" role="radiogroup"></span></div>
+        <form class="form" id="ntForm">
+          <label class="wide"><span data-i18n="nt.url"></span><input type="url" id="ntUrl" placeholder="https://ntfy.sh/…" maxlength="300"></label>
+          <button type="submit" class="btn" data-i18n="nt.save"></button>
+          <button type="button" class="btn ghost" id="ntTest" data-i18n="nt.test"></button>
+        </form>
+        <div class="line"><span class="linetext"><b data-i18n="nt.newdev"></b><small data-i18n="nt.newdevSub"></small></span><button type="button" class="switch" role="switch" id="ntNewdev"><span class="track"></span><span></span></button></div>
+        <div class="line"><span class="linetext"><b data-i18n="nt.malware"></b><small data-i18n="nt.malwareSub"></small></span><button type="button" class="switch" role="switch" id="ntMalware"><span class="track"></span><span></span></button></div>
+        <div class="line"><span class="linetext"><b data-i18n="nt.down"></b><small data-i18n="nt.downSub"></small></span><button type="button" class="switch" role="switch" id="ntDown"><span class="track"></span><span></span></button></div>
+        <p class="note" id="ntNote" role="status"></p>
+      </div>
+    </details>
+
+    <details class="tile fold">
+      <summary><span class="foldtitle"><b data-i18n="lk.title"></b><small data-i18n="lk.sub"></small></span></summary>
+      <div class="foldbody">
+        <div class="line"><span class="linetext"><b data-i18n="lk.accent"></b><small data-i18n="lk.accentSub"></small></span><span class="swatches" id="accents" role="radiogroup"></span></div>
+        <div class="line"><span class="linetext"><b data-i18n="lk.motion"></b><small data-i18n="lk.motionSub"></small></span><button type="button" class="switch" role="switch" id="motion"><span class="track"></span><span></span></button></div>
+      </div>
+    </details>
+
+    <details class="tile fold">
+      <summary><span class="foldtitle"><b data-i18n="ex.title"></b><small data-i18n="ex.sub"></small></span></summary>
+      <div class="foldbody">
+        <div class="line"><span class="linetext"><b data-i18n="ex.out"></b><small data-i18n="ex.outSub"></small></span><button type="button" class="btn" id="exOut" data-i18n="ex.outBtn"></button></div>
+        <div class="line"><label class="linetext" for="exFile"><b data-i18n="ex.in"></b><small data-i18n="ex.inSub"></small></label><input type="file" id="exFile" accept="application/json,.json"></div>
+        <p class="note" id="exNote" role="status"></p>
+      </div>
+    </details>
+
+    <details class="tile fold">
+      <summary><span class="foldtitle"><b data-i18n="nw.title"></b><small data-i18n="nw.sub"></small></span><span class="badge" id="nwBadge"></span></summary>
+      <div class="foldbody">
+        <div id="nwInfo" class="list"></div>
+        <form class="form" id="nwForm">
+          <label><span data-i18n="nw.name"></span><input type="text" id="nwName" required maxlength="32" pattern="[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?" autocapitalize="none" spellcheck="false"></label>
+          <button type="submit" class="btn" data-i18n="nw.save"></button>
+        </form>
+        <p class="muted" data-i18n="nw.later"></p>
+        <p class="note" id="nwNote" role="status"></p>
+      </div>
+    </details>
+
+    <details class="tile fold">
+      <summary><span class="foldtitle"><b data-i18n="up.title"></b><small data-i18n="up.sub"></small></span><span class="badge" id="upBadge"></span></summary>
+      <div class="foldbody">
+        <p class="muted" id="upText"></p>
+        <div id="upList" class="list"></div>
+        <div class="line"><span class="linetext"><b data-i18n="up.now"></b><small id="upChecked"></small></span><span class="pickrow"><button type="button" class="btn ghost" id="upCheck" data-i18n="up.check"></button><button type="button" class="btn" id="upRun" data-i18n="up.run"></button></span></div>
+        <div class="line"><span class="linetext"><b data-i18n="up.auto"></b><small data-i18n="up.autoSub"></small></span><button type="button" class="switch" role="switch" id="upAuto"><span class="track"></span><span></span></button></div>
+        <p class="muted" data-i18n="up.self"></p>
+        <p class="note" id="upNote" role="status"></p>
+      </div>
+    </details>
+
+    <details class="tile fold">
+      <summary><span class="foldtitle"><b data-i18n="st.device"></b><small data-i18n="st.deviceSub"></small></span></summary>
+      <div class="foldbody"><div id="deviceInfo" class="list"></div></div>
+    </details>
+
+  </div>
+  <div class="pagehead"><h2 data-i18n="st.planned"></h2><p class="muted" data-i18n="st.plannedSub"></p></div>
+  <div class="grid" id="plannedGrid"></div>
+</section>
+
+</main>
+</div>
+<script type="module" src="app.js"></script>
+</body>
+</html>
