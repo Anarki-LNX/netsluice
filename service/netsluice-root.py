@@ -208,6 +208,9 @@ REPO = "Anarki-LNX/netsluice"
 SHARE, WWW = "/usr/share/netsluice", "/srv/netsluice/www"
 VERSION_FILE, PREVIOUS = SHARE + "/VERSION", SHARE + "/previous"
 APP_LATEST, APP_LAST = BASE + "/app-latest.json", BASE + "/app-update.json"
+APP_PROGRESS = BASE + "/app-progress.json"          # read directly by the service, for the progress bar
+GITHUB = ("https://api.github.com/", "https://codeload.github.com/", "https://github.com/",
+          "https://objects.githubusercontent.com/", "https://release-assets.githubusercontent.com/")
 WORK = "/var/lib/netsluice-update"
 APP_UNIT = "netsluice-app-update"
 AUTO_TIMER = "/etc/systemd/system/netsluice-app-auto.timer"
@@ -241,18 +244,37 @@ def write_json(path, data):
     os.replace(path + ".tmp", path)
 
 
-def fetch(url, limit, timeout=30):
+def fetch(url, limit, timeout=30, progress=None):
+    """Download from GitHub only. progress(done, total) is called while the bytes arrive."""
     import urllib.request
-    if not url.startswith(("https://api.github.com/", "https://codeload.github.com/", "https://github.com/")):
+    if not url.startswith(GITHUB):
         raise ValueError("refusing to download from " + url[:80])
     req = urllib.request.Request(url, headers={"User-Agent": "NetSluice/" + (installed() or "0"), "Accept": "application/vnd.github+json"})
     with urllib.request.urlopen(req, timeout=timeout) as r:
-        if not r.geturl().startswith(("https://api.github.com/", "https://codeload.github.com/", "https://github.com/")):
+        if not r.geturl().startswith(GITHUB):
             raise ValueError("redirected away from GitHub")
-        data = r.read(limit + 1)
-    if len(data) > limit:
-        raise ValueError("download too large")
-    return data
+        total = int(r.headers.get("Content-Length") or 0) or None
+        chunks, done, shown = [], 0, 0
+        while True:
+            chunk = r.read(65536)
+            if not chunk:
+                break
+            chunks.append(chunk); done += len(chunk)
+            if done > limit:
+                raise ValueError("download too large")
+            if progress and time.time() - shown > 0.2:
+                progress(done, total); shown = time.time()
+        if progress:
+            progress(done, total or done)
+    return b"".join(chunks)
+
+
+def set_progress(phase, to=None, done=None, total=None):
+    try:
+        old = read_json(APP_PROGRESS, {}) if phase != "start" else {}
+        write_json(APP_PROGRESS, {"phase": phase, "to": to or old.get("to"), "done": done, "total": total, "at": time.time()})
+    except OSError:
+        pass
 
 
 def latest_release():
@@ -267,7 +289,11 @@ def latest_release():
     if not best:
         return None
     r = best[1]
-    return {"tag": r["tag_name"], "version": ".".join(map(str, best[0])), "name": (r.get("name") or "")[:120],
+    version = ".".join(map(str, best[0]))
+    # the package we attach to every release; its size is known, so the download can show a percentage
+    asset = next(({"url": a["browser_download_url"], "size": a.get("size")} for a in r.get("assets") or []
+                  if a.get("name") == "netsluice-%s.tar.gz" % version and str(a.get("browser_download_url", "")).startswith("https://github.com/")), None)
+    return {"tag": r["tag_name"], "asset": asset, "version": ".".join(map(str, best[0])), "name": (r.get("name") or "")[:120],
             "url": r.get("html_url", ""), "published": r.get("published_at", ""), "prerelease": bool(r.get("prerelease")),
             "notes": (r.get("body") or "")[:1500]}
 
@@ -295,6 +321,7 @@ def app_run(_=None):
     if app_status()["running"]:
         return {"error": "running"}
     sh(["systemctl", "reset-failed", APP_UNIT + ".service"])
+    set_progress("start", to=((read_json(APP_LATEST, {}).get("release") or {}).get("version")))
     code, out = sh(["systemd-run", "--quiet", "--unit=" + APP_UNIT, sys.executable, os.path.abspath(__file__), "--app-update"])
     s = app_status()
     if code:
@@ -365,8 +392,12 @@ def app_update():
         cur = installed()
         if cur and vtuple(rel["version"]) <= vtuple(cur):
             last.update(result="current", to=cur); return
-        last["to"] = rel["version"]
-        blob = fetch("https://codeload.github.com/%s/tar.gz/refs/tags/%s" % (REPO, rel["tag"]), MAX_DOWNLOAD, 120)
+        last["to"] = to = rel["version"]
+        set_progress("download", to, 0, (rel.get("asset") or {}).get("size"))
+        url = (rel.get("asset") or {}).get("url") or "https://codeload.github.com/%s/tar.gz/refs/tags/%s" % (REPO, rel["tag"])
+        size = (rel.get("asset") or {}).get("size")
+        blob = fetch(url, MAX_DOWNLOAD, 120, lambda d, t: set_progress("download", to, d, t or size))
+        set_progress("check", to)
         shutil.rmtree(WORK, ignore_errors=True)
         os.makedirs(WORK, mode=0o700)
         with tarfile.open(fileobj=io.BytesIO(blob), mode="r:gz") as tf:
@@ -386,6 +417,7 @@ def app_update():
             code, out = sh([sys.executable, "-m", "py_compile", os.path.join(src, "service", py)])
             if code:
                 raise ValueError("%s does not compile: %s" % (py, out[-120:]))
+        set_progress("install", to)
         # keep what runs now, to go back to
         shutil.rmtree(PREVIOUS, ignore_errors=True)
         os.makedirs(PREVIOUS)
@@ -396,6 +428,7 @@ def app_update():
         swap_in(os.path.join(src, "service"), SHARE + "/service")
         shutil.copy2(os.path.join(src, "VERSION"), VERSION_FILE + ".tmp"); os.chmod(VERSION_FILE + ".tmp", 0o644)
         os.replace(VERSION_FILE + ".tmp", VERSION_FILE)
+        set_progress("restart", to)
         sh(["systemctl", "restart", "netsluiced"])
         if service_answers():
             last.update(result="ok"); return
@@ -414,6 +447,7 @@ def app_update():
         shutil.rmtree(WORK, ignore_errors=True)
         last["done"] = int(time.time())
         write_json(APP_LAST, last)
+        set_progress({"ok": "done", "current": "done"}.get(last.get("result"), last.get("result", "failed")), last.get("to"))
 
 
 COMMANDS = {"net-status": net_status, "hostname": set_hostname, "addr-try": addr_try, "addr-confirm": lambda a: addr_end(True),

@@ -23,7 +23,7 @@ HTTP interface (all JSON, localhost only, the web server in front checks the ses
     GET  /api/devices
     GET  /api/kids                          POST /api/kids | /api/kids/extend | /api/kids/remove
     GET  /api/settings                      POST /api/settings | /api/notify/test
-    GET  /api/system                        POST /api/system/hostname | address[/confirm|/revert]
+    GET  /api/system | /api/system/app/progress  POST /api/system/hostname | address[/confirm|/revert]
                                                  /api/system/updates/check | auto | run
                                                  /api/system/app/check | auto | run
 
@@ -890,6 +890,20 @@ def main():
                 self.reply({"rules": rules.view()}); return
             if path == "/api/settings":
                 self.reply(cfg.public()); return
+            if path == "/api/system/app/progress":
+                # straight from the files, without the helper: polled twice a second during an update
+                def read(p, default):
+                    try:
+                        with open(p) as f:
+                            return f.read()
+                    except OSError:
+                        return default
+                try:
+                    prog = json.loads(read(os.path.join(os.path.dirname(STATE), "app-progress.json"), "{}"))
+                except ValueError:
+                    prog = {}
+                prog["version"] = read(os.environ.get("NETSLUICE_VERSION", "/usr/share/netsluice/VERSION"), "").strip() or None
+                self.reply(prog); return
             if path == "/api/system":
                 self.reply({"net": root_call("net-status"), "updates": root_call("upd-status", timeout=90), "app": root_call("app-status")}); return
             if path != "/api/geo":

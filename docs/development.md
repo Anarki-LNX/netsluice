@@ -86,8 +86,11 @@ archive of its tag and refuses it unless the `VERSION` file in it matches the
 tag. Only `web/` and `service/` are replaced; changes to `provision/` still
 need `install-stack.sh` by hand. So for a release:
 
-1. raise `VERSION` (`0.1.1`) and commit,
-2. tag it `v` plus the same number and publish the release on GitHub.
+1. raise `VERSION` (for example `0.1.3`), commit and push,
+2. run `scripts/release.sh notes.md --prerelease`. It tags the commit and
+   attaches `netsluice-<version>.tar.gz`, whose known size lets devices show
+   how far the download is. Without it a device falls back to the source
+   archive and shows the download without a percentage.
 
 ## Tests
 

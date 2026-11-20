@@ -146,10 +146,11 @@ try {
   <div class="tile soon"><h1 data-i18n="soon.tunnel"></h1><p class="muted" data-i18n="soon.tunnelSub"></p></div>
 </section>
 <section class="screen" id="screen-settings" hidden>
-  <div class="pagehead"><h1 data-i18n="st.title"></h1><p class="muted" data-i18n="st.sub"></p></div>
-  <div class="folds">
+  <div class="pagehead" id="stHead"><h1 data-i18n="st.title"></h1><p class="muted" data-i18n="st.sub"></p></div>
+  <nav class="subnav" id="stNav" hidden><a href="#settings" class="backlink" data-i18n="st.back"></a></nav>
+  <div class="folds" id="stFolds">
 
-    <details class="tile fold">
+    <details class="tile fold" data-key="kids">
       <summary><span class="foldtitle"><b data-i18n="kd.title"></b><small data-i18n="kd.sub"></small></span><span class="badge" id="kidsBadge"></span></summary>
       <div class="foldbody">
         <p class="muted" data-i18n="kd.text"></p>
@@ -160,7 +161,7 @@ try {
       </div>
     </details>
 
-    <details class="tile fold">
+    <details class="tile fold" data-key="dns">
       <summary><span class="foldtitle"><b data-i18n="st.dns"></b><small data-i18n="st.dnsSub"></small></span><span class="badge" id="dnsBadge"></span></summary>
       <div class="foldbody">
         <p class="muted" data-i18n="st.dnsText"></p>
@@ -170,7 +171,7 @@ try {
       </div>
     </details>
 
-    <details class="tile fold">
+    <details class="tile fold" data-key="privacy">
       <summary><span class="foldtitle"><b data-i18n="st.privacy"></b><small data-i18n="st.privacySub"></small></span><span class="badge" id="privacyBadge"></span></summary>
       <div class="foldbody">
         <div class="line"><label class="linetext" for="keepLog"><b data-i18n="st.keep"></b><small data-i18n="st.keepSub"></small></label>
@@ -181,7 +182,7 @@ try {
       </div>
     </details>
 
-    <details class="tile fold">
+    <details class="tile fold" data-key="access">
       <summary><span class="foldtitle"><b data-i18n="st.access"></b><small data-i18n="st.accessSub"></small></span><span class="badge" data-i18n="st.protected"></span></summary>
       <div class="foldbody">
         <form class="form" id="pwForm">
@@ -194,7 +195,7 @@ try {
       </div>
     </details>
 
-    <details class="tile fold">
+    <details class="tile fold" data-key="leds">
       <summary><span class="foldtitle"><b data-i18n="ld.title"></b><small data-i18n="ld.sub"></small></span><span class="badge" id="ledBadge"></span></summary>
       <div class="foldbody">
         <p class="muted" id="ledHw"></p>
@@ -207,7 +208,7 @@ try {
       </div>
     </details>
 
-    <details class="tile fold">
+    <details class="tile fold" data-key="notify">
       <summary><span class="foldtitle"><b data-i18n="nt.title"></b><small data-i18n="nt.sub"></small></span><span class="badge" id="ntBadge"></span></summary>
       <div class="foldbody">
         <p class="muted" data-i18n="nt.text"></p>
@@ -224,7 +225,7 @@ try {
       </div>
     </details>
 
-    <details class="tile fold">
+    <details class="tile fold" data-key="look">
       <summary><span class="foldtitle"><b data-i18n="lk.title"></b><small data-i18n="lk.sub"></small></span></summary>
       <div class="foldbody">
         <div class="line"><span class="linetext"><b data-i18n="lk.accent"></b><small data-i18n="lk.accentSub"></small></span><span class="swatches" id="accents" role="radiogroup"></span></div>
@@ -232,7 +233,7 @@ try {
       </div>
     </details>
 
-    <details class="tile fold">
+    <details class="tile fold" data-key="export">
       <summary><span class="foldtitle"><b data-i18n="ex.title"></b><small data-i18n="ex.sub"></small></span></summary>
       <div class="foldbody">
         <div class="line"><span class="linetext"><b data-i18n="ex.out"></b><small data-i18n="ex.outSub"></small></span><button type="button" class="btn" id="exOut" data-i18n="ex.outBtn"></button></div>
@@ -241,7 +242,7 @@ try {
       </div>
     </details>
 
-    <details class="tile fold">
+    <details class="tile fold" data-key="network">
       <summary><span class="foldtitle"><b data-i18n="nw.title"></b><small data-i18n="nw.sub"></small></span><span class="badge" id="nwBadge"></span></summary>
       <div class="foldbody">
         <div id="nwInfo" class="list"></div>
@@ -254,12 +255,16 @@ try {
       </div>
     </details>
 
-    <details class="tile fold">
+    <details class="tile fold" data-key="updates">
       <summary><span class="foldtitle"><b data-i18n="up.title"></b><small data-i18n="up.sub"></small></span><span class="badge" id="upBadge"></span></summary>
       <div class="foldbody">
         <h4 class="subhead">NetSluice</h4>
         <p class="muted" id="apText"></p>
         <div class="line"><span class="linetext"><b id="apVersion"></b><small id="apChecked"></small></span><span class="pickrow"><button type="button" class="btn ghost" id="apCheck" data-i18n="ap.check"></button><button type="button" class="btn" id="apRun"></button></span></div>
+        <div class="progress" id="apProgress" hidden>
+          <div class="pbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" id="apBarWrap"><span id="apBar"></span></div>
+          <div class="ptext"><span id="apPhase"></span><span id="apPct"></span></div>
+        </div>
         <div class="line"><span class="linetext"><b data-i18n="ap.auto"></b><small data-i18n="ap.autoSub"></small></span><button type="button" class="switch" role="switch" id="apAuto"><span class="track"></span><span></span></button></div>
         <p class="note" id="apNote" role="status"></p>
         <h4 class="subhead" data-i18n="up.system"></h4>
@@ -271,14 +276,14 @@ try {
       </div>
     </details>
 
-    <details class="tile fold">
+    <details class="tile fold" data-key="device">
       <summary><span class="foldtitle"><b data-i18n="st.device"></b><small data-i18n="st.deviceSub"></small></span></summary>
       <div class="foldbody"><div id="deviceInfo" class="list"></div></div>
     </details>
 
   </div>
-  <div class="pagehead"><h2 data-i18n="st.planned"></h2><p class="muted" data-i18n="st.plannedSub"></p></div>
-  <div class="grid" id="plannedGrid"></div>
+  <div id="stPlanned"><div class="pagehead"><h2 data-i18n="st.planned"></h2><p class="muted" data-i18n="st.plannedSub"></p></div>
+  <div class="grid" id="plannedGrid"></div></div>
 </section>
 
 </main>

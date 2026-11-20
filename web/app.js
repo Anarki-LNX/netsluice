@@ -62,8 +62,10 @@ const T = {
     'ap.running': 'Installing the new version. The filter keeps working; this page reloads by itself when it is done.', 'ap.started': 'Update started.', 'ap.done': (v) => `Updated to version ${v}. Reloading.`,
     'ap.failed': (m) => `The last update did not work: ${m}. The previous version is still running.`, 'ap.rolledBack': 'The last update was undone: the new version did not start, so the previous one was put back.',
     'ap.auto': 'Install new versions automatically', 'ap.autoSub': 'Looks on GitHub once a day, early in the morning. The filter keeps working during an update.',
-    'ap.badge': (a) => a ? 'new version' : 'up to date', 'up.checking': 'Looking for updates, this takes up to a minute',
-    'st.title': 'Settings', 'st.sub': 'Open a tile to change it. Changes apply at once.',
+    'ap.badge': (a) => a ? 'new version' : 'up to date',
+    'ap.p.start': 'Starting', 'ap.p.download': (d, t) => t ? `Downloading: ${d} of ${t}` : `Downloading: ${d}`, 'ap.p.check': 'Checking the download', 'ap.p.install': 'Installing',
+    'ap.p.restart': 'Restarting the service', 'ap.p.done': 'Done', 'ap.p.failed': 'Did not work', 'ap.p.rolled-back': 'Undone, the previous version runs', 'up.checking': 'Looking for updates, this takes up to a minute',
+    'st.title': 'Settings', 'st.sub': 'Open a tile to change it. Changes apply at once.', 'st.back': 'All settings',
     'st.dns': 'Secure DNS', 'st.dnsSub': 'Who the filter itself asks, and how', 'st.dnsText': 'The filter forwards what it lets through to a resolver. With DNS over HTTPS (DoH) that question is encrypted, so neither your internet provider nor anyone on the line can read or alter it.',
     'st.dnssec': 'Verify answers (DNSSEC)', 'st.dnssecSub': 'Reject forged answers for domains that are signed.', 'st.dnsOk': 'Resolver changed and tested.', 'st.dnsFail': (m) => `This resolver did not answer, nothing was changed: ${m}`, 'st.dnsTesting': 'Testing the resolver', 'st.encrypted': 'encrypted', 'st.saved': 'Saved.',
     'dns.quad9': 'Blocks known malware. Non-profit, Switzerland.', 'dns.quad9u': 'No blocking of its own. Non-profit, Switzerland.', 'dns.cloudflare': 'Fast, worldwide. USA.', 'dns.dns4eu': 'Public European resolver, unfiltered.', 'dns.dns4eup': 'European resolver with protection against malware.', 'dns.mullvad': 'Run by a privacy-focused VPN provider. Sweden.',
@@ -144,8 +146,10 @@ const T = {
     'ap.running': 'Die neue Version wird installiert. Der Filter arbeitet weiter; die Seite lädt neu, sobald es fertig ist.', 'ap.started': 'Update gestartet.', 'ap.done': (v) => `Auf Version ${v} aktualisiert. Lade neu.`,
     'ap.failed': (m) => `Das letzte Update hat nicht geklappt: ${m}. Die bisherige Version läuft weiter.`, 'ap.rolledBack': 'Das letzte Update wurde rückgängig gemacht: Die neue Version startete nicht, also läuft wieder die bisherige.',
     'ap.auto': 'Neue Versionen automatisch installieren', 'ap.autoSub': 'Sieht einmal am Tag frühmorgens auf GitHub nach. Der Filter arbeitet während eines Updates weiter.',
-    'ap.badge': (a) => a ? 'neue Version' : 'aktuell', 'up.checking': 'Suche nach Updates, das dauert bis zu einer Minute',
-    'st.title': 'Einstellungen', 'st.sub': 'Klapp eine Kachel auf, um etwas zu ändern. Änderungen gelten sofort.',
+    'ap.badge': (a) => a ? 'neue Version' : 'aktuell',
+    'ap.p.start': 'Startet', 'ap.p.download': (d, t) => t ? `Lade herunter: ${d} von ${t}` : `Lade herunter: ${d}`, 'ap.p.check': 'Prüfe den Download', 'ap.p.install': 'Installiere',
+    'ap.p.restart': 'Starte den Dienst neu', 'ap.p.done': 'Fertig', 'ap.p.failed': 'Hat nicht geklappt', 'ap.p.rolled-back': 'Rückgängig gemacht, die bisherige Version läuft', 'up.checking': 'Suche nach Updates, das dauert bis zu einer Minute',
+    'st.title': 'Einstellungen', 'st.sub': 'Öffne eine Kachel, um etwas zu ändern. Änderungen gelten sofort.', 'st.back': 'Alle Einstellungen',
     'st.dns': 'Sicheres DNS', 'st.dnsSub': 'Wen der Filter selbst fragt, und wie', 'st.dnsText': 'Was der Filter durchlässt, reicht er an einen Auflöser weiter. Mit DNS über HTTPS (DoH) ist diese Frage verschlüsselt: Weder dein Internetanbieter noch jemand auf der Leitung kann sie mitlesen oder verändern.',
     'st.dnssec': 'Antworten prüfen (DNSSEC)', 'st.dnssecSub': 'Gefälschte Antworten für signierte Adressen werden verworfen.', 'st.dnsOk': 'Auflöser gewechselt und getestet.', 'st.dnsFail': (m) => `Dieser Auflöser hat nicht geantwortet, es wurde nichts geändert: ${m}`, 'st.dnsTesting': 'Auflöser wird getestet', 'st.encrypted': 'verschlüsselt', 'st.saved': 'Gespeichert.',
     'dns.quad9': 'Sperrt bekannte Schadseiten. Gemeinnützig, Schweiz.', 'dns.quad9u': 'Ohne eigene Sperren. Gemeinnützig, Schweiz.', 'dns.cloudflare': 'Schnell, weltweit. USA.', 'dns.dns4eu': 'Öffentlicher europäischer Auflöser, ungefiltert.', 'dns.dns4eup': 'Europäischer Auflöser mit Schutz vor Schadseiten.', 'dns.mullvad': 'Betrieben von einem auf Privatsphäre ausgerichteten VPN-Anbieter. Schweden.',
@@ -222,16 +226,34 @@ function applyLang() {
   if (screen === 'map') renderMap();
 }
 
+// Settings: the overview shows one tile per section; a tile opens its section as a page of its own (#settings/<key>).
+function settingsPage(key) {
+  const folds = [...document.querySelectorAll('#stFolds > .fold')];
+  const open = folds.find((d) => d.dataset.key === key);
+  $('stFolds').classList.toggle('sub', !!open);
+  folds.forEach((d) => { d.open = d === open; d.classList.toggle('current', d === open); });
+  $('stHead').hidden = $('stPlanned').hidden = !!open; $('stNav').hidden = !open;
+  return open ? key : null;
+}
+document.querySelectorAll('#stFolds > .fold > summary').forEach((sm) => sm.addEventListener('click', (e) => {
+  e.preventDefault();                                       // never fold: the tile is a link to its page
+  if (!$('stFolds').classList.contains('sub')) location.hash = 'settings/' + sm.parentElement.dataset.key;
+}));
+
 function show(name) {
-  if (!SCREENS.includes(name)) name = 'overview';
-  screen = name;
+  let [base, sub] = name.split('/');
+  if (!SCREENS.includes(base)) { base = 'overview'; sub = null; }
+  screen = base;
+  if (base === 'settings') sub = settingsPage(sub);
+  name = sub ? base + '/' + sub : base;
   // keep the section in the address, so a reload or the back button returns to it
   if (location.hash.slice(1) !== name) history.replaceState(null, '', name === 'overview' ? location.pathname : '#' + name);
-  document.querySelectorAll('.screen').forEach((s) => { s.hidden = s.id !== 'screen-' + name; });
-  document.querySelectorAll('#nav button').forEach((b) => { b.setAttribute('aria-current', b.dataset.screen === name ? 'page' : 'false'); });
-  if (name === 'filters') loadFilters();
-  if (name === 'settings') loadSettings();
-  if (name === 'map') { renderMap(); if (geo.map) geo.map.layout(); pollGeo(); }
+  if (base === 'settings') window.scrollTo(0, 0);
+  document.querySelectorAll('.screen').forEach((s) => { s.hidden = s.id !== 'screen-' + base; });
+  document.querySelectorAll('#nav button').forEach((b) => { b.setAttribute('aria-current', b.dataset.screen === base ? 'page' : 'false'); });
+  if (base === 'filters') loadFilters();
+  if (base === 'settings') loadSettings();
+  if (base === 'map') { renderMap(); if (geo.map) geo.map.layout(); pollGeo(); }
   render();
 }
 
@@ -774,9 +796,7 @@ function renderSystem() {
 const when = (s) => new Date(s * 1000).toLocaleString(lang === 'de' ? 'de-DE' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' });
 function renderApp() {
   const a = (sys.d && sys.d.app) || {}, l = a.latest || {}, last = a.last || {};
-  if (sys.appFrom === undefined && !a.error) sys.appFrom = a.version || null;
-  // the service restarts during an update: once it reports a newer version, load the new interface
-  if (sys.appWatch && !a.running && a.version && a.version !== sys.appFrom) { say('apNote', 'ok', t('ap.done', a.version)); setTimeout(() => location.reload(), 1500); }
+  if (a.running) watchApp();
   $('upBadge').textContent = a.running || (sys.d.updates || {}).running ? '…' : a.available ? t('ap.badge', true) : t('up.badge', ((sys.d.updates || {}).pending || []).length);
   if (a.available) $('upBadge').className = 'badge no';
   $('apVersion').textContent = t('ap.version', a.version);
@@ -789,8 +809,53 @@ function renderApp() {
   $('apRun').textContent = t('ap.run', l.version || ''); $('apRun').hidden = !a.available;   // nothing to install: no button that looks like one
   $('apRun').disabled = !a.available || a.running || sys.busy; $('apCheck').disabled = !!a.running || sys.busy;
   setSwitch($('apAuto'), !!a.auto); $('apAuto').disabled = sys.busy;
-  clearTimeout(sys.appTimer);
-  if (a.running || sys.appWatch) sys.appTimer = setTimeout(async () => { try { sys.d = await svc('system'); } catch { /* restarting */ } renderSystem(); }, 3000);
+}
+
+// Progress of a NetSluice update, polled twice a second straight from the service.
+// The service itself restarts near the end; while it is away the bar waits at that step.
+const PHASES = { start: [2, 2], download: [4, 70], check: [72, 72], install: [80, 80], restart: [88, 97], done: [100, 100] };
+const kb = (n) => n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' kB';
+function showProgress(p) {
+  const [lo, hi] = PHASES[p.phase] || [0, 0], bad = p.phase === 'failed' || p.phase === 'rolled-back';
+  let pct = lo, known = true;
+  if (p.phase === 'download') { if (p.total) pct = lo + (hi - lo) * Math.min(1, (p.done || 0) / p.total); else known = false; }
+  if (p.phase === 'restart') pct = Math.min(hi, lo + (Date.now() / 1000 - (p.at || Date.now() / 1000)) * 1.5);   // a few seconds, no way to measure them
+  if (bad) pct = 100;
+  $('apProgress').hidden = false;
+  $('apBarWrap').classList.toggle('unknown', !known); $('apBarWrap').classList.toggle('bad', bad);
+  $('apBar').style.width = pct + '%'; $('apBarWrap').setAttribute('aria-valuenow', Math.round(pct));
+  const label = t('ap.p.' + p.phase, kb(p.done || 0), p.total ? kb(p.total) : '');
+  $('apPhase').textContent = (typeof label === 'string' ? label : '') + (p.to && !bad ? ' · ' + p.to : '');
+  $('apPct').textContent = known && !bad ? Math.round(pct) + ' %' : '';
+}
+async function watchApp() {
+  if (sys.watching) return;
+  sys.watching = true;
+  const from = (sys.d && sys.d.app && sys.d.app.version) || null, began = Date.now();
+  let p = { phase: 'start' };
+  while (Date.now() - began < 5 * 60 * 1000) {
+    try {
+      const r = await fetch('/api/system/app/progress', { cache: 'no-store' });
+      if (r.status === 401) { gate('login'); break; }
+      if (r.ok) p = await r.json();
+      else if (p.phase === 'install') p = { ...p, phase: 'restart', at: Date.now() / 1000 };
+    } catch { if (p.phase === 'install') p = { ...p, phase: 'restart', at: Date.now() / 1000 }; }  // the service is restarting
+    if (p.phase === 'done' && p.version && p.version !== from) {
+      showProgress(p); say('apNote', 'ok', t('ap.done', p.version));
+      setTimeout(() => location.reload(), 1200); return;
+    }
+    if ((p.phase === 'failed' || p.phase === 'rolled-back') && (p.at || 0) * 1000 > began - 2000) {
+      showProgress(p); sys.watching = false;
+      try { sys.d = await svc('system'); } catch { /* keep */ }
+      renderSystem(); return;
+    }
+    if (p.phase === 'done' && (p.at || 0) * 1000 > began - 2000) break;    // nothing newer to install after all
+    showProgress(p.phase === 'done' || p.phase === 'failed' || p.phase === 'rolled-back' ? { phase: 'start' } : p);
+    await new Promise((res) => setTimeout(res, 500));
+  }
+  sys.watching = false; $('apProgress').hidden = true;
+  try { sys.d = await svc('system'); } catch { /* keep */ }
+  renderSystem();
 }
 async function sysCall(path, body, noteId, okKey) {
   if (sys.busy) return;
@@ -811,7 +876,7 @@ $('upCheck').addEventListener('click', () => { say('upNote', '', t('up.checking'
 $('upRun').addEventListener('click', () => sysCall('updates/run', {}, 'upNote', 'up.started'));
 $('upAuto').addEventListener('click', () => sys.d && sysCall('updates/auto', { on: !sys.d.updates.auto }, 'upNote', 'st.saved'));
 $('apCheck').addEventListener('click', () => { say('apNote', '', t('up.checking')); sysCall('app/check', {}, 'apNote', 'st.saved'); });
-$('apRun').addEventListener('click', () => { sys.appWatch = true; sys.appSeen = Date.now() / 1000; sysCall('app/run', {}, 'apNote', 'ap.started'); });
+$('apRun').addEventListener('click', () => { say('apNote', '', ''); showProgress({ phase: 'start' }); watchApp(); sysCall('app/run', {}, 'apNote', 'ap.started'); });
 $('apAuto').addEventListener('click', () => sys.d && sysCall('app/auto', { on: !(sys.d.app || {}).auto }, 'apNote', 'st.saved'));
 
 async function loadSettings() {
