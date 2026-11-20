@@ -15,7 +15,11 @@ mkdir -p /etc/netsluice /srv/netsluice/www
 
 echo "==> freeing port 53 (systemd-resolved stub listener off)"
 mkdir -p /etc/systemd/resolved.conf.d
-printf '[Resolve]\nDNSStubListener=no\n' > /etc/systemd/resolved.conf.d/netsluice.conf
+# The device asks its own filter first, and whatever the router names only after
+# that. The router may name an address where nothing answers, for example the
+# one of a filter that was switched off when this one arrived; the engine does
+# not depend on it, it reaches its upstream by address.
+printf '[Resolve]\nDNSStubListener=no\nDNS=127.0.0.1\n' > /etc/systemd/resolved.conf.d/netsluice.conf
 ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
 systemctl restart systemd-resolved
 

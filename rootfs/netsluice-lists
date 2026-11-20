@@ -1,7 +1,12 @@
 #!/bin/sh
 # NetSluice: a device set up without internet has a filter with empty lists.
-# As soon as the internet is there, have the engine download them, once.
-# The engine would get to it by itself, but only at its next regular check.
-curl -fsS -m 10 -o /dev/null https://adguardteam.github.io/ || exit 1
-curl -fsS -m 120 -X POST -H 'Content-Type: application/json' -d '{"whitelist": false}' http://127.0.0.1:3001/control/filtering/refresh >/dev/null || exit 1
+# Have the engine download them as soon as it can, once. The engine would get
+# to it by itself, but only at its next regular check. Everything is asked of
+# the engine on this device, so no name lookup of the system is involved.
+AGH=http://127.0.0.1:3001/control/filtering
+loaded() { curl -fsS -m 10 "$AGH/status" | grep -Eq '"rules_count": ?[1-9]'; }
+if ! loaded; then
+  curl -fsS -m 180 -X POST -H 'Content-Type: application/json' -d '{"whitelist": false}' "$AGH/refresh" >/dev/null || exit 1
+  loaded || exit 1
+fi
 touch /var/lib/netsluice-setup/lists-done
