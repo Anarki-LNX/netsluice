@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/logo.svg" alt="NetSluice" width="420"></p>
+
 # NetSluice
 
 A second life for the Deeper Connect Mini: plain Debian instead of the vendor's

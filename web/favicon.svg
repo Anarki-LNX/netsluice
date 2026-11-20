@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- NetSluice: traffic arrives (blue), meets the gate (gold), leaves checked (green) -->
+  <rect width="64" height="64" rx="15" fill="#06141B"/>
+  <rect x="5" y="5" width="54" height="54" rx="12" fill="none" stroke="#F5C451" stroke-width="4"/>
+  <path d="M14 32H26" stroke="#4EA8FF" stroke-width="6" stroke-linecap="round"/>
+  <path d="M38 32H50" stroke="#5CE39A" stroke-width="6" stroke-linecap="round"/>
+  <path d="M32 17V47" stroke="#F5C451" stroke-width="6" stroke-linecap="round"/>
+</svg>

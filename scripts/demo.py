@@ -13,7 +13,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 WEB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "web")
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8099
 T0 = time.time()
-TYPES = {".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css", ".json": "application/json"}
+TYPES = {".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml"}
 
 DEVICES = [   # ip, name, kind, vendor, model, firmware, mac, weight
     ("192.168.0.21", "living-room-tv", "tv", "LG Electronics", "OLED55C3", "23.20.56", "02:00:5e:10:00:21", 30),
