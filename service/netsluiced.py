@@ -12,6 +12,7 @@ what the engine does not:
   board       the two LEDs and the button of the device
   messages    ntfy or a webhook when something happens
   system      name, addresses and updates, through the helper with root rights
+  storage     back up the internal storage, install onto it, put the backup back
 
 The service itself runs without privileges. Sections below follow this order;
 search for "# ----------" to jump between them.
@@ -23,6 +24,8 @@ HTTP interface (all JSON, localhost only, the web server in front checks the ses
     GET  /api/devices
     GET  /api/kids                          POST /api/kids | /api/kids/extend | /api/kids/remove
     GET  /api/settings                      POST /api/settings | /api/notify/test
+    GET  /api/storage | /api/storage/progress | /api/storage/backup/download
+                                            POST /api/storage/backup[/delete] | install | restore | poweroff
     GET  /api/system | /api/system/app/progress | /api/system/updates/progress
                                             POST /api/system/hostname | address[/confirm|/revert]
                                                  /api/system/updates/check | auto | run
@@ -30,7 +33,7 @@ HTTP interface (all JSON, localhost only, the web server in front checks the ses
 
 Standard library only.
 """
-import array, bisect, csv, hashlib, hmac, json, os, re, secrets, signal, socket, struct, subprocess, sys, threading, time, urllib.request
+import array, bisect, csv, hashlib, hmac, json, os, re, secrets, shutil, signal, socket, struct, subprocess, sys, threading, time, urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 AGH = os.environ.get("NETSLUICE_AGH", "http://127.0.0.1:3001")
@@ -45,6 +48,7 @@ SETTINGS = os.path.join(os.path.dirname(STATE), "settings.json")
 LEDS = "/sys/class/leds"
 REQ, RES = os.path.join(os.path.dirname(STATE), "req"), os.path.join(os.path.dirname(STATE), "res")
 BUTTON = "/dev/input/by-path/platform-gpio-keys-event"
+BACKUP = os.environ.get("NETSLUICE_BACKUP", "/var/lib/netsluice-backup/internal.img.gz")   # written by the helper, handed out here
 SESSION_DAYS = 30
 OUI = [os.environ.get("NETSLUICE_OUI", "/usr/share/netsluice/oui.csv"), "/usr/share/ieee-data/oui.csv"]   # current list first, packaged one as fallback
 
@@ -891,6 +895,31 @@ def main():
                 self.reply({"rules": rules.view()}); return
             if path == "/api/settings":
                 self.reply(cfg.public()); return
+            if path == "/api/storage":
+                self.reply(root_call("st-status")); return
+            if path == "/api/storage/progress":
+                try:
+                    with open(os.path.join(os.path.dirname(STATE), "st-progress.json")) as f:
+                        self.reply(json.load(f)); return
+                except (OSError, ValueError):
+                    self.reply({}); return
+            if path == "/api/storage/backup/download":
+                try:
+                    f = open(BACKUP, "rb")
+                except OSError:
+                    self.send_error(404); return
+                with f:
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/gzip")
+                    self.send_header("Content-Length", str(os.fstat(f.fileno()).st_size))
+                    self.send_header("Content-Disposition", 'attachment; filename="netsluice-backup-internal-storage.img.gz"')
+                    self.send_header("Cache-Control", "no-store")
+                    self.end_headers()
+                    try:
+                        shutil.copyfileobj(f, self.wfile, 1024 * 1024)
+                    except OSError:
+                        pass                               # the browser went away
+                return
             if path == "/api/system/updates/progress":
                 try:
                     with open(os.path.join(os.path.dirname(STATE), "sys-progress.json")) as f:
@@ -964,10 +993,12 @@ def main():
             system = {"/api/system/hostname": ("hostname", 30), "/api/system/address": ("addr-try", 60), "/api/system/address/confirm": ("addr-confirm", 60),
                       "/api/system/address/revert": ("addr-revert", 60), "/api/system/updates/check": ("upd-check", 280),
                       "/api/system/updates/auto": ("upd-auto", 320), "/api/system/updates/run": ("upd-run", 60),
-                      "/api/system/app/check": ("app-check", 60), "/api/system/app/auto": ("app-auto", 30), "/api/system/app/run": ("app-run", 30)}
+                      "/api/system/app/check": ("app-check", 60), "/api/system/app/auto": ("app-auto", 30), "/api/system/app/run": ("app-run", 30),
+                      "/api/storage/backup": ("st-backup", 30), "/api/storage/backup/delete": ("st-backup-delete", 30),
+                      "/api/storage/install": ("st-install", 30), "/api/storage/restore": ("st-restore", 30), "/api/storage/poweroff": ("st-poweroff", 30)}
             if path in system:
                 cmd, wait = system[path]
-                res = root_call(cmd, {k: data[k] for k in ("name", "ip", "on") if k in data}, timeout=wait)
+                res = root_call(cmd, {k: data[k] for k in ("name", "ip", "on", "confirm", "no_backup") if k in data}, timeout=wait)
                 self.reply(res, 400 if res.get("error") else 200); return
             if path == "/api/notify/test":
                 why = notify(cfg, "test", "NetSluice: test message", "If you can read this, messages from your NetSluice arrive.", force=True)

@@ -280,6 +280,31 @@ try {
       </div>
     </details>
 
+    <details class="tile fold" data-key="storage">
+      <summary><span class="foldtitle"><b data-i18n="bk.title"></b><small data-i18n="bk.sub"></small></span><span class="badge" id="bkBadge"></span></summary>
+      <div class="foldbody">
+        <p class="muted" id="bkIntro"></p>
+        <div class="progress" id="bkProgress" hidden>
+          <div class="pbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" id="bkBarWrap"><span id="bkBar"></span></div>
+          <div class="ptext"><span id="bkPhase"></span><span id="bkPct"></span></div>
+        </div>
+        <p class="note" id="bkNote" role="status"></p>
+        <div class="steps" id="bkCard" hidden>
+          <h4 class="subhead" data-i18n="bk.s1"></h4>
+          <p class="muted" data-i18n="bk.backupText"></p>
+          <div class="line"><span class="linetext"><b id="bkBackupState"></b><small id="bkBackupInfo"></small></span><span class="pickrow"><a class="btn ghost" id="bkDownload" href="/api/storage/backup/download" download data-i18n="bk.download"></a><button type="button" class="btn ghost danger" id="bkDelete" data-i18n="bk.delete"></button><button type="button" class="btn" id="bkBackup"></button></span></div>
+          <h4 class="subhead" data-i18n="bk.s2"></h4>
+          <p class="muted" data-i18n="bk.installText"></p>
+          <div class="line" id="bkNoBackupRow"><span class="linetext"><b data-i18n="bk.noBackup"></b><small data-i18n="bk.noBackupSub"></small></span><button type="button" class="switch" role="switch" id="bkNoBackup"><span class="track"></span><span></span></button></div>
+          <div class="line"><span class="linetext"><b data-i18n="bk.installNow"></b><small id="bkInstallInfo"></small></span><button type="button" class="btn ghost danger" id="bkInstall" data-i18n="bk.install"></button></div>
+          <div class="line" id="bkAfter" hidden><span class="linetext"><b data-i18n="bk.doneTitle"></b><small data-i18n="bk.done"></small></span><button type="button" class="btn" id="bkOff" data-i18n="bk.off"></button></div>
+          <h4 class="subhead" data-i18n="bk.s3"></h4>
+          <p class="muted" data-i18n="bk.restoreText"></p>
+          <div class="line"><span class="linetext"><b data-i18n="bk.restoreNow"></b><small id="bkRestoreInfo"></small></span><button type="button" class="btn ghost danger" id="bkRestore" data-i18n="bk.restore"></button></div>
+        </div>
+      </div>
+    </details>
+
     <details class="tile fold" data-key="device">
       <summary><span class="foldtitle"><b data-i18n="st.device"></b><small data-i18n="st.deviceSub"></small></span></summary>
       <div class="foldbody"><div id="deviceInfo" class="list"></div></div>

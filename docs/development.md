@@ -37,9 +37,8 @@
 | Path | What |
 |---|---|
 | `web/` | the interface |
-| `service/` | `netsluiced.py` and the root helper |
+| `service/` | `netsluiced.py`, the root helper, and `netsluice-install.sh`, which moves the system from the card to the eMMC |
 | `provision/install-stack.sh` | turns a running Armbian into a NetSluice; safe to run again |
-| `provision/install-to-emmc.sh` | moves the system from the card to the eMMC |
 | `scripts/build-image.sh` | adapts a stock Armbian image to this board; with `--netsluice` it builds the ready-made image |
 | `scripts/deploy-dev.sh` | copies `web/` and `service/` to a device |
 | `scripts/demo.py` | the interface on your own computer, with made-up data |
@@ -112,7 +111,11 @@ the interface yet.
   after package installs, and the kernel packages are held. Proper board
   support in Armbian would remove both workarounds.
 - **The bootloader is the vendor's and is never written.** A broken bootloader
-  on the eMMC is the one thing that makes this device hard to recover.
+  on the eMMC is the one thing that makes this device hard to recover. Backup,
+  installation and putting a backup back all leave sectors 64 to 32767 alone,
+  and the last two check them. To try these in QEMU, attach a second disk and
+  set `NETSLUICE_INTERNAL_DISK` for `netsluice-root.service`; without it only a
+  real eMMC is ever accepted as the target.
 - **Country lookup is IPv4 only** and counts one event per `A` lookup, so the
   map shows fewer requests than the overview.
 - **Blocking a device** is done by refusing its DNS lookups. A device with its

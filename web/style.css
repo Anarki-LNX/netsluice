@@ -225,3 +225,9 @@ input[type="file"] { max-width: 100%; color: var(--muted); }
   #stFolds:not(.sub) > .fold > summary { min-height: 0; padding: 16px 48px 16px 18px; }
   #stFolds:not(.sub) > .fold > summary::after { right: 20px; top: 50%; bottom: auto; margin-top: -5px; }
 }
+
+/* back up and install */
+a.btn { display: inline-flex; align-items: center; text-decoration: none; }
+.steps { display: flex; flex-direction: column; gap: 14px; }
+.steps[hidden] { display: none; }
+#bkNote:empty { display: none; }

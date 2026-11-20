@@ -56,6 +56,35 @@ const T = {
     'up.title': 'Updates', 'up.sub': 'New versions of NetSluice and security fixes', 'up.now': 'Update now', 'up.check': 'Look for updates', 'up.run': 'Install', 'up.auto': 'Install security updates automatically', 'up.autoSub': 'Debian then installs security fixes by itself every night.',
     'up.none': 'The system is up to date.', 'up.some': (n) => n === 1 ? 'One update is waiting.' : `${n} updates are waiting.`, 'up.badge': (n) => n ? `${n} waiting` : 'up to date', 'up.checked': (d) => d ? `last looked ${d}` : 'never looked',
     'up.held': 'Held back on purpose: the system core. It only works on this board together with the adapted hardware description, so it is updated by hand.', 'up.running': 'Updates are being installed. This can take a few minutes; the filter keeps working.', 'up.started': 'Installation started.',
+    'bk.title': 'Back up and install', 'bk.sub': 'Move NetSluice from the card to the internal storage',
+    'bk.badge.card': 'runs from the card', 'bk.badge.internal': 'installed', 'bk.badge.none': 'no internal storage',
+    'bk.introCard': (size, what) => `NetSluice runs from the card. The internal storage (${size}) holds ${what}. Nothing on it changes until you install.`,
+    'bk.holds.original': 'the original system', 'bk.holds.netsluice': 'an earlier NetSluice', 'bk.holds.other': 'another system', 'bk.holds.unknown': 'nothing that can be recognised',
+    'bk.introInternal': 'NetSluice is installed on the internal storage and starts from there. To go back to the original system, start the device from a NetSluice card that holds your backup, and put the backup back there.',
+    'bk.introNone': 'No internal storage was found on this device.',
+    'bk.s1': '1. Back up the internal storage',
+    'bk.backupText': 'A complete copy of the internal storage is written to the card. With it the device can be put back exactly as it was. Download it to your computer as well: a card can break or be overwritten.',
+    'bk.none': 'No backup yet', 'bk.have': (date) => `Backup of ${date}`, 'bk.info': (size, sum) => `${size} on the card, checksum ${sum}…`,
+    'bk.noRoom': (need) => `This card has no room for a backup: ${need} must be free. Use a larger card, or install without a backup.`,
+    'bk.backup': 'Back up now', 'bk.again': 'Back up again', 'bk.download': 'Download', 'bk.delete': 'Delete',
+    'bk.deleteAsk': 'Delete the backup from the card? If you have not downloaded it, it is gone.', 'bk.backedUp': 'Backup finished. Download it before you go on.',
+    'bk.s2': '2. Install on the internal storage',
+    'bk.installText': 'NetSluice is copied from the card to the internal storage, with everything you have set up. Whatever is on the internal storage now is erased. The start-up software of the manufacturer is left untouched. Afterwards the device starts without the card, and faster.',
+    'bk.noBackup': 'Install without a backup', 'bk.noBackupSub': 'The system that is on the internal storage now cannot be brought back.',
+    'bk.installNow': 'Install NetSluice', 'bk.installNeed': 'Make a backup first, or switch on "Install without a backup".', 'bk.installReady': 'Takes a few minutes. The filter pauses for a few seconds near the end.',
+    'bk.tooBig': 'This system does not fit on the internal storage.', 'bk.install': 'Erase and install',
+    'bk.installAsk': 'Erase the internal storage and install NetSluice on it?\n\nWithout a backup this cannot be undone.',
+    'bk.doneTitle': 'Installed', 'bk.done': 'To start from the internal storage: switch the device off, pull the card out, and connect the power again.',
+    'bk.off': 'Switch off now', 'bk.offAsk': 'Switch the device off now? The filter stops until you have removed the card and connected the power again.', 'bk.offDone': 'The device is switching off. Pull the card out, then connect the power again.',
+    'bk.s3': '3. Put the backup back',
+    'bk.restoreText': 'Writes the backup from the card back to the internal storage. The device is then as it was before, and starts that system when you remove the card.',
+    'bk.restoreNow': 'Put the backup back', 'bk.restoreNeed': 'There is no backup on this card.', 'bk.restoreReady': 'The backup is checked first. Nothing is written if it is damaged.',
+    'bk.restore': 'Erase and put back', 'bk.restoreAsk': 'Erase the internal storage and write the backup back?', 'bk.restored': 'The backup is back on the internal storage. Remove the card to start it.',
+    'bk.p.start': 'Starting', 'bk.p.read': (d, t) => `Reading the internal storage: ${d} of ${t}`, 'bk.p.check': 'Checking', 'bk.p.partition': 'Preparing the internal storage', 'bk.p.format': 'Creating the file system',
+    'bk.p.copy': 'Copying the system', 'bk.p.finish': 'Finishing', 'bk.p.verify': 'Checking the result', 'bk.p.write': 'Writing the backup back', 'bk.p.done': 'Done', 'bk.p.failed': (m) => `Did not work: ${m}`,
+    'bk.p.restore.check': 'Checking the backup', 'bk.p.restore.verify': 'Reading back what was written',
+    'bk.e.running': 'Something is already running.', 'bk.e.notcard': 'This only works while NetSluice runs from the card.', 'bk.e.noroom': 'There is no room on the card.', 'bk.e.confirm': 'Not confirmed.',
+    'bk.e.toobig': 'This system does not fit on the internal storage.', 'bk.e.nobackup': 'There is no backup.', 'bk.e.othersize': 'This backup was made from a different storage.', 'bk.e.notnow': 'Not possible right now.',
     'up.system': 'System underneath (Debian)',
     'ap.check': 'Look for a new version', 'ap.run': (v) => `Install ${v}`, 'ap.current': 'Up to date', 'ap.version': (v) => v ? `Installed: version ${v}` : 'Installed: a version from before updates existed',
     'ap.available': (v) => `Version ${v} is available on GitHub.`, 'ap.none': 'This is the newest version.', 'ap.never': 'Not looked yet.', 'ap.checked': (d) => `last looked ${d}`,
@@ -81,7 +110,6 @@ const T = {
     'pl.kids': 'Children and schedules', 'pl.kidsText': 'Switch the internet on and off for chosen devices, by hand or by time of day. In filter mode this works through name lookups; a child who changes the DNS setting gets around it.',
     'pl.led': 'Button and LEDs', 'pl.ledText': 'The button on the device pauses the filter for ten minutes. The red LED flashes for every stopped request. Night mode turns the LEDs off.',
     'pl.notify': 'Messages to your phone', 'pl.notifyText': 'A new device joined, a device tried to reach a malware host, the filter stopped, an update is ready.',
-    'pl.backup': 'Back up and install', 'pl.backupText': 'Back up the original system, download it, restore it, and install NetSluice permanently. It can only be built and tested on a device that still runs from the card; this one is already installed.',
     'pl.net': 'Network', 'pl.netText': 'Change address and name here, and choose between filter, sluice and listening mode. A wrong entry would cut the device off, so this needs a safe way back first.',
     'pl.look': 'Appearance', 'pl.lookText': 'Light or dark, accent colour, animations on or off.',
     'pl.export': 'Export and import', 'pl.exportText': 'Save all settings, lists and device names to a file and load them on another device.',
@@ -142,6 +170,35 @@ const T = {
     'up.title': 'Updates', 'up.sub': 'Neue NetSluice-Versionen und Sicherheitskorrekturen', 'up.now': 'Jetzt aktualisieren', 'up.check': 'Nach Updates suchen', 'up.run': 'Installieren', 'up.auto': 'Sicherheitsupdates automatisch einspielen', 'up.autoSub': 'Debian installiert Sicherheitskorrekturen dann jede Nacht selbst.',
     'up.none': 'Das System ist aktuell.', 'up.some': (n) => n === 1 ? 'Ein Update wartet.' : `${n} Updates warten.`, 'up.badge': (n) => n ? `${n} warten` : 'aktuell', 'up.checked': (d) => d ? `zuletzt gesucht ${d}` : 'noch nie gesucht',
     'up.held': 'Absichtlich zurückgehalten: der Systemkern. Er läuft auf dieser Platine nur zusammen mit der angepassten Hardware-Beschreibung und wird deshalb von Hand aktualisiert.', 'up.running': 'Updates werden installiert. Das kann einige Minuten dauern; der Filter arbeitet weiter.', 'up.started': 'Installation gestartet.',
+    'bk.title': 'Sichern und Installieren', 'bk.sub': 'NetSluice von der Karte auf den internen Speicher bringen',
+    'bk.badge.card': 'läuft von der Karte', 'bk.badge.internal': 'installiert', 'bk.badge.none': 'kein interner Speicher',
+    'bk.introCard': (size, what) => `NetSluice läuft von der Karte. Auf dem internen Speicher (${size}) liegt ${what}. Dort ändert sich nichts, bis du installierst.`,
+    'bk.holds.original': 'das Originalsystem', 'bk.holds.netsluice': 'ein früheres NetSluice', 'bk.holds.other': 'ein anderes System', 'bk.holds.unknown': 'nichts Erkennbares',
+    'bk.introInternal': 'NetSluice ist auf dem internen Speicher installiert und startet von dort. Zurück zum Originalsystem kommst du, indem du das Gerät von einer NetSluice-Karte mit deiner Sicherung startest und die Sicherung dort zurückspielst.',
+    'bk.introNone': 'Auf diesem Gerät wurde kein interner Speicher gefunden.',
+    'bk.s1': '1. Internen Speicher sichern',
+    'bk.backupText': 'Eine vollständige Kopie des internen Speichers wird auf die Karte geschrieben. Damit lässt sich das Gerät genau so wiederherstellen, wie es war. Lade sie zusätzlich auf deinen Rechner: Eine Karte kann kaputtgehen oder überschrieben werden.',
+    'bk.none': 'Noch keine Sicherung', 'bk.have': (date) => `Sicherung vom ${date}`, 'bk.info': (size, sum) => `${size} auf der Karte, Prüfsumme ${sum}…`,
+    'bk.noRoom': (need) => `Auf dieser Karte ist kein Platz für eine Sicherung: ${need} müssen frei sein. Nimm eine größere Karte, oder installiere ohne Sicherung.`,
+    'bk.backup': 'Jetzt sichern', 'bk.again': 'Erneut sichern', 'bk.download': 'Herunterladen', 'bk.delete': 'Löschen',
+    'bk.deleteAsk': 'Die Sicherung von der Karte löschen? Wenn du sie nicht heruntergeladen hast, ist sie weg.', 'bk.backedUp': 'Sicherung fertig. Lade sie herunter, bevor du weitermachst.',
+    'bk.s2': '2. Auf dem internen Speicher installieren',
+    'bk.installText': 'NetSluice wird von der Karte auf den internen Speicher kopiert, mit allem, was du eingerichtet hast. Was jetzt auf dem internen Speicher liegt, wird gelöscht. Die Startsoftware des Herstellers bleibt unangetastet. Danach startet das Gerät ohne Karte, und schneller.',
+    'bk.noBackup': 'Ohne Sicherung installieren', 'bk.noBackupSub': 'Das System, das jetzt auf dem internen Speicher liegt, lässt sich dann nicht zurückholen.',
+    'bk.installNow': 'NetSluice installieren', 'bk.installNeed': 'Mach zuerst eine Sicherung, oder schalte "Ohne Sicherung installieren" ein.', 'bk.installReady': 'Dauert ein paar Minuten. Der Filter pausiert gegen Ende für ein paar Sekunden.',
+    'bk.tooBig': 'Dieses System passt nicht auf den internen Speicher.', 'bk.install': 'Löschen und installieren',
+    'bk.installAsk': 'Den internen Speicher löschen und NetSluice darauf installieren?\n\nOhne Sicherung lässt sich das nicht rückgängig machen.',
+    'bk.doneTitle': 'Installiert', 'bk.done': 'Um vom internen Speicher zu starten: Gerät ausschalten, Karte herausziehen, Strom wieder anschließen.',
+    'bk.off': 'Jetzt ausschalten', 'bk.offAsk': 'Das Gerät jetzt ausschalten? Der Filter steht, bis du die Karte gezogen und den Strom wieder angeschlossen hast.', 'bk.offDone': 'Das Gerät schaltet sich aus. Zieh die Karte heraus und schließ dann den Strom wieder an.',
+    'bk.s3': '3. Sicherung zurückspielen',
+    'bk.restoreText': 'Schreibt die Sicherung von der Karte zurück auf den internen Speicher. Das Gerät ist dann wieder wie vorher und startet dieses System, sobald du die Karte ziehst.',
+    'bk.restoreNow': 'Sicherung zurückspielen', 'bk.restoreNeed': 'Auf dieser Karte liegt keine Sicherung.', 'bk.restoreReady': 'Die Sicherung wird zuerst geprüft. Ist sie beschädigt, wird nichts geschrieben.',
+    'bk.restore': 'Löschen und zurückspielen', 'bk.restoreAsk': 'Den internen Speicher löschen und die Sicherung zurückschreiben?', 'bk.restored': 'Die Sicherung liegt wieder auf dem internen Speicher. Zieh die Karte, um sie zu starten.',
+    'bk.p.start': 'Startet', 'bk.p.read': (d, t) => `Lese den internen Speicher: ${d} von ${t}`, 'bk.p.check': 'Prüfe', 'bk.p.partition': 'Bereite den internen Speicher vor', 'bk.p.format': 'Lege das Dateisystem an',
+    'bk.p.copy': 'Kopiere das System', 'bk.p.finish': 'Schließe ab', 'bk.p.verify': 'Prüfe das Ergebnis', 'bk.p.write': 'Schreibe die Sicherung zurück', 'bk.p.done': 'Fertig', 'bk.p.failed': (m) => `Hat nicht geklappt: ${m}`,
+    'bk.p.restore.check': 'Prüfe die Sicherung', 'bk.p.restore.verify': 'Lese das Geschriebene zurück',
+    'bk.e.running': 'Es läuft schon etwas.', 'bk.e.notcard': 'Das geht nur, solange NetSluice von der Karte läuft.', 'bk.e.noroom': 'Auf der Karte ist kein Platz.', 'bk.e.confirm': 'Nicht bestätigt.',
+    'bk.e.toobig': 'Dieses System passt nicht auf den internen Speicher.', 'bk.e.nobackup': 'Es gibt keine Sicherung.', 'bk.e.othersize': 'Diese Sicherung stammt von einem anderen Speicher.', 'bk.e.notnow': 'Gerade nicht möglich.',
     'up.system': 'System darunter (Debian)',
     'ap.check': 'Nach neuer Version suchen', 'ap.run': (v) => `${v} installieren`, 'ap.current': 'Aktuell', 'ap.version': (v) => v ? `Installiert: Version ${v}` : 'Installiert: eine Fassung von vor den Updates',
     'ap.available': (v) => `Version ${v} ist auf GitHub verfügbar.`, 'ap.none': 'Das ist die neueste Version.', 'ap.never': 'Noch nicht gesucht.', 'ap.checked': (d) => `zuletzt gesucht ${d}`,
@@ -167,7 +224,6 @@ const T = {
     'pl.kids': 'Kinder und Zeitpläne', 'pl.kidsText': 'Das Internet für ausgewählte Geräte an- und abschalten, von Hand oder nach Uhrzeit. Im Filterbetrieb läuft das über das Nachschlagen von Adressen; ein Kind, das die DNS-Einstellung ändert, kommt daran vorbei.',
     'pl.led': 'Taster und LEDs', 'pl.ledText': 'Der Knopf am Gerät pausiert den Filter für zehn Minuten. Die rote LED blitzt bei jeder aufgehaltenen Anfrage. Der Nachtmodus schaltet die LEDs ab.',
     'pl.notify': 'Meldungen aufs Handy', 'pl.notifyText': 'Ein neues Gerät ist im Netz, ein Gerät wollte eine Schadseite aufrufen, der Filter steht, ein Update liegt bereit.',
-    'pl.backup': 'Sichern und Installieren', 'pl.backupText': 'Das Originalsystem sichern, herunterladen, zurückspielen und NetSluice fest installieren. Das lässt sich nur auf einem Gerät bauen und testen, das noch von der Karte läuft; dieses ist schon installiert.',
     'pl.net': 'Netzwerk', 'pl.netText': 'Adresse und Name hier ändern und zwischen Filter, Schleuse und Mithören wählen. Eine falsche Eingabe würde das Gerät abschneiden, deshalb braucht das erst einen sicheren Rückweg.',
     'pl.look': 'Aussehen', 'pl.lookText': 'Hell oder dunkel, Akzentfarbe, Animationen an oder aus.',
     'pl.export': 'Export und Import', 'pl.exportText': 'Alle Einstellungen, Listen und Gerätenamen in eine Datei speichern und auf einem anderen Gerät einlesen.',
@@ -202,6 +258,7 @@ let lang = (() => { const q = new URLSearchParams(location.search).get('lang'); 
 let screen = 'overview';
 const state = { stats: null, status: null, clients: {}, devices: {}, filters: [], recent: [], reachable: true, last: null };
 const SCREENS = ['overview', 'devices', 'filters', 'map', 'tunnel', 'settings'];
+const PLANNED = [];            // sections that are decided but not built; shown in the settings as such
 
 const $ = (id) => document.getElementById(id);
 const t = (key, ...args) => { const v = (T[lang] && T[lang][key]) ?? T.en[key] ?? key; return typeof v === 'function' ? v(...args) : v; };
@@ -225,7 +282,7 @@ function applyLang() {
   document.querySelectorAll('[data-i18n-aria]').forEach((n) => { n.setAttribute('aria-label', t(n.dataset.i18nAria)); });
   $('lang').textContent = lang === 'de' ? 'EN' : 'DE';
   render();
-  if (screen === 'settings') { renderSettings(); renderKids(); renderDevice(); renderSystem(); }
+  if (screen === 'settings') { renderSettings(); renderKids(); renderDevice(); renderSystem(); renderStorage(); }
   if (screen === 'filters') renderFilters();
   if (screen === 'map') renderMap();
 }
@@ -236,7 +293,7 @@ function settingsPage(key) {
   const open = folds.find((d) => d.dataset.key === key);
   $('stFolds').classList.toggle('sub', !!open);
   folds.forEach((d) => { d.open = d === open; d.classList.toggle('current', d === open); });
-  $('stHead').hidden = $('stPlanned').hidden = !!open; $('stNav').hidden = !open;
+  $('stHead').hidden = !!open; $('stPlanned').hidden = !!open || !PLANNED.length; $('stNav').hidden = !open;
   return open ? key : null;
 }
 document.querySelectorAll('#stFolds > .fold > summary').forEach((sm) => sm.addEventListener('click', (e) => {
@@ -621,11 +678,76 @@ function renderSettings() {
     $('keepLog').value = String(cfg.log.interval);
     setSwitch($('anon'), !!cfg.log.anonymize_client_ip);
   }
-  $('plannedGrid').replaceChildren(...['backup'].map((k) => {
+  $('plannedGrid').replaceChildren(...PLANNED.map((k) => {
     const c = el('div', 'card'); const h = el('div', 'cardhead'); h.append(el('h3', '', t('pl.' + k)), el('span', 'badge off', t('st.soon')));
     c.append(h, el('p', 'muted', t('pl.' + k + 'Text'))); return c;
   }));
 }
+// ---- back up and install -------------------------------------------------------
+const bk = { d: null, busy: false, watching: false, noBackup: false };
+const bytes = (n) => n >= 1073741824 ? (n / 1073741824).toFixed(1) + ' GB' : kb(n || 0);
+function renderStorage() {
+  const d = bk.d; if (!d || !d.where) return;
+  const job = d.job || {}, b = d.backup, card = d.where === 'card', busy = bk.busy || d.running || bk.watching;
+  $('bkBadge').textContent = t('bk.badge.' + d.where); $('bkBadge').className = 'badge' + (d.where === 'internal' ? '' : ' off');
+  $('bkIntro').textContent = card ? t('bk.introCard', bytes(d.internal.size), t('bk.holds.' + d.internal.holds)) : t(d.where === 'internal' ? 'bk.introInternal' : 'bk.introNone');
+  $('bkCard').hidden = !card;
+  if (!card) return;
+  $('bkBackupState').textContent = b ? t('bk.have', when(b.created)) : t('bk.none');
+  $('bkBackupInfo').textContent = b ? t('bk.info', bytes(b.packed), (b.sha256 || '').slice(0, 16)) : d.room ? '' : t('bk.noRoom', bytes(d.internal.size));
+  $('bkBackup').textContent = t(b ? 'bk.again' : 'bk.backup'); $('bkBackup').disabled = busy || !d.room;
+  $('bkDownload').hidden = !b; $('bkDelete').hidden = !b; $('bkDelete').disabled = busy;
+  $('bkNoBackupRow').hidden = !!b; setSwitch($('bkNoBackup'), bk.noBackup); $('bkNoBackup').disabled = busy;
+  const may = (b || bk.noBackup) && d.fits;
+  $('bkInstallInfo').textContent = !d.fits ? t('bk.tooBig') : may ? t('bk.installReady') : t('bk.installNeed');
+  $('bkInstall').disabled = busy || !may;
+  $('bkAfter').hidden = !(job.job === 'install' && job.phase === 'done') || busy;
+  $('bkRestoreInfo').textContent = b ? t('bk.restoreReady') : t('bk.restoreNeed'); $('bkRestore').disabled = busy || !b;
+  if (d.running) watchStorage();
+}
+function showStorage(p) {
+  const bad = p.phase === 'failed', own = 'bk.p.' + p.job + '.' + p.phase;
+  const label = bad ? t('bk.p.failed', p.error || '?') : t(own) !== own ? t(own) : t('bk.p.' + p.phase, bytes(p.done), bytes(p.total));
+  drawBar('bk', p.percent || 0, true, bad, typeof label === 'string' ? label : '');
+}
+// One job at a time runs on the device; follow it until it says done or failed.
+async function watchStorage() {
+  if (bk.watching) return;
+  bk.watching = true; renderStorage();
+  const began = Date.now();
+  let p = { phase: 'start', percent: 0 };
+  while (Date.now() - began < 3 * 3600 * 1000) {
+    try { const r = await fetch('/api/storage/progress', { cache: 'no-store' }); if (r.status === 401) { gate('login'); break; } if (r.ok) p = await r.json(); } catch { /* try again */ }
+    if (p.phase) showStorage(p);
+    if ((p.phase === 'done' || p.phase === 'failed') && (p.at || 0) * 1000 > began - 5000) break;
+    await new Promise((res) => setTimeout(res, 700));
+  }
+  bk.watching = false;
+  try { bk.d = await svc('storage'); } catch { /* keep */ }
+  if (p.phase === 'done') say('bkNote', 'ok', t(p.job === 'backup' ? 'bk.backedUp' : p.job === 'restore' ? 'bk.restored' : 'bk.doneTitle'));
+  if (p.phase === 'done') setTimeout(() => { if (!bk.watching) $('bkProgress').hidden = true; }, 6000);
+  renderStorage();
+}
+async function storageCall(path, body, okKey) {
+  if (bk.busy) return;
+  bk.busy = true; say('bkNote', '', ''); renderStorage();
+  try {
+    const r = await fetch('/api/storage/' + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
+    if (r.status === 401) { gate('login'); throw new Error('login'); }
+    const d = await r.json();
+    if (!r.ok) { const k = 'bk.e.' + d.error; throw new Error(t(k) !== k ? t(k) : d.error || ('HTTP ' + r.status)); }
+    if (d.where) bk.d = d;
+    if (okKey) say('bkNote', 'ok', t(okKey));
+  } catch (e) { say('bkNote', 'bad', t('fl.fail', e.message)); }
+  bk.busy = false; renderStorage();
+}
+$('bkBackup').addEventListener('click', () => storageCall('backup'));
+$('bkDelete').addEventListener('click', () => { if (confirm(t('bk.deleteAsk'))) storageCall('backup/delete'); });
+$('bkNoBackup').addEventListener('click', () => { bk.noBackup = !bk.noBackup; renderStorage(); });
+$('bkInstall').addEventListener('click', () => { if (confirm(t('bk.installAsk'))) storageCall('install', { confirm: 'erase', no_backup: !(bk.d && bk.d.backup) && bk.noBackup }); });
+$('bkRestore').addEventListener('click', () => { if (confirm(t('bk.restoreAsk'))) storageCall('restore', { confirm: 'erase' }); });
+$('bkOff').addEventListener('click', () => { if (confirm(t('bk.offAsk'))) storageCall('poweroff', {}, 'bk.offDone'); });
+
 // ---- children and schedules ---------------------------------------------------
 const kids = { rules: {} };
 async function svc(path, body) {
@@ -917,6 +1039,7 @@ $('apAuto').addEventListener('click', () => sys.d && sysCall('app/auto', { on: !
 
 async function loadSettings() {
   svc('system').then((d) => { sys.d = d; renderSystem(); }).catch(() => { /* shown by the status dot */ });
+  svc('storage').then((d) => { bk.d = d; renderStorage(); }).catch(() => { /* shown by the status dot */ });
   try { dev.s = await svc('settings'); } catch { /* shown by the status dot */ }
   renderDevice();
   try { kids.rules = (await svc('kids')).rules || {}; } catch { /* shown by the status dot */ }

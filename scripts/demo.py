@@ -82,6 +82,13 @@ def reply_for(path, query):
     if path.startswith("/api/settings") or path == "/api/notify/test":
         return {"led": {"mode": "night", "flash": True, "night_from": "22:00", "night_to": "07:00"}, "button": True,
                 "notify": {"kind": "ntfy", "url": "https://ntfy.sh/your-topic", "newdev": True, "malware": True, "down": True}, "hardware": {"leds": True, "button": True}, "ok": True}
+    if path.startswith("/api/storage/progress"):
+        return {}
+    if path.startswith("/api/storage"):
+        return {"where": "card", "running": False, "job": None, "free": 52 * 2**30, "room": True, "fits": True,
+                "internal": {"size": 7818182656, "holds": "original"},
+                "backup": {"created": int(time.time()) - 900, "size": 7818182656, "packed": 6442450944, "holds": "original",
+                           "sha256": "3f1c9a7e52b08d44aa10c7e9b6f2d8315c0e4b7a9d2f6c1e8b3a5d7f0c2e4a6b"}}
     if path.startswith("/api/system"):
         return {"net": {"hostname": "netsluice", "fixed": ["192.168.0.2/24"], "dhcp": ["192.168.0.117"], "trial": None},
                 "updates": {"pending": [], "held": ["linux-image-current-rockchip64"], "auto": True, "checked": int(time.time()) - 3600, "running": False},

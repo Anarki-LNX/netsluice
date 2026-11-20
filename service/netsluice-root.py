@@ -21,6 +21,11 @@ Nothing in a request is trusted: only known commands, every argument validated.
     app-check                       ask GitHub for the newest release
     app-run                         install it in the background (--app-update)
     app-auto      { on }            look and install once a day (--app-auto)
+    st-status                       internal storage: what is there, is there a backup, what is running
+    st-backup                       copy the internal storage to the card (--st-backup)
+    st-install    { confirm, no_backup }   move this system to the internal storage (--st-install)
+    st-restore    { confirm }       write the backup back (--st-restore)
+    st-backup-delete | st-poweroff
 
 Called with --revert it ends a trial that nobody confirmed.
 """
@@ -489,12 +494,342 @@ def app_update():
         set_progress({"ok": "done", "current": "done"}.get(last.get("result"), last.get("result", "failed")), last.get("to"))
 
 
+# ---------- internal storage: back up, install, put back ---------------------------
+# The device starts from a card whenever one is inserted, so a NetSluice on a card
+# leaves the internal storage (eMMC) alone. Here the owner can keep a copy of what
+# is on it, move NetSluice onto it, and put the copy back. Three rules:
+#   - nothing is written to it unless the system runs from the card;
+#   - the 16 MiB behind the partition table hold the vendor's bootloader and are
+#     never written, neither by the installation nor by putting a backup back;
+#   - one job at a time, in the background, reporting its progress to a file.
+BACKUP_DIR = "/var/lib/netsluice-backup"
+BACKUP_IMG, BACKUP_META = BACKUP_DIR + "/internal.img.gz", BACKUP_DIR + "/backup.json"
+ST_PROGRESS = BASE + "/st-progress.json"            # read directly by the service, for the progress bar
+ST_UNIT = "netsluice-storage"
+BOOT_FROM, BOOT_TO = 64 * 512, 32768 * 512          # the vendor bootloader
+CHUNK = 4 * 1024 * 1024
+MiB = 1024 * 1024
+INSTALLER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "netsluice-install.sh")
+
+
+def disk_of_root():
+    src = sh(["findmnt", "-no", "SOURCE", "/"])[1].strip()
+    code, out = sh(["lsblk", "-no", "PKNAME", src])
+    name = out.split()[0] if code == 0 and out.split() else ""
+    return "/dev/" + name if name else None
+
+
+def internal_disk():
+    """The built-in eMMC. NETSLUICE_INTERNAL_DISK names it in an emulator, where there is none."""
+    forced = os.environ.get("NETSLUICE_INTERNAL_DISK")
+    if forced:
+        return forced if os.path.exists(forced) else None
+    for name in sorted(os.listdir("/sys/block")):
+        if re.fullmatch(r"mmcblk\d+", name):
+            try:
+                if open("/sys/block/%s/device/type" % name).read().strip() == "MMC":
+                    return "/dev/" + name
+            except OSError:
+                pass
+    return None
+
+
+def disk_size(dev):
+    try:
+        return int(open("/sys/block/%s/size" % os.path.basename(dev)).read()) * 512
+    except (OSError, ValueError):
+        return 0
+
+
+def holds(dev):
+    """What is on a disk, as far as it can be told: original | netsluice | other | unknown."""
+    kinds = sh(["lsblk", "-rno", "FSTYPE,LABEL", dev])[1].split()
+    if "netsluice_root" in kinds:
+        return "netsluice"
+    if "crypto_LUKS" in kinds:
+        return "original"
+    return "other" if kinds else "unknown"
+
+
+def in_use(dev):
+    try:
+        return any(line.startswith(dev) for line in open("/proc/mounts"))
+    except OSError:
+        return True
+
+
+def st_progress(job, phase, percent=None, error=None, **more):
+    try:
+        d = {"job": job, "phase": phase, "percent": percent, "error": error, "at": time.time()}
+        d.update(more)
+        write_json(ST_PROGRESS, d)
+    except OSError:
+        pass
+
+
+def st_running():
+    return sh(["systemctl", "is-active", ST_UNIT + ".service"])[1] == "active"
+
+
+def st_status(_=None):
+    root, internal = disk_of_root(), internal_disk()
+    where = "internal" if internal and internal == root else "card" if internal and root else "none"
+    fs = os.statvfs("/")
+    used, free = (fs.f_blocks - fs.f_bfree) * fs.f_frsize, fs.f_bavail * fs.f_frsize
+    out = {"where": where, "running": st_running(), "job": read_json(ST_PROGRESS), "free": free}
+    have = os.path.getsize(BACKUP_IMG) if os.path.isfile(BACKUP_IMG) else 0
+    meta = read_json(BACKUP_META)
+    if meta and have:
+        out["backup"] = meta
+    if where == "card":
+        size = disk_size(internal)
+        out["internal"] = {"size": size, "holds": holds(internal)}
+        out["room"] = free + have >= size + 64 * MiB          # worst case: nothing compresses
+        out["fits"] = used - have + 256 * MiB <= size - BOOT_TO
+    return out
+
+
+def st_start(job, a):
+    s = st_status()
+    why = None
+    if s["running"]:
+        why = "running"
+    elif s["where"] != "card":
+        why = "notcard"
+    elif job == "backup" and not s["room"]:
+        why = "noroom"
+    elif job in ("install", "restore") and str(a.get("confirm")) != "erase":
+        why = "confirm"
+    elif job == "install" and not s["fits"]:
+        why = "toobig"
+    elif job == "install" and "backup" not in s and not a.get("no_backup"):
+        why = "nobackup"
+    elif job == "restore" and "backup" not in s:
+        why = "nobackup"
+    elif job == "restore" and s["backup"].get("size") != s["internal"]["size"]:
+        why = "othersize"
+    if why:
+        return {"error": why}
+    sh(["systemctl", "reset-failed", ST_UNIT + ".service"])
+    st_progress(job, "start", 0)
+    cmd = ["systemd-run", "--quiet", "--unit=" + ST_UNIT]
+    if os.environ.get("NETSLUICE_INTERNAL_DISK"):
+        cmd.append("--setenv=NETSLUICE_INTERNAL_DISK=" + os.environ["NETSLUICE_INTERNAL_DISK"])
+    code, out = sh(cmd + [sys.executable, os.path.abspath(__file__), "--st-" + job])
+    s = st_status()
+    if code:
+        s["error"] = out[-200:]
+    return s
+
+
+def st_backup_delete(_=None):
+    if st_running():
+        return {"error": "running"}
+    for p in (BACKUP_IMG, BACKUP_META, BACKUP_IMG + ".tmp"):
+        try:
+            os.remove(p)
+        except OSError:
+            pass
+    return st_status()
+
+
+def st_poweroff(_=None):
+    """Only offered after an installation: the owner then pulls the card and powers the device up again."""
+    s = st_status()
+    job = s.get("job") or {}
+    if s["running"] or s["where"] != "card" or job.get("job") != "install" or job.get("phase") != "done":
+        return {"error": "notnow"}
+    sh(["systemd-run", "--quiet", "--on-active=3", "systemctl", "poweroff"])
+    return {"ok": True}
+
+
+def st_do_backup():
+    import grp, hashlib, zlib
+    dev = internal_disk()
+    size = disk_size(dev) if dev else 0
+    if not size:
+        raise ValueError("no internal storage found")
+    try:
+        gid = grp.getgrnam("netsluice").gr_gid          # the service hands the file out for download
+    except KeyError:
+        gid = 0
+    os.makedirs(BACKUP_DIR, exist_ok=True)
+    os.chown(BACKUP_DIR, 0, gid); os.chmod(BACKUP_DIR, 0o750)
+    what, tmp = holds(dev), BACKUP_IMG + ".tmp"
+    free = os.statvfs(BACKUP_DIR)
+    if free.f_bavail * free.f_frsize < size + 64 * MiB:      # no room for two: the old one goes first
+        for p in (BACKUP_IMG, BACKUP_META):
+            try:
+                os.remove(p)
+            except OSError:
+                pass
+    raw, packed, boot = hashlib.sha256(), hashlib.sha256(), hashlib.sha256()
+    z = zlib.compressobj(1, zlib.DEFLATED, 31)               # gzip, fast: the card is the slow part
+    done = written = shown = 0
+    try:
+        with open(dev, "rb", buffering=0) as src, open(tmp, "wb") as dst:
+            while done < size:
+                chunk = src.read(min(CHUNK, size - done))
+                if not chunk:
+                    raise ValueError("the internal storage ended early, at byte %d" % done)
+                raw.update(chunk)
+                lo, hi = max(done, BOOT_FROM), min(done + len(chunk), BOOT_TO)
+                if lo < hi:
+                    boot.update(chunk[lo - done:hi - done])
+                out = z.compress(chunk)
+                if out:
+                    packed.update(out); dst.write(out); written += len(out)
+                done += len(chunk)
+                if time.time() - shown > 0.5:
+                    left = os.statvfs(BACKUP_DIR)
+                    if left.f_bavail * left.f_frsize < 48 * MiB:
+                        raise ValueError("the card is full")
+                    st_progress("backup", "read", round(done * 100 / size, 1), done=done, total=size, written=written)
+                    shown = time.time()
+            out = z.flush()
+            packed.update(out); dst.write(out); written += len(out)
+            dst.flush(); os.fsync(dst.fileno())
+        os.chown(tmp, 0, gid); os.chmod(tmp, 0o640)
+        os.replace(tmp, BACKUP_IMG)
+        write_json(BACKUP_META, {"created": int(time.time()), "size": size, "packed": written, "holds": what,
+                                 "sha256": packed.hexdigest(), "sha256_raw": raw.hexdigest(), "sha256_boot": boot.hexdigest()})
+        os.chown(BACKUP_META, 0, gid); os.chmod(BACKUP_META, 0o640)
+        os.sync()
+    finally:
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
+
+
+def unpack(path):
+    """The bytes of a backup, in order, a few megabytes at a time whatever they compress to."""
+    import zlib
+    z = zlib.decompressobj(31)
+    with open(path, "rb") as f:
+        while True:
+            c = f.read(256 * 1024)
+            if not c:
+                break
+            while c:
+                out = z.decompress(c, CHUNK)
+                c = z.unconsumed_tail
+                if out:
+                    yield out
+        out = z.flush()
+        if out:
+            yield out
+
+
+def pwrite_all(fd, data, pos):
+    view = memoryview(data)
+    while view:
+        n = os.pwrite(fd, view, pos)
+        view, pos = view[n:], pos + n
+
+
+def st_do_restore():
+    import hashlib
+    dev = internal_disk()
+    size, meta = (disk_size(dev) if dev else 0), read_json(BACKUP_META) or {}
+    if not size or meta.get("size") != size:
+        raise ValueError("this backup was not made from this storage")
+    if in_use(dev):
+        raise ValueError("part of the internal storage is in use")
+    # 1. Is the backup intact, and is the bootloader on the device the one in it?
+    raw, boot, pos, shown = hashlib.sha256(), hashlib.sha256(), 0, 0
+    for piece in unpack(BACKUP_IMG):
+        raw.update(piece)
+        lo, hi = max(pos, BOOT_FROM), min(pos + len(piece), BOOT_TO)
+        if lo < hi:
+            boot.update(piece[lo - pos:hi - pos])
+        pos += len(piece)
+        if time.time() - shown > 0.5:
+            st_progress("restore", "check", round(pos * 30 / size, 1)); shown = time.time()
+    if pos != size or raw.hexdigest() != meta.get("sha256_raw"):
+        raise ValueError("the backup is damaged. Nothing was written.")
+    now = hashlib.sha256()
+    with open(dev, "rb", buffering=0) as f:
+        f.seek(BOOT_FROM)
+        left = BOOT_TO - BOOT_FROM
+        while left:
+            c = f.read(min(CHUNK, left))
+            if not c:
+                break
+            now.update(c); left -= len(c)
+    if now.hexdigest() != boot.hexdigest():
+        raise ValueError("the bootloader on the device is not the one in the backup. Nothing was written.")
+    # 2. Write everything except the bootloader.
+    fd = os.open(dev, os.O_WRONLY | os.O_EXCL)               # fails if anything has the disk open or mounted
+    try:
+        pos = 0
+        for piece in unpack(BACKUP_IMG):
+            end = pos + len(piece)
+            if pos < BOOT_FROM:
+                pwrite_all(fd, piece[:min(end, BOOT_FROM) - pos], pos)
+            if end > BOOT_TO:
+                start = max(pos, BOOT_TO)
+                pwrite_all(fd, piece[start - pos:], start)
+            pos = end
+            if time.time() - shown > 0.5:
+                st_progress("restore", "write", round(30 + pos * 45 / size, 1)); shown = time.time()
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+    sh(["partprobe", dev]); sh(["udevadm", "settle"])
+    # 3. Read it back.
+    back, pos = hashlib.sha256(), 0
+    with open(dev, "rb", buffering=0) as f:
+        while pos < size:
+            c = f.read(min(CHUNK, size - pos))
+            if not c:
+                break
+            back.update(c); pos += len(c)
+            if time.time() - shown > 0.5:
+                st_progress("restore", "verify", round(75 + pos * 24 / size, 1)); shown = time.time()
+    if back.hexdigest() != meta.get("sha256_raw"):
+        raise ValueError("what was written does not read back as the backup")
+
+
+def st_do_install():
+    dev = internal_disk()
+    if not dev:
+        raise ValueError("no internal storage found")
+    env = dict(os.environ, CONFIRM="erase-emmc", NETSLUICE_INTERNAL_DISK=dev, NETSLUICE_SKIP=BACKUP_DIR)
+    p = subprocess.Popen(["bash", INSTALLER], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=env)
+    tail = []
+    for line in p.stdout:
+        m = re.match(r"PROGRESS (\w+) (\d+)", line)
+        if m:
+            st_progress("install", m.group(1), int(m.group(2)))
+        else:
+            print(line, end="", flush=True)                   # into the journal of the job
+            if line.strip():
+                tail = (tail + [line.strip()])[-4:]
+    if p.wait():
+        raise ValueError(" ".join(tail)[-300:] or "the installation failed")
+
+
+def st_job(job):
+    try:
+        {"backup": st_do_backup, "install": st_do_install, "restore": st_do_restore}[job]()
+        st_progress(job, "done", 100)
+    except Exception as e:
+        st_progress(job, "failed", None, str(e)[:300])
+        raise
+
+
 COMMANDS = {"net-status": net_status, "hostname": set_hostname, "addr-try": addr_try, "addr-confirm": lambda a: addr_end(True),
             "addr-revert": lambda a: addr_end(False), "upd-status": upd_status, "upd-check": upd_check, "upd-auto": upd_auto, "upd-run": upd_run,
-            "app-status": app_status, "app-check": app_check, "app-run": app_run, "app-auto": app_auto}
+            "app-status": app_status, "app-check": app_check, "app-run": app_run, "app-auto": app_auto,
+            "st-status": st_status, "st-backup": lambda a: st_start("backup", a), "st-install": lambda a: st_start("install", a),
+            "st-restore": lambda a: st_start("restore", a), "st-backup-delete": st_backup_delete, "st-poweroff": st_poweroff}
 
 
 def main():
+    for job in ("backup", "install", "restore"):
+        if "--st-" + job in sys.argv:
+            st_job(job); return
     if "--sys-upgrade" in sys.argv:
         sys_upgrade(); return
     if "--app-update" in sys.argv:

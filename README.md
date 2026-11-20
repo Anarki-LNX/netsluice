@@ -39,6 +39,8 @@ a device: `python3 scripts/demo.py`, then open <http://127.0.0.1:8099/>.
   name and system updates.
 - **Updates of NetSluice itself** from the releases here on GitHub, by hand or
   once a day. If the new version does not start, the old one is put back.
+- **Back up and install**: keep a copy of the original system, move NetSluice
+  to the internal storage, and put the copy back if you change your mind.
 - English and German.
 
 ## Status: early, tested on one device
@@ -48,8 +50,8 @@ the board marking `mini_v21_20210521`. It runs that owner's home network.
 
 | | |
 |---|---|
-| Works | a ready-made image for the microSD card, boot from microSD, installation to the internal eMMC, both Ethernet ports at 1 Gbit/s, LEDs, button, everything listed above |
-| Not built yet | HTTPS, the WireGuard tunnel, backup and restore of the original system from the interface, inline ("sluice") and listening mode, changing the fixed address from the interface |
+| Works | a ready-made image for the microSD card, boot from microSD, backup of the internal storage, installation to it and putting the backup back, all from the interface, both Ethernet ports at 1 Gbit/s, LEDs, button, everything listed above |
+| Not built yet | HTTPS, the WireGuard tunnel, inline ("sluice") and listening mode, changing the fixed address from the interface |
 | Not working | USB-C as a data port (it still powers the device) |
 | Untested | other board revisions; the other Deeper models (Pico, Nano, Air) are different hardware |
 
@@ -94,7 +96,9 @@ as soon as the device reaches the internet; until then nothing is stopped.
 Good to know:
 
 - **Nothing on the device is changed.** NetSluice runs from the card. Remove
-  the card and the original system starts again, wallet included.
+  the card and the original system starts again, wallet included. When you
+  are sure, Settings → "Back up and install" keeps a copy of the original
+  system and moves NetSluice to the internal storage.
 - **There is no login to the system underneath.** SSH is off and the system
   account is locked. If you want SSH, put your public key on the card as
   `/boot/netsluice-ssh.pub` before a start (the card is ext4, so this needs a
@@ -141,14 +145,16 @@ device the address your old filter had.
 
 ### 3. Optional: move to the internal storage
 
-The card is slow (about 24 MB/s). The eMMC is five times faster.
-`provision/install-to-emmc.sh` copies the running system there. **It erases
-the original system.** Back it up first, for example with
-`dd if=/dev/mmcblk0 of=/root/atomos.img bs=4M`, and copy the backup off the
-device. The vendor bootloader is never touched: the script compares that area
+The card is slow (about 24 MB/s). The eMMC is five times faster. Under
+Settings, "Back up and install" does it in three steps: it writes a complete
+copy of the internal storage to the card (download it to your computer as
+well), copies NetSluice to the internal storage, and can write the backup back
+later. **Installing erases the original system**, so make the backup first.
+The vendor bootloader is never written: the installation compares that area
 before and after and refuses to finish if it changed.
 
-To go back: boot from the card and write the backup to `/dev/mmcblk0`.
+By hand, on a device that runs from the card:
+`CONFIRM=erase-emmc bash /usr/share/netsluice/service/netsluice-install.sh`
 
 ## For developers
 
