@@ -1,0 +1,15 @@
+[Unit]
+Description=NetSluice: load the filter lists once the internet is there
+ConditionPathExists=/var/lib/netsluice-setup/done
+ConditionPathExists=!/var/lib/netsluice-setup/lists-done
+After=netsluice-firstboot.service AdGuardHome.service network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/netsluice-lists
+Restart=on-failure
+RestartSec=60
+
+[Install]
+WantedBy=multi-user.target

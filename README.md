@@ -82,6 +82,8 @@ any computer to write the card.
    minutes and needs the internet, because it downloads the filter engine and
    the web server. When the green LED is steady, it is ready. A steady red LED
    means a step failed, most often no internet; it tries again every minute.
+   While it works, the device shows a page with the current step, and what is
+   wrong if one fails, at the same address as the interface later.
 
 Then open **http://netsluice.local/** (or the address your router shows for
 the device "netsluice"). The first visitor chooses the password, so do this

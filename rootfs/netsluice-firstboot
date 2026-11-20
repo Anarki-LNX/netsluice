@@ -1,22 +1,38 @@
 #!/bin/sh
 # NetSluice: set the device up on its first start from a ready-made image.
 # Nobody is logged in and nobody can be: there is no screen, and SSH is off.
-# So this runs by itself, writes what it does to /var/log/netsluice-setup.log
-# and shows its state on the LEDs:
-#   green blinking   setting up (about five minutes, needs the internet)
-#   green steady     ready, open http://netsluice.local/
-#   red steady       a step failed; it is tried again every minute
+# The image brings everything along, so this needs no internet and no DNS;
+# only an image built without the bundle downloads what is missing.
+# It says what it does in three places:
+#   a page on http://<device>/   the current step, and what is wrong if one fails
+#   the LEDs                     green blinking: setting up (a minute or two)
+#                                green steady:   ready
+#                                red steady:     a step failed; tried again every minute
+#   /var/lib/netsluice-setup/setup.log   everything, kept across a power cut
 # Safe to run again: finished steps are skipped.
 set -u
 SETUP=/usr/share/netsluice/setup
 STATE=/var/lib/netsluice-setup
-LOG=/var/log/netsluice-setup.log
-mkdir -p "$STATE"
-exec >>"$LOG" 2>&1
+PAGE=/run/netsluice-setup
+BUNDLE="$STATE/bundle"
+OWNDNS=/etc/systemd/resolved.conf.d/90-netsluice-setup.conf
+mkdir -p "$STATE" "$PAGE"
+exec >>"$STATE/setup.log" 2>&1
 echo "=== $(date -Is) first-boot setup starts"
 
+ports() { ls /sys/class/net | grep -E '^(e|lan|wan)'; }
 led() { [ -w "/sys/class/leds/$1/trigger" ] && echo "$2" > "/sys/class/leds/$1/trigger" 2>/dev/null; [ -z "${3:-}" ] || echo "$3" > "/sys/class/leds/$1/brightness" 2>/dev/null; return 0; }
-fail() { echo "FAILED: $*"; led led_red none 1; exit 1; }
+# step <number> <text> [problem]: for the log and for the page
+step() {
+  NOW="$1"; TEXT="$2"
+  echo "--- $(date +%T) step $1: $2${3:+ | problem: $3}"
+  printf '{"step": %s, "of": 4, "text": "%s", "problem": "%s"}\n' "$1" "$2" "${3:-}" > "$PAGE/status.json.tmp" && mv "$PAGE/status.json.tmp" "$PAGE/status.json"
+}
+fail() { rm -f "$NOSTART"; step "$NOW" "$TEXT" "$* Trying again in a minute."; led led_red none 1; sync; exit 1; }
+# While packages are installed, their services must not start by themselves: the web
+# server would grab port 80 with its welcome page. install-stack.sh starts them when
+# they are configured.
+NOSTART=/usr/sbin/policy-rc.d
 led led_red none 0
 led led_green heartbeat
 
@@ -30,41 +46,101 @@ systemctl daemon-reload
 # key from the owner (see netsluice-sshkey) there is nobody to let in: switch it off.
 [ -s /boot/netsluice-ssh.pub ] || systemctl disable -q --now ssh ssh.socket 2>/dev/null || true
 
-echo "--- waiting for the internet (and with it for a correct clock)"
-n=0
-until curl -fsS -m 8 -o /dev/null https://github.com/; do
-  n=$((n+1)); [ $n -lt 60 ] || fail "no internet after five minutes: is the network cable plugged into the router?"
-  sleep 5
-done
+# Be findable from the first minute: the name, and a page that says what is going on.
+# The page is served by Python until the real web server takes over port 80.
+if [ "$(hostname)" != netsluice ]; then
+  hostnamectl set-hostname netsluice
+  sed -i 's/^127\.0\.1\.1.*/127.0.1.1\tnetsluice/' /etc/hosts
+fi
+for i in $(ports); do resolvectl mdns "$i" yes 2>/dev/null || true; done
+cp "$SETUP/setup-page.html" "$PAGE/index.html"
+step 1 "Unpacking"
+if ! systemctl is-active -q caddy && ! systemctl is-active -q netsluice-setup-page; then
+  systemctl reset-failed netsluice-setup-page 2>/dev/null
+  systemd-run --quiet --unit=netsluice-setup-page python3 -m http.server 80 --directory "$PAGE" || true
+fi
 
 if [ ! -f "$STATE/unpacked" ]; then
-  echo "--- unpacking NetSluice"
   T="$(mktemp -d)"
-  tar -C "$T" -xzf "$SETUP/netsluice.tar.gz" || fail "the package in the image is damaged"
+  tar -C "$T" -xzf "$SETUP/netsluice.tar.gz" || fail "The NetSluice package in the image is damaged."
   SRC="$(echo "$T"/netsluice-*)"
-  [ -f "$SRC/VERSION" ] && [ -f "$SRC/web/index.html" ] && [ -f "$SRC/service/netsluiced.py" ] || fail "the package in the image is incomplete"
+  [ -f "$SRC/VERSION" ] && [ -f "$SRC/web/index.html" ] && [ -f "$SRC/service/netsluiced.py" ] || fail "The NetSluice package in the image is incomplete."
   mkdir -p /srv/netsluice /usr/share/netsluice
   rm -rf /srv/netsluice/www /usr/share/netsluice/service
-  cp -r "$SRC/web" /srv/netsluice/www && cp -r "$SRC/service" /usr/share/netsluice/service && cp "$SRC/VERSION" /usr/share/netsluice/VERSION || fail "could not copy the files"
+  cp -r "$SRC/web" /srv/netsluice/www && cp -r "$SRC/service" /usr/share/netsluice/service && cp "$SRC/VERSION" /usr/share/netsluice/VERSION || fail "Could not copy the files."
   chown -R root:root /srv/netsluice /usr/share/netsluice; chmod -R a+rX,go-w /srv/netsluice /usr/share/netsluice
   rm -rf "$T"
   touch "$STATE/unpacked"
 fi
+if [ -f "$SETUP/bundle.tar" ] && [ ! -f "$BUNDLE/SOURCES.txt" ]; then
+  rm -rf "$BUNDLE"; mkdir -p "$BUNDLE"
+  tar -C "$BUNDLE" -xf "$SETUP/bundle.tar" || fail "The bundle in the image is damaged."
+fi
 
-echo "--- package lists"
-apt-get -o DPkg::Lock::Timeout=600 update -q || fail "apt-get update"
+step 2 "Installing the web server"
+printf '#!/bin/sh\nexit 101\n' > "$NOSTART"; chmod 755 "$NOSTART"
+if ! dpkg -s caddy avahi-daemon avahi-utils ieee-data >/dev/null 2>&1; then
+  if ls "$BUNDLE"/debs/*.deb >/dev/null 2>&1; then
+    n=0
+    until DEBIAN_FRONTEND=noninteractive dpkg -i "$BUNDLE"/debs/*.deb; do
+      n=$((n+1)); [ $n -lt 5 ] || fail "The packages in the image could not be installed."
+      sleep 10; DEBIAN_FRONTEND=noninteractive dpkg --configure -a || true      # another package run was in the way
+    done
+  else
+    # no bundle in this image: fetch the packages. The router may hand out an address
+    # for DNS where nothing answers yet, for example the one this very device is meant
+    # to take over. Then ask public resolvers directly.
+    n=0
+    until curl -fsS -m 8 -o /dev/null https://deb.debian.org/; do
+      n=$((n+1))
+      if [ $n -eq 2 ] && ! getent hosts deb.debian.org >/dev/null 2>&1; then
+        echo "    names do not resolve with the DNS server from the router: using 9.9.9.9 and 1.1.1.1 for the setup"
+        mkdir -p /etc/systemd/resolved.conf.d
+        printf '[Resolve]\nDNS=9.9.9.9 1.1.1.1\nDomains=~.\n' > "$OWNDNS"
+        systemctl restart systemd-resolved; systemctl restart systemd-timesyncd 2>/dev/null || true
+      fi
+      if [ $n -ge 6 ]; then
+        if ! ip -4 route | grep -q '^default'; then why="No address from the router. Is the network cable plugged into the router or a switch?"
+        elif ! getent hosts deb.debian.org >/dev/null 2>&1; then why="Connected, but names cannot be looked up (DNS)."
+        else why="Connected, but the internet cannot be reached."; fi
+        step 2 "Waiting for the internet" "$why"; led led_red none 1
+      fi
+      [ $n -lt 120 ] || fail "No internet after ten minutes."
+      sleep 5
+    done
+    led led_red none 0
+    # a clock that is behind makes apt refuse its package lists
+    n=0; until [ "$(timedatectl show -p NTPSynchronized --value 2>/dev/null)" = yes ] || [ $n -ge 15 ]; do n=$((n+1)); sleep 2; done
+    if [ "$(timedatectl show -p NTPSynchronized --value 2>/dev/null)" != yes ]; then
+      d="$(curl -fsSI -m 8 https://deb.debian.org/ | tr -d '\r' | sed -n 's/^[Dd]ate: //p')"
+      [ -z "$d" ] || date -s "$d" >/dev/null 2>&1 || true
+    fi
+    step 2 "Downloading the web server"
+    apt-get -o DPkg::Lock::Timeout=600 update -q || fail "The package lists could not be downloaded."
+  fi
+fi
 
-echo "--- installing the filter, the web server and the rest"
-sh "$SETUP/install-stack.sh" || fail "install-stack.sh"
+step 3 "Setting up the filter"
+# avahi answers for the name from here on
+for i in $(ports); do resolvectl mdns "$i" no 2>/dev/null || true; done
+NETSLUICE_BUNDLE="$BUNDLE" sh "$SETUP/install-stack.sh" || fail "The setup stopped. Details are in $STATE/setup.log on the card."
 
+rm -f "$NOSTART"
+
+step 4 "Starting"
+systemctl stop netsluice-setup-page 2>/dev/null || true
+systemctl is-active -q caddy || systemctl restart caddy
 n=0
 until curl -fsS -m 5 http://127.0.0.1:3002/auth/state | grep -q configured; do
-  n=$((n+1)); [ $n -lt 30 ] || fail "the NetSluice service does not answer"
+  n=$((n+1)); [ $n -lt 30 ] || fail "The NetSluice service does not answer."
   sleep 2
 done
-curl -fsS -m 5 -o /dev/null http://127.0.0.1/ || fail "the web server does not answer"
+curl -fsS -m 5 -o /dev/null http://127.0.0.1/ || fail "The web server does not answer."
 
+if [ -f "$OWNDNS" ]; then rm -f "$OWNDNS"; systemctl restart systemd-resolved; fi
+rm -rf "$BUNDLE"
 touch "$STATE/done"
 led led_red none 0
 led led_green none 1
 echo "=== $(date -Is) done: http://$(hostname).local/"
+sync

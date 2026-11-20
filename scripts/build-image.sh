@@ -10,7 +10,7 @@
 # compressed to <output>.xz with a .sha256 next to it.
 #
 # Requires: bash, python3, dtc (device-tree-compiler), debugfs and e2fsck (e2fsprogs),
-#           sfdisk (util-linux), xz.
+#           sfdisk (util-linux), xz. With --netsluice also the internet, for the bundle.
 set -euo pipefail
 
 FULL=0
@@ -79,18 +79,28 @@ if [[ $FULL == 1 ]]; then
       --exclude=__pycache__ -czf "$WORK/netsluice.tar.gz" VERSION web service
   printf 'PasswordAuthentication no\nKbdInteractiveAuthentication no\nPermitRootLogin prohibit-password\n' > "$WORK/sshd.conf"
   mkd /usr/share/netsluice; mkd /usr/share/netsluice/setup; mkd /etc/ssh/sshd_config.d
+  # everything the first start would otherwise download, so that it needs no internet
+  echo "==> collecting the bundle (Debian packages, AdGuard Home, data files)"
+  BUNDLE="$(dirname "$OUT")/bundle"
+  dbg "cat /var/lib/dpkg/status" > "$WORK/status"
+  python3 "$HERE/scripts/fetch-bundle.py" "$WORK/status" "$BUNDLE"
+  tar -C "$BUNDLE" --owner=0 --group=0 --numeric-owner --mode='u+rwX,go+rX,go-w' -cf "$WORK/bundle.tar" .
+  put "$WORK/bundle.tar" /usr/share/netsluice/setup/bundle.tar
   put "$WORK/netsluice.tar.gz" /usr/share/netsluice/setup/netsluice.tar.gz
   put "$HERE/provision/install-stack.sh" /usr/share/netsluice/setup/install-stack.sh 0100755
   put "$HERE/rootfs/netsluice-firstboot" /usr/local/sbin/netsluice-firstboot 0100755
+  put "$HERE/rootfs/setup-page.html" /usr/share/netsluice/setup/setup-page.html
   put "$HERE/rootfs/netsluice-firstboot.service" /etc/systemd/system/netsluice-firstboot.service
+  put "$HERE/rootfs/netsluice-lists" /usr/local/sbin/netsluice-lists 0100755
+  put "$HERE/rootfs/netsluice-lists.service" /etc/systemd/system/netsluice-lists.service
   put "$HERE/rootfs/netsluice-sshkey" /usr/local/sbin/netsluice-sshkey 0100755
   put "$HERE/rootfs/netsluice-sshkey.service" /etc/systemd/system/netsluice-sshkey.service
   # Armbian's default password is public: no password logins, and SSH stays off
   # until the owner puts a key on the card (see rootfs/netsluice-sshkey).
   put "$WORK/sshd.conf" /etc/ssh/sshd_config.d/10-netsluice.conf
   dbgw "rm /etc/systemd/system/multi-user.target.wants/ssh.service"
-  enable netsluice-firstboot.service; enable netsluice-sshkey.service
-  CHECK+=(/usr/share/netsluice/setup/netsluice.tar.gz /usr/share/netsluice/setup/install-stack.sh /usr/local/sbin/netsluice-firstboot
+  enable netsluice-firstboot.service; enable netsluice-sshkey.service; enable netsluice-lists.service
+  CHECK+=(/usr/share/netsluice/setup/bundle.tar /usr/local/sbin/netsluice-lists /etc/systemd/system/netsluice-lists.service /usr/share/netsluice/setup/setup-page.html /usr/share/netsluice/setup/netsluice.tar.gz /usr/share/netsluice/setup/install-stack.sh /usr/local/sbin/netsluice-firstboot
           /etc/systemd/system/netsluice-firstboot.service /usr/local/sbin/netsluice-sshkey /etc/systemd/system/netsluice-sshkey.service /etc/ssh/sshd_config.d/10-netsluice.conf)
 fi
 
@@ -106,6 +116,8 @@ if [[ $FULL == 1 ]]; then
   dbg "stat /etc/systemd/system/multi-user.target.wants/ssh.service" | grep -q "Type:" && { echo "SSH is still enabled in the image" >&2; exit 1; }
   dbg "dump /usr/share/netsluice/setup/netsluice.tar.gz $WORK/check.tar.gz"
   cmp -s "$WORK/check.tar.gz" "$WORK/netsluice.tar.gz" || { echo "the NetSluice package in the image does not match" >&2; exit 1; }
+  dbg "dump /usr/share/netsluice/setup/bundle.tar $WORK/check.tar"
+  cmp -s "$WORK/check.tar" "$WORK/bundle.tar" || { echo "the bundle in the image does not match" >&2; exit 1; }
 fi
 e2fsck -fn "$FS" >/dev/null 2>&1 || { echo "filesystem check failed" >&2; exit 1; }
 

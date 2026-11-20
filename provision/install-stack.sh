@@ -8,6 +8,9 @@ set -eu
 
 AGH_VER="${AGH_VER:-v1.0.0}"
 AGH_URL="https://github.com/AdguardTeam/AdGuardHome/releases/download/$AGH_VER"
+# The ready-made image brings everything along (scripts/fetch-bundle.py), so that
+# a first start needs no internet. Without a bundle the files are downloaded.
+BUNDLE="${NETSLUICE_BUNDLE:-/usr/share/netsluice/setup/bundle}"
 mkdir -p /etc/netsluice /srv/netsluice/www
 
 echo "==> freeing port 53 (systemd-resolved stub listener off)"
@@ -18,14 +21,18 @@ systemctl restart systemd-resolved
 
 if [ ! -x /opt/AdGuardHome/AdGuardHome ]; then
   echo "==> installing AdGuard Home $AGH_VER"
-  T="$(mktemp -d)"
-  curl -fsSL -o "$T/agh.tar.gz" "$AGH_URL/AdGuardHome_linux_arm64.tar.gz"
-  curl -fsSL -o "$T/checksums.txt" "$AGH_URL/checksums.txt"
-  want="$(grep 'AdGuardHome_linux_arm64.tar.gz' "$T/checksums.txt" | awk '{print $1}')"
-  have="$(sha256sum "$T/agh.tar.gz" | awk '{print $1}')"
-  [ -n "$want" ] && [ "$want" = "$have" ] || { echo "checksum mismatch for AdGuard Home" >&2; exit 1; }
-  tar -C /opt -xzf "$T/agh.tar.gz"
-  rm -rf "$T"
+  if [ -f "$BUNDLE/AdGuardHome_linux_arm64.tar.gz" ]; then
+    tar -C /opt -xzf "$BUNDLE/AdGuardHome_linux_arm64.tar.gz"      # checked when the bundle was made
+  else
+    T="$(mktemp -d)"
+    curl -fsSL -o "$T/agh.tar.gz" "$AGH_URL/AdGuardHome_linux_arm64.tar.gz"
+    curl -fsSL -o "$T/checksums.txt" "$AGH_URL/checksums.txt"
+    want="$(grep 'AdGuardHome_linux_arm64.tar.gz' "$T/checksums.txt" | awk '{print $1}')"
+    have="$(sha256sum "$T/agh.tar.gz" | awk '{print $1}')"
+    [ -n "$want" ] && [ "$want" = "$have" ] || { echo "checksum mismatch for AdGuard Home" >&2; exit 1; }
+    tar -C /opt -xzf "$T/agh.tar.gz"
+    rm -rf "$T"
+  fi
   /opt/AdGuardHome/AdGuardHome -s install
 fi
 
@@ -53,6 +60,9 @@ echo "==> country database for the world map"
 # IP to Country Lite by DB-IP (https://db-ip.com), CC BY 4.0, via the ip-location-db project.
 GEO=/usr/share/netsluice/geo
 mkdir -p "$GEO" /usr/share/netsluice/service
+if [ ! -s "$GEO/dbip-country-ipv4.csv" ] && [ -s "$BUNDLE/dbip-country-ipv4.csv" ]; then
+  cp "$BUNDLE/dbip-country-ipv4.csv" "$GEO/dbip-country-ipv4.csv"
+fi
 if [ ! -s "$GEO/dbip-country-ipv4.csv" ]; then
   curl -fsSL -o "$GEO/dbip-country-ipv4.csv.tmp" https://cdn.jsdelivr.net/npm/@ip-location-db/dbip-country/dbip-country-ipv4.csv
   mv "$GEO/dbip-country-ipv4.csv.tmp" "$GEO/dbip-country-ipv4.csv"
@@ -94,6 +104,9 @@ systemctl disable -q --now deeper-report.service 2>/dev/null || true
 # after the switch from a transient user the state directory still belongs to the old one
 [ ! -d /var/lib/netsluice ] || chown -R netsluice:netsluice /var/lib/netsluice/
 # Current list of network card makers from the IEEE; the Debian package is the fallback.
+if [ ! -s /usr/share/netsluice/oui.csv ] && [ -s "$BUNDLE/oui.csv" ]; then
+  cp "$BUNDLE/oui.csv" /usr/share/netsluice/oui.csv
+fi
 if [ ! -s /usr/share/netsluice/oui.csv ] || [ -n "$(find /usr/share/netsluice/oui.csv -mtime +30 2>/dev/null)" ]; then
   curl -fsSL -m 60 -o /usr/share/netsluice/oui.csv.tmp https://standards-oui.ieee.org/oui/oui.csv && mv /usr/share/netsluice/oui.csv.tmp /usr/share/netsluice/oui.csv || rm -f /usr/share/netsluice/oui.csv.tmp
 fi
@@ -124,7 +137,9 @@ UNIT
 
 echo "==> installing Caddy and avahi"
 # ieee-data: who made a network card; avahi-utils: what devices announce about themselves
-DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=600 install -y -q caddy avahi-daemon avahi-utils ieee-data >/dev/null
+if ! dpkg -s caddy avahi-daemon avahi-utils ieee-data >/dev/null 2>&1; then
+  DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=600 install -y -q caddy avahi-daemon avahi-utils ieee-data >/dev/null
+fi
 
 cat > /etc/caddy/Caddyfile <<'CADDY'
 {
@@ -170,6 +185,8 @@ if [ -e /etc/systemd/system/netsluice-geo.service ]; then systemctl disable -q -
 systemctl enable -q caddy avahi-daemon netsluiced
 systemctl reset-failed netsluice-root.service netsluice-root.path 2>/dev/null || true
 systemctl enable -q netsluice-root.path && systemctl restart netsluice-root.path
+# on a first start from the ready-made image a small page holds port 80 until here
+systemctl stop netsluice-setup-page 2>/dev/null || true
 systemctl restart caddy avahi-daemon
 [ ! -f /usr/share/netsluice/service/netsluiced.py ] || systemctl restart netsluiced
 

@@ -10,3 +10,7 @@ atomos-backup/
 probe-env*.txt
 __pycache__/
 *.pyc
+bundle/
+*.img
+*.img.xz
+*.img.xz.sha256
