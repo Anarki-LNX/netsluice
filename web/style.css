@@ -88,7 +88,8 @@ main, .screen { display: flex; flex-direction: column; gap: 20px; }
 .meter i { border-radius: 4px; background: var(--ok); }
 .meter i.no { background: var(--no); }
 
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+/* tiles: never more than four in a row, fewer when the page is narrow */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(max(260px, calc((100% - 48px) / 4)), 1fr)); gap: 16px; }
 .card { display: flex; flex-direction: column; gap: 10px; padding: 20px; border: 1px solid var(--line); border-radius: 22px; background: rgba(0, 0, 0, .22); }
 .card h3 { margin: 0; font: 600 19px/1.2 var(--display); overflow-wrap: anywhere; }
 .cardhead { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
@@ -197,7 +198,7 @@ input[type="file"] { max-width: 100%; color: var(--muted); }
 }
 
 /* Settings: tiles on the overview, one section per page when opened */
-#stFolds:not(.sub) { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+#stFolds:not(.sub) { display: grid; grid-template-columns: repeat(auto-fill, minmax(max(260px, calc((100% - 48px) / 4)), 1fr)); gap: 16px; }
 #stFolds:not(.sub) > .fold { border-radius: 22px; transition: border-color .2s, transform .2s, background .2s; }
 #stFolds:not(.sub) > .fold:hover { border-color: color-mix(in srgb, var(--gold) 55%, transparent); transform: translateY(-2px); }
 #stFolds:not(.sub) > .fold > summary { display: grid; grid-template-columns: 1fr auto; align-items: start; gap: 10px 12px; min-height: 150px; padding: 20px 20px 44px; border-radius: 22px; }
