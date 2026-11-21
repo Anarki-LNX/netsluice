@@ -7,7 +7,7 @@ import { createWorldMap } from './worldmap.js';
 const T = {
   en: {
     'nav.overview': 'Overview', 'nav.devices': 'Devices', 'nav.filters': 'Filters', 'nav.map': 'World map', 'nav.settings': 'Settings',
-    'status.on': 'Filter running', 'status.off': 'Filter off', 'status.offFor': (left) => `Filter off, back in ${left}`, 'status.stay': 'Keep it off', 'status.err': 'Filter not reachable',
+    'status.on': 'Filter running', 'status.off': 'Filter off', 'status.offFor': (left) => `Filter off, back in ${left}`, 'status.stay': 'Keep it off', 'status.update': (v) => `Update to ${v}`, 'status.err': 'Filter not reachable',
     'ov.passed': 'requests passed', 'ov.blocked': 'stopped', 'ov.sub': 'In the last 24 hours, counted live. A dot is one request that just went through this device.',
     'ov.home': 'Home network', 'ov.internet': 'Internet', 'ov.flowAria': 'Live view: requests arrive blue, are checked inside the sluice, leave green or burst in red',
     'lg.incoming': 'on the way to the sluice', 'lg.passed': 'passed', 'lg.blocked': 'caught in the sluice',
@@ -120,7 +120,7 @@ const T = {
   },
   de: {
     'nav.overview': 'Übersicht', 'nav.devices': 'Geräte', 'nav.filters': 'Filter', 'nav.map': 'Weltkarte', 'nav.settings': 'Einstellungen',
-    'status.on': 'Filter läuft', 'status.off': 'Filter aus', 'status.offFor': (left) => `Filter aus, wieder an in ${left}`, 'status.stay': 'Aus lassen', 'status.err': 'Filter nicht erreichbar',
+    'status.on': 'Filter läuft', 'status.off': 'Filter aus', 'status.offFor': (left) => `Filter aus, wieder an in ${left}`, 'status.stay': 'Aus lassen', 'status.update': (v) => `Update auf ${v}`, 'status.err': 'Filter nicht erreichbar',
     'ov.passed': 'Anfragen durchgelassen', 'ov.blocked': 'aufgehalten', 'ov.sub': 'In den letzten 24 Stunden, live gezählt. Ein Punkt ist eine Anfrage, die gerade durch dieses Gerät ging.',
     'ov.home': 'Heimnetz', 'ov.internet': 'Internet', 'ov.flowAria': 'Live-Ansicht: Anfragen kommen blau an, werden in der Schleuse geprüft, verlassen sie grün oder zerplatzen rot',
     'lg.incoming': 'unterwegs zur Schleuse', 'lg.passed': 'durchgelassen', 'lg.blocked': 'in der Schleuse erwischt',
@@ -426,6 +426,8 @@ function render() {
   $('statusText').textContent = !state.reachable ? t('status.err') : on ? t('status.on')
     : left ? t('status.offFor', `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`) : t('status.off');
   $('protectStay').hidden = !state.reachable || on || !left;
+  $('newVersion').hidden = !state.newVersion;
+  if (state.newVersion) $('newVersion').textContent = t('status.update', state.newVersion);
   if (!s) return;
 
   const total = s.num_dns_queries || 0, blocked = s.num_blocked_filtering || 0;
@@ -610,6 +612,7 @@ async function pollRest() {
     state.recent = ((log && log.data) || []).map((e) => ({ host: e.question && e.question.name, client: e.client, time: e.time }));
     setStatus(status);
   } catch { /* the fast loop reports reachability */ }
+  try { const r = await fetch('/api/system/app/hint'); if (r.ok) state.newVersion = (await r.json()).latest || null; } catch { /* a hint, nothing more */ }
   try { const r = await fetch('/api/devices'); if (r.ok) { const d = await r.json(); state.devices = d.devices || {}; if (!state.stopped) state.seats = null; state.stopped = d.blocked || {}; } } catch { /* names are optional */ }
   render();
 }

@@ -180,6 +180,9 @@ on the device unless you turn on messages to your phone, which leave through
 the service you choose. At home this is your call. If other people use the
 network, tell them.
 
+About once a day the device asks GitHub whether there is a new version. GitHub
+sees your address for that and nothing else.
+
 ## Licence and warranty
 
 MIT for the code and documentation, see [LICENSE](LICENSE). What NetSluice

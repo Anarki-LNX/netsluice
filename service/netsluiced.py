@@ -26,7 +26,7 @@ HTTP interface (all JSON, localhost only, the web server in front checks the ses
     GET  /api/settings                      POST /api/settings | /api/notify/test
     GET  /api/storage | /api/storage/progress | /api/storage/backup/download
                                             POST /api/storage/backup[/delete] | install | restore | poweroff
-    GET  /api/system | /api/system/app/progress | /api/system/updates/progress
+    GET  /api/system | /api/system/app/progress | /api/system/app/hint | /api/system/updates/progress
                                             POST /api/system/hostname | address[/confirm|/revert]
                                                  /api/system/updates/check | auto | run
                                                  /api/system/app/check | auto | run
@@ -711,6 +711,49 @@ def enforce(rules, st):
             rules.save()
 
 
+VERSION_FILE = os.environ.get("NETSLUICE_VERSION", "/usr/share/netsluice/VERSION")
+APP_LATEST = os.path.join(os.path.dirname(STATE), "app-latest.json")   # written by the helper when it looks on GitHub
+
+
+def read_text(path, default=""):
+    try:
+        with open(path) as f:
+            return f.read()
+    except OSError:
+        return default
+
+
+def app_hint():
+    """The running version and, if GitHub had a newer one at the last look, that one."""
+    def parts(v):
+        m = re.fullmatch(r"v?(\d{1,4})\.(\d{1,4})\.(\d{1,4})", str(v or "").strip())
+        return tuple(int(x) for x in m.groups()) if m else None
+    cur = read_text(VERSION_FILE).strip() or None
+    try:
+        new = (json.loads(read_text(APP_LATEST, "{}")).get("release") or {}).get("version")
+    except (ValueError, AttributeError):
+        new = None
+    newer = bool(parts(new) and parts(cur) and parts(new) > parts(cur))
+    return {"version": cur, "latest": new if newer else None}
+
+
+def lookout():
+    """Look on GitHub for a new version about once a day, so the top bar can say so.
+    Looking installs nothing; that stays a click, or the daily automatic update."""
+    time.sleep(120)
+    while True:
+        try:
+            checked = json.loads(read_text(APP_LATEST, "{}")).get("checked", 0)
+        except (ValueError, AttributeError):
+            checked = 0
+        if time.time() - checked > 20 * 3600:
+            try:
+                root_call("app-check", timeout=60)
+            except Exception:
+                pass
+        time.sleep(3600)
+
+
 def clock(rules, st, cfg=None):
     misses, down = 0, False
     while True:
@@ -922,6 +965,7 @@ def main():
     threading.Thread(target=follow, args=(db, st, cfg, leds), daemon=True).start()
     threading.Thread(target=discover, args=(st, cfg), daemon=True).start()
     threading.Thread(target=clock, args=(rules, st, cfg), daemon=True).start()
+    threading.Thread(target=lookout, daemon=True).start()
 
     auth = Auth(AUTH)
 
@@ -996,6 +1040,8 @@ def main():
                         self.reply(json.load(f)); return
                 except (OSError, ValueError):
                     self.reply({}); return
+            if path == "/api/system/app/hint":
+                self.reply(app_hint()); return
             if path == "/api/system/app/progress":
                 # straight from the files, without the helper: polled twice a second during an update
                 def read(p, default):

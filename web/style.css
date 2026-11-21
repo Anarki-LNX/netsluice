@@ -33,6 +33,10 @@ button { cursor: pointer; }
 #nav button[aria-current="page"] { border-color: color-mix(in srgb, var(--gold) 60%, transparent); background: color-mix(in srgb, var(--gold) 12%, transparent); color: color-mix(in srgb, var(--gold) 55%, white); }
 .top-right { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
 .status { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+/* a newer version exists: a quiet gold pill that leads to the update page */
+.newver { display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border: 1px solid color-mix(in srgb, var(--gold) 60%, transparent); border-radius: 999px; background: color-mix(in srgb, var(--gold) 12%, transparent); color: color-mix(in srgb, var(--gold) 55%, white); font-weight: 700; text-decoration: none; white-space: nowrap; }
+.newver[hidden] { display: none; }
+.newver:hover { background: color-mix(in srgb, var(--gold) 22%, transparent); }
 /* the switch in the top bar: gold while the filter is off, red when it cannot be reached */
 .status .switch[aria-checked="false"] .track { background: color-mix(in srgb, var(--gold) 55%, transparent); }
 .status .switch[aria-checked="false"] { color: color-mix(in srgb, var(--gold) 60%, white); }

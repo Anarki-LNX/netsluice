@@ -74,6 +74,7 @@ def reply_for(path, query):
     if path == "/control/filtering/status": return {"enabled": True, "filters": [{"id": i + 1, "name": n, "url": u, "rules_count": r, "enabled": True} for i, (n, u, r) in enumerate(LISTS)]}
     if path == "/control/dns_info": return {"upstream_dns": ["https://dns.quad9.net/dns-query"], "bootstrap_dns": ["9.9.9.9"], "dnssec_enabled": True}
     if path == "/control/querylog/config": return {"enabled": True, "interval": 604800000, "anonymize_client_ip": False, "ignored": [], "ignored_enabled": False}
+    if path == "/api/system/app/hint": return {"version": "0.1.7", "latest": "0.1.8"}
     if path == "/api/devices": return {"devices": {d[0]: {"name": d[1], "kind": d[2], "vendor": d[3], "model": d[4], "firmware": d[5], "mac": d[6], "private": d[3] is None, "source": "router", "services": []} for d in DEVICES}, "blocked": {d[0]: (k * 137 + int(now() / 3) * (k % 3)) % 900 for k, d in enumerate(DEVICES)}}
     if path == "/api/geo":
         since = next((int(p[6:]) for p in query.split("&") if p.startswith("since=") and p[6:].isdigit()), 0)
