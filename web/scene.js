@@ -37,7 +37,8 @@ export function createScene(canvas) {
   let W = 0, H = 0, dpr = 1, last = 0, vert = false, on = true, visible = true;
   let col = {};
   let nodes = [], byIp = new Map(), more = null;
-  const packets = [], shards = [], rings = [], labels = [], sparks = [];
+  const packets = [], shards = [], rings = [], labels = [], sparks = [], hits = [];
+  const TILT = .38;
   let spin = 0, gateFlash = 0, gateFlashV = 0, gateOk = 0;
 
   // ----- colours of the design, read from the page so dark and light both work
@@ -104,7 +105,7 @@ export function createScene(canvas) {
     n.heat = 1; n.pulse = 1;
     const gv = gvOf(n.v, (Math.random() - .5) * .14);
     packets.push({ n, gv, bad: !!ev.blocked && on, host: ev.host || '', phase: 'fly', t: 0, dur: .95 + Math.random() * .45,
-      wv: clamp((gv - GV()) * 1.1 + (Math.random() - .5) * .5, -.75, .75), size: 2.6 + Math.random() * 1.2, trail: [] });
+      size: 2.6 + Math.random() * 1.2, trail: [] });
   }
 
   function quad(a, c, b, t) { const m = 1 - t; return [m * m * a[0] + 2 * m * t * c[0] + t * t * b[0], m * m * a[1] + 2 * m * t * c[1] + t * t * b[1]]; }
@@ -144,10 +145,19 @@ export function createScene(canvas) {
           }
         } else {
           const k = ease(Math.min(1, p.t / p.dur));
-          const from = p.from || entry, c = P(WORLD(), GV() * .5), a = Math.atan2(from[1] - c[1], from[0] - c[0]) + p.wv * .9;
-          const target = [c[0] + Math.cos(a) * R * .96, c[1] + Math.sin(a) * R * .96];
-          pos = quad(from, P((g + WORLD()) / 2, p.gv * .6 + p.wv * .25), target, k);
-          if (p.t >= p.dur) { rings.push({ x: target[0], y: target[1], life: 0, ttl: .7, c: on ? 'ok' : 'muted', r: 16 }); packets.splice(i, 1); continue; }
+          // each one comes down somewhere else on the side of the globe that faces us
+          if (!p.land) { const a = Math.random() * TAU, d = Math.sqrt(Math.random()) * .9; p.land = [Math.cos(a) * d, Math.sin(a) * d]; }
+          const from = p.from || entry, c = P(WORLD(), GV() * .5);
+          const target = [c[0] + p.land[0] * R, c[1] + p.land[1] * R];
+          pos = quad(from, P((g + WORLD()) / 2, p.gv * .6 + p.land[1] * .2), target, k);
+          if (p.t >= p.dur) {
+            // remember the spot on the globe itself, so the mark turns with it
+            const x = p.land[0], y = p.land[1], z = Math.sqrt(Math.max(0, 1 - x * x - y * y));
+            const ct = Math.cos(TILT), st = Math.sin(TILT), cs = Math.cos(spin), sn = Math.sin(spin), py = y * ct + z * st, z0 = -y * st + z * ct;
+            hits.push({ p: [x * cs - z0 * sn, py, x * sn + z0 * cs], life: 0, ttl: 2.4, c: on ? 'ok' : 'muted' });
+            if (hits.length > 60) hits.shift();
+            packets.splice(i, 1); continue;
+          }
         }
         p.trail.push(pos); if (p.trail.length > 9) p.trail.shift();
         p.x = pos[0]; p.y = pos[1];
@@ -155,6 +165,7 @@ export function createScene(canvas) {
       for (let i = shards.length - 1; i >= 0; i--) { const s = shards[i]; s.life += dt; s.x += s.vx * dt; s.y += s.vy * dt; s.vx *= .93; s.vy *= .93; s.rot += s.vr * dt; if (s.life >= s.ttl) shards.splice(i, 1); }
       for (let i = sparks.length - 1; i >= 0; i--) { const s = sparks[i]; s.life += dt; s.x += s.vx * dt; s.y += s.vy * dt; s.vx *= .9; s.vy *= .9; if (s.life >= s.ttl) sparks.splice(i, 1); }
       for (let i = rings.length - 1; i >= 0; i--) { rings[i].life += dt; if (rings[i].life >= rings[i].ttl) rings.splice(i, 1); }
+      for (let i = hits.length - 1; i >= 0; i--) { hits[i].life += dt; if (hits[i].life >= hits[i].ttl) hits.splice(i, 1); }
       for (let i = labels.length - 1; i >= 0; i--) { labels[i].life += dt; if (labels[i].life >= labels[i].ttl) labels.splice(i, 1); }
       draw(now);
     }
@@ -180,7 +191,7 @@ export function createScene(canvas) {
     const halo = ctx.createRadialGradient(wc[0], wc[1], R * .7, wc[0], wc[1], R * 1.55);
     halo.addColorStop(0, A(col.accent, col.light ? .10 : .14)); halo.addColorStop(1, A(col.accent, 0));
     ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(wc[0], wc[1], R * 1.55, 0, TAU); ctx.fill();
-    const cs = Math.cos(spin), sn = Math.sin(spin), tilt = .38, ct = Math.cos(tilt), stt = Math.sin(tilt);
+    const cs = Math.cos(spin), sn = Math.sin(spin), ct = Math.cos(TILT), stt = Math.sin(TILT);
     for (const pt of GLOBE) {
       const x = pt[0] * cs + pt[2] * sn, z0 = -pt[0] * sn + pt[2] * cs, y = pt[1] * ct - z0 * stt, z = pt[1] * stt + z0 * ct;
       const front = z > 0, a = front ? .32 + z * .62 : .1;
@@ -189,6 +200,16 @@ export function createScene(canvas) {
       ctx.fillRect(wc[0] + x * R - s / 2, wc[1] + y * R - s / 2, s, s);
     }
     ctx.strokeStyle = A(col.text, .16); ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(wc[0], wc[1], R + 7, 0, TAU); ctx.stroke();
+    // where lookups came down: a ring that opens, and a point of light that turns away with the globe
+    for (const h of hits) {
+      const x = h.p[0] * cs + h.p[2] * sn, z0 = -h.p[0] * sn + h.p[2] * cs, y = h.p[1] * ct - z0 * stt, z = h.p[1] * stt + z0 * ct;
+      if (z <= .02) continue;
+      const k = h.life / h.ttl, hx = wc[0] + x * R, hy = wc[1] + y * R, c = col[h.c];
+      if (h.life < .7) { const r = h.life / .7; ctx.strokeStyle = A(c, (1 - r) * .85); ctx.lineWidth = 1.8 * (1 - r) + .4; ctx.beginPath(); ctx.ellipse(hx, hy, (3 + ease(r) * 15) * (.35 + z * .65), 3 + ease(r) * 15, 0, 0, TAU); ctx.stroke(); }
+      const gl = ctx.createRadialGradient(hx, hy, 0, hx, hy, 9); gl.addColorStop(0, A(c, .55 * (1 - k) * z)); gl.addColorStop(1, A(c, 0));
+      ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(hx, hy, 9, 0, TAU); ctx.fill();
+      ctx.fillStyle = A(c, (1 - k) * (.4 + z * .6)); ctx.beginPath(); ctx.arc(hx, hy, 1.9, 0, TAU); ctx.fill();
+    }
 
     // the gate: two rails, a field between them, a line of light that never stops scanning
     const sweep = still ? 0 : Math.sin(now / 900) * .5 + .5;
