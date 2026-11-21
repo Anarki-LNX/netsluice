@@ -12,6 +12,7 @@ const T = {
     'ov.home': 'Home network', 'ov.internet': 'Internet', 'ov.flowAria': 'Live view: requests arrive blue, are checked inside the sluice, leave green or burst in red',
     'lg.incoming': 'on the way to the sluice', 'lg.passed': 'passed', 'lg.blocked': 'caught in the sluice',
     'ov.last24': 'The last 24 hours', 'ov.barsAria': 'Requests per hour',
+    'ov.stoppedWord': 'stopped', 'ov.keyNo': 'stopped', 'ov.keyOk': 'let through', 'ov.hour': (h) => `${h}:00`, 'ov.fPeak': 'busiest hour', 'ov.fPeakSub': (n) => `${n} requests`, 'ov.fRate': 'requests per minute', 'ov.fSpeed': 'average answer time', 'ov.fDevices': 'devices',
     'ov.share': (p) => `${p} % of all requests were stopped.`, 'ov.shareNone': 'No requests yet. Point a device at this filter to see it work.',
     'ov.topDevices': 'Devices stopped most often', 'ov.allDevices': 'All devices', 'ov.recent': 'Stopped most recently', 'ov.topBlocked': 'Stopped most often',
     'empty.devices': 'No device has been stopped yet.', 'empty.recent': 'Nothing has been stopped yet.', 'empty.blocked': 'Nothing has been stopped yet.',
@@ -132,6 +133,7 @@ const T = {
     'ov.home': 'Heimnetz', 'ov.internet': 'Internet', 'ov.flowAria': 'Live-Ansicht: Anfragen kommen blau an, werden in der Schleuse geprüft, verlassen sie grün oder zerplatzen rot',
     'lg.incoming': 'unterwegs zur Schleuse', 'lg.passed': 'durchgelassen', 'lg.blocked': 'in der Schleuse erwischt',
     'ov.last24': 'Die letzten 24 Stunden', 'ov.barsAria': 'Anfragen pro Stunde',
+    'ov.stoppedWord': 'aufgehalten', 'ov.keyNo': 'aufgehalten', 'ov.keyOk': 'durchgelassen', 'ov.hour': (h) => `${h} Uhr`, 'ov.fPeak': 'stärkste Stunde', 'ov.fPeakSub': (n) => `${n} Anfragen`, 'ov.fRate': 'Anfragen pro Minute', 'ov.fSpeed': 'mittlere Antwortzeit', 'ov.fDevices': 'Geräte',
     'ov.share': (p) => `${p} % aller Anfragen wurden aufgehalten.`, 'ov.shareNone': 'Noch keine Anfragen. Stell bei einem Gerät diesen Filter ein, dann siehst du ihn arbeiten.',
     'ov.topDevices': 'Meist aufgehaltene Geräte', 'ov.allDevices': 'Alle Geräte', 'ov.recent': 'Zuletzt aufgehalten', 'ov.topBlocked': 'Am häufigsten aufgehalten',
     'empty.devices': 'Bisher wurde kein Gerät aufgehalten.', 'empty.recent': 'Bisher wurde nichts aufgehalten.', 'empty.blocked': 'Bisher wurde nichts aufgehalten.',
@@ -453,7 +455,12 @@ function render() {
   const total = s.num_dns_queries || 0, blocked = s.num_blocked_filtering || 0;
   countTo($('numPassed'), total - blocked);
   countTo($('numBlocked'), blocked);
-  $('shareText').textContent = total ? t('ov.share', Math.round(blocked / total * 100)) : t('ov.shareNone');
+  // the day at a glance: a ring for the share that was stopped, and a few figures
+  const pct = total ? Math.round(blocked / total * 100) : 0;
+  $('dayArc').style.strokeDasharray = `${(total ? blocked / total : 0) * 251.33} 251.33`;
+  $('dayPct').textContent = pct + ' %';
+  $('dayDonut').setAttribute('aria-label', total ? t('ov.share', pct) : t('ov.shareNone'));
+  $('dayNo').textContent = `${fmt(blocked)} · ${pct} %`; $('dayOk').textContent = `${fmt(total - blocked)} · ${100 - pct} %`;
   fitHero();
 
   const q = s.dns_queries || [], b = s.blocked_filtering || [];
@@ -470,6 +477,18 @@ function render() {
   const own = new Set([location.hostname, '127.0.0.1', '::1', ...((state.status && state.status.dns_addresses) || []).map((a) => a.split('%')[0])]);
   const isSelf = (ip) => own.has(ip) || (state.devices[ip] && state.devices[ip].kind === 'self');
   const clients = pairs(s.top_clients).filter(([ip]) => !isSelf(ip));
+  {
+    const peak = q.length ? q.indexOf(Math.max(...q)) : -1;
+    const hour = peak < 0 ? null : (new Date().getHours() - (q.length - 1 - peak) + 48) % 24;
+    const ms = (s.avg_processing_time || 0) * 1000;
+    const fact = (big, label, sub) => { const f = el('div', 'fact'); f.append(el('b', '', big), el('span', '', label)); if (sub) f.append(el('small', '', sub)); return f; };
+    $('dayFacts').replaceChildren(
+      fact(hour === null || !total ? '–' : t('ov.hour', hour), t('ov.fPeak'), hour === null || !total ? '' : t('ov.fPeakSub', fmt(q[peak]))),
+      fact(total ? fmt(Math.round(total / (q.length || 24) / 60 * 10) / 10) : '–', t('ov.fRate')),
+      fact(ms ? (ms < 10 ? ms.toFixed(1).replace('.', lang === 'de' ? ',' : '.') : Math.round(ms)) + ' ms' : '–', t('ov.fSpeed')),
+      fact(String(clients.length), t('ov.fDevices')),
+    );
+  }
   // on the overview: who is stopped most, not who is busiest
   const most = Object.entries(state.stopped || {}).filter(([ip, n]) => n > 0 && !isSelf(ip)).sort((a, b) => b[1] - a[1]);
   const cmax = Math.max(1, ...most.map((c) => c[1]));
