@@ -145,6 +145,10 @@ if ! dpkg -s caddy avahi-daemon avahi-utils ieee-data >/dev/null 2>&1; then
   DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=600 install -y -q caddy avahi-daemon avahi-utils ieee-data >/dev/null
 fi
 
+# HTTPS is switched on in the interface (Settings, Access). Running this script again
+# writes the plain configuration, so remember the choice and put it back at the end.
+# The text below is also in service/netsluice-root.py; tests/caddyfile.sh compares them.
+HTTPS_WAS_ON=0; grep -qs 'tls internal' /etc/caddy/Caddyfile && HTTPS_WAS_ON=1
 cat > /etc/caddy/Caddyfile <<'CADDY'
 {
 	admin off
@@ -194,6 +198,10 @@ systemctl enable -q netsluice-root.path && systemctl restart netsluice-root.path
 [ ! -f /run/netsluice-setup/page.pid ] || sleep 1
 systemctl restart caddy avahi-daemon
 [ ! -f /usr/share/netsluice/service/netsluiced.py ] || systemctl restart netsluiced
+if [ "$HTTPS_WAS_ON" = 1 ] && [ -f /usr/share/netsluice/service/netsluice-root.py ]; then
+  echo "==> HTTPS was on, switching it on again"
+  python3 /usr/share/netsluice/service/netsluice-root.py --https-on >/dev/null || echo "    could not switch HTTPS back on; do it under Settings, Access" >&2
+fi
 
 if [ "$(hostname)" != "netsluice" ]; then
   echo "==> setting the hostname to netsluice"

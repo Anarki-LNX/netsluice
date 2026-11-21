@@ -102,6 +102,7 @@ update.
 ```bash
 bash tests/auth-smoke.sh        # sign-in: setup, login, change, logout, lock-out
 bash tests/settings-smoke.sh    # settings and message delivery against a local receiver
+bash tests/caddyfile.sh         # the web server configuration is the same text in both places
 ```
 
 Both start the service on localhost with throw-away state and random
@@ -131,6 +132,6 @@ the interface yet.
 
 ## Wanted
 
-Reports from other board revisions, HTTPS, a light theme, tests for the
+Reports from other board revisions, a light theme, tests for the
 interface, and board support in Armbian. The WireGuard tunnel is an idea for
 later; the README says what it would be.

@@ -104,6 +104,11 @@ const T = {
     'st.anon': 'Hide which device asked', 'st.anonSub': 'Stores shortened addresses. Devices can then no longer be told apart in the interface.',
     'st.wipe': 'Delete everything collected', 'st.wipeSub': 'Empties the log and resets all counters. Lists and settings stay.', 'st.wipeBtn': 'Delete now', 'st.wipeAsk': 'Delete the complete log and all counters? This cannot be undone.', 'st.wiped': 'Log and counters are empty.',
     'st.access': 'Access', 'st.accessSub': 'Password and sign-out', 'st.protected': 'protected', 'st.pwOld': 'Current password', 'st.pwNew': 'New password, 8 characters or more', 'st.pwBtn': 'Change password', 'st.pwOk': 'Password changed. All other browsers were signed out.',
+    'hs.title': 'HTTPS', 'hs.sub': 'Encrypts the way between your browser and this device, with a certificate the device signs itself. Plain HTTP keeps working.',
+    'hs.on': 'on', 'hs.off': 'off', 'hs.working': 'Restarting the web server, a moment', 'hs.okOn': 'HTTPS is on.', 'hs.okOff': 'HTTPS is off.', 'hs.fail': (m) => `That did not work: ${m}`,
+    'hs.open': 'Open this page over HTTPS', 'hs.openBtn': 'Open', 'hs.ca': 'Root certificate', 'hs.caSub': 'Import it once on every computer and phone, then the browser stops warning. It is called "Caddy Local Authority", after the web server in this device.', 'hs.caBtn': 'Download',
+    'hs.how': 'Until a device has the root certificate, its browser warns that the connection is not private. The connection is encrypted all the same; the browser just cannot tell who signed it. Import the file under "certificate authorities" in the browser or the system settings, and trust it for websites.',
+    'hs.print': (f) => `Fingerprint of the root certificate (SHA-256), to compare when importing: ${f}`,
     'st.logout': 'Sign out of this browser', 'st.logoutSub': 'The session otherwise lasts 30 days.', 'st.logoutBtn': 'Sign out',
     'st.deviceSub': 'Filter engine and addresses', 'st.planned': 'Not built yet', 'st.plannedSub': 'Decided, but not working yet. Nothing here does anything so far.', 'st.soon': 'planned',
     'pl.kids': 'Children and schedules', 'pl.kidsText': 'Switch the internet on and off for chosen devices, by hand or by time of day. In filter mode this works through name lookups; a child who changes the DNS setting gets around it.',
@@ -217,6 +222,11 @@ const T = {
     'st.anon': 'Verbergen, welches Gerät gefragt hat', 'st.anonSub': 'Speichert gekürzte Adressen. Geräte lassen sich in der Oberfläche dann nicht mehr unterscheiden.',
     'st.wipe': 'Alles Gesammelte löschen', 'st.wipeSub': 'Leert das Protokoll und setzt alle Zähler zurück. Listen und Einstellungen bleiben.', 'st.wipeBtn': 'Jetzt löschen', 'st.wipeAsk': 'Das komplette Protokoll und alle Zähler löschen? Das lässt sich nicht rückgängig machen.', 'st.wiped': 'Protokoll und Zähler sind leer.',
     'st.access': 'Zugang', 'st.accessSub': 'Passwort und Abmelden', 'st.protected': 'geschützt', 'st.pwOld': 'Bisheriges Passwort', 'st.pwNew': 'Neues Passwort, mindestens 8 Zeichen', 'st.pwBtn': 'Passwort ändern', 'st.pwOk': 'Passwort geändert. Alle anderen Browser wurden abgemeldet.',
+    'hs.title': 'HTTPS', 'hs.sub': 'Verschlüsselt den Weg zwischen deinem Browser und diesem Gerät, mit einem Zertifikat, das das Gerät selbst ausstellt. HTTP bleibt daneben erreichbar.',
+    'hs.on': 'an', 'hs.off': 'aus', 'hs.working': 'Starte den Webserver neu, einen Moment', 'hs.okOn': 'HTTPS ist an.', 'hs.okOff': 'HTTPS ist aus.', 'hs.fail': (m) => `Das hat nicht geklappt: ${m}`,
+    'hs.open': 'Diese Seite über HTTPS öffnen', 'hs.openBtn': 'Öffnen', 'hs.ca': 'Stammzertifikat', 'hs.caSub': 'Einmal auf jedem Rechner und Handy importieren, dann warnt der Browser nicht mehr. Es heißt "Caddy Local Authority", nach dem Webserver in diesem Gerät.', 'hs.caBtn': 'Herunterladen',
+    'hs.how': 'Solange ein Gerät das Stammzertifikat nicht kennt, warnt sein Browser, die Verbindung sei nicht privat. Verschlüsselt ist sie trotzdem; der Browser weiß nur nicht, wer unterschrieben hat. Importiere die Datei im Browser oder in den Systemeinstellungen unter "Zertifizierungsstellen" und vertraue ihr für Websites.',
+    'hs.print': (f) => `Fingerabdruck des Stammzertifikats (SHA-256), zum Vergleichen beim Importieren: ${f}`,
     'st.logout': 'In diesem Browser abmelden', 'st.logoutSub': 'Sonst hält die Anmeldung 30 Tage.', 'st.logoutBtn': 'Abmelden',
     'st.deviceSub': 'Filter-Motor und Adressen', 'st.planned': 'Noch nicht gebaut', 'st.plannedSub': 'Beschlossen, aber noch ohne Funktion. Hier lässt sich bisher nichts einstellen.', 'st.soon': 'geplant',
     'pl.kids': 'Kinder und Zeitpläne', 'pl.kidsText': 'Das Internet für ausgewählte Geräte an- und abschalten, von Hand oder nach Uhrzeit. Im Filterbetrieb läuft das über das Nachschlagen von Adressen; ein Kind, das die DNS-Einstellung ändert, kommt daran vorbei.',
@@ -287,12 +297,14 @@ function applyLang() {
 }
 
 // Settings: the overview shows one tile per section; a tile opens its section as a page of its own (#settings/<key>).
+const hs = { d: null, busy: false };        // HTTPS switch, see renderHttps
 function settingsPage(key) {
   const folds = [...document.querySelectorAll('#stFolds > .fold')];
   const open = folds.find((d) => d.dataset.key === key);
   $('stFolds').classList.toggle('sub', !!open);
   folds.forEach((d) => { d.open = d === open; d.classList.toggle('current', d === open); });
   $('stHead').hidden = !!open; $('stPlanned').hidden = !!open || !PLANNED.length; $('stNav').hidden = !open;
+  if (key === 'access') loadHttps();
   return open ? key : null;
 }
 document.querySelectorAll('#stFolds > .fold > summary').forEach((sm) => sm.addEventListener('click', (e) => {
@@ -830,6 +842,41 @@ $('bkOff').addEventListener('click', () => { if (confirm(t('bk.offAsk'))) storag
 
 // ---- children and schedules ---------------------------------------------------
 const kids = { rules: {} };
+// HTTPS: the switch restarts the web server this page came through, so the page
+// asks again until the device answers and says what became of it.
+function renderHttps() {
+  const d = hs.d || {};
+  setSwitch($('hsSwitch'), !!d.on); $('hsSwitch').disabled = hs.busy || !hs.d;
+  $('hsLabel').textContent = t(d.on ? 'hs.on' : 'hs.off');
+  $('hsOn').hidden = !d.on || hs.busy;
+  const url = 'https://' + location.hostname + '/';
+  $('hsUrl').textContent = url; $('hsLink').href = url + location.hash;
+  $('hsLink').hidden = location.protocol === 'https:';
+  $('hsCa').hidden = !d.ca;
+  $('hsPrint').textContent = d.fingerprint ? t('hs.print', d.fingerprint) : '';
+}
+async function loadHttps() {
+  try { hs.d = await svc('system/https'); } catch { /* an older service: the switch stays off */ }
+  renderHttps();
+}
+$('hsSwitch').addEventListener('click', async () => {
+  if (hs.busy || !hs.d) return;
+  const want = !hs.d.on;
+  hs.busy = true; renderHttps(); say('hsNote', '', t('hs.working'));
+  try { await svc('system/https', { on: want }); } catch (e) { hs.busy = false; renderHttps(); say('hsNote', 'bad', t('hs.fail', e.message)); return; }
+  let d = null;
+  for (let i = 0; i < 60 && !(d && !d.busy); i++) {
+    await new Promise((r) => setTimeout(r, 1500));
+    try { const r = await fetch('/api/system/https'); d = r.ok ? await r.json() : null; } catch { d = null; }   // the web server is restarting
+  }
+  hs.busy = false;
+  if (d) hs.d = d;
+  renderHttps();
+  if (!d) say('hsNote', 'bad', t('hs.fail', 'no answer'));
+  else if (d.on !== want || d.error) say('hsNote', 'bad', t('hs.fail', d.error || '?'));
+  else say('hsNote', 'ok', t(want ? 'hs.okOn' : 'hs.okOff'));
+});
+
 async function svc(path, body) {
   const r = await fetch('/api/' + path, body === undefined ? {} : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   if (r.status === 401) { gate('login'); throw new Error('login'); }

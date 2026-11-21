@@ -819,11 +819,122 @@ def st_job(job):
         raise
 
 
+# ---------- HTTPS ---------------------------------------------------------------
+# The web server can sign a certificate for this device itself. Its root certificate
+# is offered for download, so that browsers which import it stop warning. Port 80
+# keeps working, nobody is locked out by a browser that distrusts the certificate.
+CADDYFILE = "/etc/caddy/Caddyfile"
+CA_ROOT = "/var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt"
+CA_COPY, HTTPS_RESULT = BASE + "/https-ca.crt", BASE + "/https-result.json"
+SITE = """	encode zstd gzip
+
+	# sign-in, sign-out and first-time setup are reachable without a session
+	handle /auth/* {
+		reverse_proxy 127.0.0.1:3002
+	}
+
+	# everything that reads or changes the filter needs a valid session
+	@inside path /control/* /api/*
+	handle @inside {
+		forward_auth 127.0.0.1:3002 {
+			uri /auth/check
+		}
+		handle /control/* {
+			reverse_proxy 127.0.0.1:3001
+		}
+		handle /api/* {
+			reverse_proxy 127.0.0.1:3002
+		}
+	}
+
+	# the interface itself: static files, nothing secret in them
+	handle {
+		root * /srv/netsluice/www
+		# always revalidate, so a new version of the interface shows up on reload
+		header Cache-Control "no-cache"
+		file_server
+	}"""
+
+
+def caddyfile(https):
+    """The whole configuration of the web server. Without HTTPS it is, to the letter,
+    what provision/install-stack.sh writes (tests/caddyfile.sh compares them)."""
+    if not https:
+        return "{\n\tadmin off\n}\n\n:80 {\n" + SITE + "\n}\n"
+    return ("{\n\tadmin off\n\t# port 80 stays a way in of its own, it does not send browsers to HTTPS\n\tauto_https disable_redirects\n"
+            "\t# the root certificate is offered in the interface, not put into this system\n\tskip_install_trust\n}\n\n"
+            ":80, :443 {\n\t# a certificate for whatever name or address the device is opened under\n"
+            "\ttls internal {\n\t\ton_demand\n\t}\n\n" + SITE + "\n}\n")
+
+
+def https_on():
+    try:
+        return "tls internal" in open(CADDYFILE).read()
+    except OSError:
+        return False
+
+
+def port_open(port, wait):
+    import socket
+    end = time.time() + wait
+    while time.time() < end:
+        try:
+            socket.create_connection(("127.0.0.1", port), 1).close()
+            return True
+        except OSError:
+            time.sleep(0.5)
+    return False
+
+
+def https_set(a):
+    """Switch HTTPS on or off. The new configuration is checked first; if the web server
+    does not come up with it, the previous one is put back."""
+    on = bool(a.get("on"))
+    result = lambda err=None: (write_json(HTTPS_RESULT, {"on": https_on(), "error": err, "at": int(time.time())}), {"on": https_on(), "error": err})[1]
+    try:
+        old = open(CADDYFILE).read()
+    except OSError as e:
+        return result(str(e)[:200])
+    tmp = CADDYFILE + ".new"
+    with open(tmp, "w") as f:
+        f.write(caddyfile(on))
+    os.chmod(tmp, 0o644)
+    code, out = sh(["runuser", "-u", "caddy", "--", "env", "HOME=/var/lib/caddy", "caddy", "validate", "--config", tmp, "--adapter", "caddyfile"], 60)
+    if code:
+        os.remove(tmp)
+        return result("check: " + out[-200:])
+    os.replace(tmp, CADDYFILE)
+    sh(["systemctl", "restart", "caddy"], 60)
+    if not (port_open(80, 20) and (not on or port_open(443, 10))):
+        with open(CADDYFILE, "w") as f:
+            f.write(old)
+        sh(["systemctl", "restart", "caddy"], 60)
+        return result("the web server did not start with the new setting; the previous one is back")
+    if on:
+        end = time.time() + 15
+        while time.time() < end and not os.path.exists(CA_ROOT):
+            time.sleep(0.5)
+        try:
+            with open(CA_ROOT, "rb") as src, open(CA_COPY + ".tmp", "wb") as dst:
+                dst.write(src.read())
+            os.chmod(CA_COPY + ".tmp", 0o644)
+            os.replace(CA_COPY + ".tmp", CA_COPY)
+        except OSError as e:
+            return result("HTTPS is on, but the root certificate could not be read: " + str(e)[:120])
+    else:
+        try:
+            os.remove(CA_COPY)
+        except OSError:
+            pass
+    return result()
+
+
 COMMANDS = {"net-status": net_status, "hostname": set_hostname, "addr-try": addr_try, "addr-confirm": lambda a: addr_end(True),
             "addr-revert": lambda a: addr_end(False), "upd-status": upd_status, "upd-check": upd_check, "upd-auto": upd_auto, "upd-run": upd_run,
             "app-status": app_status, "app-check": app_check, "app-run": app_run, "app-auto": app_auto,
             "st-status": st_status, "st-backup": lambda a: st_start("backup", a), "st-install": lambda a: st_start("install", a),
-            "st-restore": lambda a: st_start("restore", a), "st-backup-delete": st_backup_delete, "st-poweroff": st_poweroff}
+            "st-restore": lambda a: st_start("restore", a), "st-backup-delete": st_backup_delete, "st-poweroff": st_poweroff,
+            "https-set": https_set}
 
 
 def main():
@@ -839,6 +950,8 @@ def main():
         if s["available"] and not s["running"]:
             app_update()
         return
+    if "--https-on" in sys.argv:              # for install-stack.sh, which writes the plain configuration
+        print(https_set({"on": True})); return
     if "--revert" in sys.argv:
         t = trial()
         if t and t["expires"] <= time.time() + 5:

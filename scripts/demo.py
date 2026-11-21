@@ -60,6 +60,7 @@ def geo(since):
 
 
 REFRESH = {"before": time.time() - 90000, "at": time.time() - 3600}   # when the lists were last refreshed
+HTTPS = {"on": False, "until": 0}
 OFF = {"until": 0}        # the filter switch in the top bar: off until this time
 
 
@@ -78,6 +79,7 @@ def reply_for(path, query):
         return {"enabled": True, "filters": [{"id": i + 1, "name": n, "url": u, "rules_count": r, "enabled": True, "last_updated": stamp(i)} for i, (n, u, r) in enumerate(LISTS)]}
     if path == "/control/dns_info": return {"upstream_dns": ["https://dns.quad9.net/dns-query"], "bootstrap_dns": ["9.9.9.9"], "dnssec_enabled": True}
     if path == "/control/querylog/config": return {"enabled": True, "interval": 604800000, "anonymize_client_ip": False, "ignored": [], "ignored_enabled": False}
+    if path == "/api/system/https": return {"on": HTTPS["on"], "busy": time.time() < HTTPS["until"], "error": None, "ca": HTTPS["on"], "fingerprint": "A1:B2:C3:D4:E5:F6:07:18:29:3A:4B:5C:6D:7E:8F:90:A1:B2:C3:D4:E5:F6:07:18:29:3A:4B:5C:6D:7E:8F:90" if HTTPS["on"] else None}
     if path == "/api/system/app/hint": return {"version": "0.1.7", "latest": "0.1.8"}
     if path == "/api/devices": return {"devices": {d[0]: {"name": d[1], "kind": d[2], "vendor": d[3], "model": d[4], "firmware": d[5], "mac": d[6], "private": d[3] is None, "source": "router", "services": []} for d in DEVICES}, "blocked": {d[0]: (k * 137 + int(now() / 3) * (k % 3)) % 900 for k, d in enumerate(DEVICES)}}
     if path == "/api/geo":
@@ -128,6 +130,8 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == "/control/filtering/refresh":      # like the real filter: one list after the other
             REFRESH["before"], REFRESH["at"] = REFRESH["at"], time.time()
             time.sleep(len(LISTS) * 0.8 + 0.5)
+        if self.path == "/api/system/https":
+            HTTPS["on"], HTTPS["until"] = bool(json.loads(body or b"{}").get("on")), time.time() + 4
         if self.path == "/control/protection":
             d = json.loads(body or b"{}")
             if d.get("enabled") and d.get("duration"):

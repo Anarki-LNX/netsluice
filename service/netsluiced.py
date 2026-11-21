@@ -27,13 +27,14 @@ HTTP interface (all JSON, localhost only, the web server in front checks the ses
     GET  /api/storage | /api/storage/progress | /api/storage/backup/download
                                             POST /api/storage/backup[/delete] | install | restore | poweroff
     GET  /api/system | /api/system/app/progress | /api/system/app/hint | /api/system/updates/progress
+    GET  /api/system/https | /api/system/https/ca     POST /api/system/https { on }
                                             POST /api/system/hostname | address[/confirm|/revert]
                                                  /api/system/updates/check | auto | run
                                                  /api/system/app/check | auto | run
 
 Standard library only.
 """
-import array, bisect, csv, hashlib, hmac, json, os, re, secrets, shutil, signal, socket, struct, subprocess, sys, threading, time, urllib.parse, urllib.request
+import array, base64, bisect, csv, hashlib, hmac, json, os, re, secrets, shutil, signal, socket, struct, subprocess, sys, threading, time, urllib.parse, urllib.request
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -737,6 +738,42 @@ def app_hint():
     return {"version": cur, "latest": new if newer else None}
 
 
+CADDYFILE = os.environ.get("NETSLUICE_CADDYFILE", "/etc/caddy/Caddyfile")
+HTTPS_CA = os.path.join(os.path.dirname(STATE), "https-ca.crt")           # copy of the root certificate, made by the helper
+HTTPS_RESULT = os.path.join(os.path.dirname(STATE), "https-result.json")
+https_busy = threading.Event()
+
+
+def https_status():
+    """Read from files, without the helper: the page asks while the web server restarts."""
+    on = "tls internal" in read_text(CADDYFILE)
+    try:
+        last = json.loads(read_text(HTTPS_RESULT, "{}"))
+    except ValueError:
+        last = {}
+    out = {"on": on, "busy": https_busy.is_set(), "error": last.get("error"), "ca": False, "fingerprint": None}
+    try:
+        with open(HTTPS_CA) as f:
+            pem = f.read()
+        der = base64.b64decode("".join(l for l in pem.split("-----END")[0].splitlines() if l and not l.startswith("-----")))
+        digest = hashlib.sha256(der).hexdigest().upper()
+        out.update(ca=on, fingerprint=":".join(digest[i:i + 2] for i in range(0, len(digest), 2)) if on else None)
+    except (OSError, ValueError):
+        pass
+    return out
+
+
+def https_switch(on):
+    """Runs after the answer went out: switching restarts the web server the request came through."""
+    try:
+        time.sleep(0.5)
+        root_call("https-set", {"on": on}, timeout=150)
+    except Exception:
+        pass
+    finally:
+        https_busy.clear()
+
+
 def lookout():
     """Look on GitHub for a new version about once a day, so the top bar can say so.
     Looking installs nothing; that stays a click, or the daily automatic update."""
@@ -992,7 +1029,9 @@ def main():
             self.send_header("Content-Length", str(len(body)))
             if cookie is not None:
                 age = SESSION_DAYS * 86400 if cookie else 0
-                self.send_header("Set-Cookie", f"netsluice_session={cookie}; Path=/; Max-Age={age}; HttpOnly; SameSite=Strict")
+                # signed in over HTTPS, the session is never sent over plain HTTP
+                secure = "; Secure" if self.headers.get("X-Forwarded-Proto") == "https" else ""
+                self.send_header("Set-Cookie", f"netsluice_session={cookie}; Path=/; Max-Age={age}; HttpOnly; SameSite=Strict{secure}")
             self.end_headers()
             self.wfile.write(body)
 
@@ -1040,6 +1079,20 @@ def main():
                         self.reply(json.load(f)); return
                 except (OSError, ValueError):
                     self.reply({}); return
+            if path == "/api/system/https":
+                self.reply(https_status()); return
+            if path == "/api/system/https/ca":
+                try:
+                    with open(HTTPS_CA, "rb") as f:
+                        body = f.read()
+                except OSError:
+                    self.reply({"error": "none"}, 404); return
+                self.send_response(200)
+                self.send_header("Content-Type", "application/x-x509-ca-cert")
+                self.send_header("Content-Disposition", 'attachment; filename="netsluice-root.crt"')
+                self.send_header("Cache-Control", "no-store")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers(); self.wfile.write(body); return
             if path == "/api/system/app/hint":
                 self.reply(app_hint()); return
             if path == "/api/system/app/progress":
@@ -1112,6 +1165,12 @@ def main():
                       "/api/system/app/check": ("app-check", 60), "/api/system/app/auto": ("app-auto", 30), "/api/system/app/run": ("app-run", 30),
                       "/api/storage/backup": ("st-backup", 30), "/api/storage/backup/delete": ("st-backup-delete", 30),
                       "/api/storage/install": ("st-install", 30), "/api/storage/restore": ("st-restore", 30), "/api/storage/poweroff": ("st-poweroff", 30)}
+            if path == "/api/system/https":
+                if https_busy.is_set():
+                    self.reply({"error": "busy"}, 400); return
+                https_busy.set()
+                threading.Thread(target=https_switch, args=(bool(data.get("on")),), daemon=True).start()
+                self.reply({"started": True}); return
             if path in system:
                 cmd, wait = system[path]
                 res = root_call(cmd, {k: data[k] for k in ("name", "ip", "on", "confirm", "no_backup") if k in data}, timeout=wait)

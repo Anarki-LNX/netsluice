@@ -28,8 +28,8 @@ a device: `python3 scripts/demo.py`, then open <http://127.0.0.1:8099/>.
 - **Filter** for the whole network, with the block lists known from AdGuard
   Home and Pi-hole. One switch per list.
 - **Overview** with a live view: lookups arrive, are checked, and pass or burst.
-- **Devices**, sorted by activity, with name, maker, kind and, where a device
-  announces it, model and firmware.
+- **Devices**, the one that is stopped most often first, with name, maker,
+  kind and, where a device announces it, model and firmware.
 - **World map** of where the network talks to, coloured by traffic and by how
   much was stopped.
 - **Children and schedules**: internet on or off per device, by hand or by
@@ -41,6 +41,9 @@ a device: `python3 scripts/demo.py`, then open <http://127.0.0.1:8099/>.
   once a day. If the new version does not start, the old one is put back.
 - **Back up and install**: keep a copy of the original system, move NetSluice
   to the internal storage, and put the copy back if you change your mind.
+- **HTTPS** in your own network, if you switch it on: the device signs its own
+  certificate and offers the root certificate to import, so browsers stop
+  warning. Plain HTTP keeps working.
 - English and German.
 
 ## Status: early, tested on one device
@@ -51,7 +54,7 @@ the board marking `mini_v21_20210521`. It runs that owner's home network.
 | | |
 |---|---|
 | Works | a ready-made image for the microSD card, boot from microSD, backup of the internal storage, installation to it and putting the backup back, all from the interface, both Ethernet ports at 1 Gbit/s, LEDs, button, everything listed above |
-| Not built yet | HTTPS, inline ("sluice") and listening mode, changing the fixed address from the interface |
+| Not built yet | inline ("sluice") and listening mode, changing the fixed address from the interface |
 | Not working | USB-C as a data port (it still powers the device) |
 | Untested | other board revisions; the other Deeper models (Pico, Nano, Air) are different hardware |
 

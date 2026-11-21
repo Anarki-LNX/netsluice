@@ -198,6 +198,14 @@ try {
         </form>
         <p class="note" id="pwNote" role="status"></p>
         <div class="line"><span class="linetext"><b data-i18n="st.logout"></b><small data-i18n="st.logoutSub"></small></span><button type="button" class="btn ghost" id="logout" data-i18n="st.logoutBtn"></button></div>
+        <div class="line"><span class="linetext"><b data-i18n="hs.title"></b><small data-i18n="hs.sub"></small></span><button type="button" class="switch" role="switch" id="hsSwitch" data-i18n-label="hs.title"><span class="track"></span><span id="hsLabel"></span></button></div>
+        <p class="note" id="hsNote" role="status"></p>
+        <div id="hsOn" hidden>
+          <div class="line"><span class="linetext"><b data-i18n="hs.open"></b><small id="hsUrl"></small></span><a class="btn ghost" id="hsLink" data-i18n="hs.openBtn"></a></div>
+          <div class="line"><span class="linetext"><b data-i18n="hs.ca"></b><small data-i18n="hs.caSub"></small></span><a class="btn ghost" id="hsCa" href="/api/system/https/ca" download="netsluice-root.crt" data-i18n="hs.caBtn"></a></div>
+          <p class="muted" data-i18n="hs.how"></p>
+          <p class="muted" id="hsPrint"></p>
+        </div>
       </div>
     </details>
 
