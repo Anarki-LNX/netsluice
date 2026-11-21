@@ -60,9 +60,13 @@ export function createScene(canvas) {
   // ----- where things stand: u runs along the flow (0 devices, 1 world), v across it (-1 .. 1)
   const P = (u, v) => (vert ? [W / 2 + v * W / 2, u * H] : [u * W, H / 2 + v * H / 2]);
   const along = () => (vert ? H : W), across = () => (vert ? W : H);
-  const GATE = () => (vert ? .5 : .53), WORLD = () => (vert ? .86 : .84);
+  const GATE = () => (vert ? .5 : .53), WORLD = () => (vert ? .86 : .825);
   const gateHalf = () => clamp(along() * .028, 22, 40);            // half the depth of the gate
-  const globeR = () => Math.min(across() * (vert ? .2 : .3), along() * (vert ? .11 : .13));
+  // the gate stands below the two figures and is shorter than the stage; the globe keeps
+  // clear of the edge, glow included
+  const GV = () => (vert ? 0 : .13), GS = () => (vert ? .92 : .64);        // centre and half height of the gate, in v
+  const gvOf = (v, jitter = 0) => clamp(GV() + v * .3 + jitter, GV() - GS() * .62, GV() + GS() * .62);
+  const globeR = () => Math.min(across() * (vert ? .2 : .235), along() * (vert ? .11 : .105), along() * (1 - WORLD()) / 1.62);
 
   function layout() {
     const r = canvas.getBoundingClientRect();
@@ -84,7 +88,7 @@ export function createScene(canvas) {
     const all = rest > 0 ? [...list, { ip: '+', name: '+' + rest, kind: 'more' }] : list;
     all.forEach((d, i) => {
       const k = all.length === 1 ? 0 : (i / (all.length - 1)) * 2 - 1;        // -1 .. 1
-      const v = k * (vert ? .8 : .84), u = (vert ? .1 : .17) + (vert ? .02 : .035) * (1 - k * k) * -1 + (vert ? 0 : .02);
+      const v = k * .8, u = (vert ? .1 : .17) + (vert ? .02 : .035) * (1 - k * k) * -1 + (vert ? 0 : .02);
       const prev = old.get(d.ip);
       const n = { ...d, u, v, heat: prev ? prev.heat : 0, pulse: prev ? prev.pulse : 0 };
       nodes.push(n); byIp.set(d.ip, n);
@@ -98,9 +102,9 @@ export function createScene(canvas) {
     const n = byIp.get(ev.client) || more;
     if (!n || packets.length > 90) return;
     n.heat = 1; n.pulse = 1;
-    const gv = clamp(n.v * .34 + (Math.random() - .5) * .16, -.42, .42);
+    const gv = gvOf(n.v, (Math.random() - .5) * .14);
     packets.push({ n, gv, bad: !!ev.blocked && on, host: ev.host || '', phase: 'fly', t: 0, dur: .95 + Math.random() * .45,
-      wv: clamp(gv * 1.1 + (Math.random() - .5) * .5, -.75, .75), size: 2.6 + Math.random() * 1.2, trail: [] });
+      wv: clamp((gv - GV()) * 1.1 + (Math.random() - .5) * .5, -.75, .75), size: 2.6 + Math.random() * 1.2, trail: [] });
   }
 
   function quad(a, c, b, t) { const m = 1 - t; return [m * m * a[0] + 2 * m * t * c[0] + t * t * b[0], m * m * a[1] + 2 * m * t * c[1] + t * t * b[1]]; }
@@ -140,7 +144,7 @@ export function createScene(canvas) {
           }
         } else {
           const k = ease(Math.min(1, p.t / p.dur));
-          const from = p.from || entry, c = P(WORLD(), 0), a = Math.atan2(from[1] - c[1], from[0] - c[0]) + p.wv * .9;
+          const from = p.from || entry, c = P(WORLD(), GV() * .5), a = Math.atan2(from[1] - c[1], from[0] - c[0]) + p.wv * .9;
           const target = [c[0] + Math.cos(a) * R * .96, c[1] + Math.sin(a) * R * .96];
           pos = quad(from, P((g + WORLD()) / 2, p.gv * .6 + p.wv * .25), target, k);
           if (p.t >= p.dur) { rings.push({ x: target[0], y: target[1], life: 0, ttl: .7, c: on ? 'ok' : 'muted', r: 16 }); packets.splice(i, 1); continue; }
@@ -161,15 +165,15 @@ export function createScene(canvas) {
   function draw(now) {
     if (!W || !col.text) return;
     ctx.clearRect(0, 0, W, H);
-    const g = GATE(), gh = gateHalf(), gc = P(g, 0), wc = P(WORLD(), 0), R = globeR(), span = across() * .46;
+    const g = GATE(), gh = gateHalf(), wc = P(WORLD(), GV() * .5), R = globeR(), v0 = GV() - GS(), v1 = GV() + GS();
     const gateCol = on ? col.accent : col.muted;
 
     // quiet lines: where a lookup of each device would travel
     ctx.lineWidth = 1;
     for (const n of nodes) {
-      const a = P(n.u, n.v), b = P(g - gh / along(), clamp(n.v * .34, -.42, .42));
+      const a = P(n.u, n.v), b = P(g - gh / along(), gvOf(n.v));
       ctx.strokeStyle = A(col.text, .045 + n.heat * .09);
-      ctx.beginPath(); ctx.moveTo(a[0], a[1]); const c = P((n.u + g) / 2, n.v * .55 + clamp(n.v * .34, -.42, .42) * .45); ctx.quadraticCurveTo(c[0], c[1], b[0], b[1]); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(a[0], a[1]); const c = P((n.u + g) / 2, n.v * .55 + gvOf(n.v) * .45); ctx.quadraticCurveTo(c[0], c[1], b[0], b[1]); ctx.stroke();
     }
 
     // the world: a turning sphere of dots, lit from the side the lookups arrive at
@@ -189,18 +193,18 @@ export function createScene(canvas) {
     // the gate: two rails, a field between them, a line of light that never stops scanning
     const sweep = still ? 0 : Math.sin(now / 900) * .5 + .5;
     const rail = (du, flash) => {
-      const a = P(g + du / along(), -span / (across() / 2)), b = P(g + du / along(), span / (across() / 2));
+      const a = P(g + du / along(), v0), b = P(g + du / along(), v1);
       const grad = ctx.createLinearGradient(a[0], a[1], b[0], b[1]);
       grad.addColorStop(0, A(gateCol, 0)); grad.addColorStop(.12, A(gateCol, .85)); grad.addColorStop(.88, A(gateCol, .85)); grad.addColorStop(1, A(gateCol, 0));
       ctx.strokeStyle = grad; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
       if (flash > 0) { const f = P(g + du / along(), gateFlashV); const fg = ctx.createRadialGradient(f[0], f[1], 0, f[0], f[1], 70); fg.addColorStop(0, A(du < 0 ? col.no : col.ok, .55 * flash)); fg.addColorStop(1, A(du < 0 ? col.no : col.ok, 0)); ctx.fillStyle = fg; ctx.beginPath(); ctx.arc(f[0], f[1], 70, 0, TAU); ctx.fill(); }
     };
-    const f0 = P(g - gh / along(), -span / (across() / 2)), f1 = P(g + gh / along(), span / (across() / 2));
+    const f0 = P(g - gh / along(), v0), f1 = P(g + gh / along(), v1);
     const field = vert ? ctx.createLinearGradient(0, f0[1], 0, f1[1]) : ctx.createLinearGradient(f0[0], 0, f1[0], 0);
     field.addColorStop(0, A(gateCol, .12)); field.addColorStop(.5, A(gateCol, .03)); field.addColorStop(1, A(gateCol, .12));
     ctx.fillStyle = field; ctx.fillRect(Math.min(f0[0], f1[0]), Math.min(f0[1], f1[1]), Math.abs(f1[0] - f0[0]), Math.abs(f1[1] - f0[1]));
     if (on) {
-      const sv = (sweep * 2 - 1) * span / (across() / 2), s0 = P(g - gh / along(), sv), s1 = P(g + gh / along(), sv);
+      const sv = GV() + (sweep * 2 - 1) * GS() * .97, s0 = P(g - gh / along(), sv), s1 = P(g + gh / along(), sv);
       const glow = vert ? ctx.createLinearGradient(s0[0] - 26, 0, s0[0] + 26, 0) : ctx.createLinearGradient(0, s0[1] - 26, 0, s0[1] + 26);
       glow.addColorStop(0, A(gateCol, 0)); glow.addColorStop(.5, A(gateCol, .3)); glow.addColorStop(1, A(gateCol, 0));
       ctx.fillStyle = glow;

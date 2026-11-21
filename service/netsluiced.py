@@ -357,6 +357,10 @@ def follow(db, st, cfg=None, leds=None):
             # per device every stopped request counts, whatever its record type
             if counted and key[0] > counted and is_blocked(e) and e.get("client") and e.get("client") not in st.mine:
                 st.count_blocked(e["client"], key[0])
+            # the live stage shows every request, as the counters count them: also the ones
+            # for IPv6 and HTTPS records, which the world map leaves out
+            if st.last_time and e.get("client") and e.get("client") not in st.mine:
+                st.add_flow(e["client"], is_blocked(e), q.get("name", ""))
             if q.get("type") != "A":            # one event per lookup, not one per record type
                 continue
             host, client = q.get("name", ""), e.get("client", "")
@@ -365,8 +369,6 @@ def follow(db, st, cfg=None, leds=None):
             if client:
                 st.clients.add(client)
             blocked = is_blocked(e)
-            if client and st.last_time:                 # live only, not the backlog read at start
-                st.add_flow(client, blocked, host)
             if blocked and st.last_time:                # not for the backlog read at start
                 if leds:
                     leds.flash()

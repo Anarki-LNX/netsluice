@@ -397,7 +397,10 @@ async function pollFlow() {
     const r = await fetch('/api/flow?since=' + flow.seq);
     if (r.ok) {
       const d = await r.json();
-      if (flow.primed) for (const ev of d.events || []) setTimeout(() => scene.add(ev), Math.random() * 950);
+      // on opening, the last few are played once more, so a quiet network does not look switched off
+      const ev = d.events || [];
+      if (flow.primed) for (const e of ev) setTimeout(() => scene.add(e), Math.random() * 950);
+      else ev.slice(-12).forEach((e, i) => setTimeout(() => scene.add(e), 400 + i * 380 + Math.random() * 200));
       flow.seq = d.seq || 0; flow.primed = true;
     }
   } catch { /* shown by the switch in the top bar */ }
