@@ -7,14 +7,14 @@ import { createWorldMap } from './worldmap.js';
 const T = {
   en: {
     'nav.overview': 'Overview', 'nav.devices': 'Devices', 'nav.filters': 'Filters', 'nav.map': 'World map', 'nav.settings': 'Settings',
-    'status.on': 'Filter running', 'status.off': 'Filter off', 'status.offFor': (left) => `Filter off, back in ${left}`, 'status.stay': 'Keep it off', 'status.update': (v) => `Update to ${v}`, 'status.err': 'Filter not reachable',
+    'status.on': 'Filter on', 'status.off': 'Filter off', 'status.offFor': (left) => `Filter off, back in ${left}`, 'status.stay': 'Keep it off', 'status.update': (v) => `Update to ${v}`, 'status.err': 'Filter not reachable',
     'ov.passed': 'requests passed', 'ov.blocked': 'stopped', 'ov.sub': 'In the last 24 hours, counted live. A dot is one request that just went through this device.',
     'ov.home': 'Home network', 'ov.internet': 'Internet', 'ov.flowAria': 'Live view: requests arrive blue, are checked inside the sluice, leave green or burst in red',
     'lg.incoming': 'on the way to the sluice', 'lg.passed': 'passed', 'lg.blocked': 'caught in the sluice',
     'ov.last24': 'The last 24 hours', 'ov.barsAria': 'Requests per hour',
     'ov.share': (p) => `${p} % of all requests were stopped.`, 'ov.shareNone': 'No requests yet. Point a device at this filter to see it work.',
-    'ov.topDevices': 'Most active devices', 'ov.allDevices': 'All devices', 'ov.recent': 'Stopped most recently', 'ov.topBlocked': 'Stopped most often',
-    'empty.devices': 'No device has asked yet.', 'empty.recent': 'Nothing has been stopped yet.', 'empty.blocked': 'Nothing has been stopped yet.',
+    'ov.topDevices': 'Devices stopped most often', 'ov.allDevices': 'All devices', 'ov.recent': 'Stopped most recently', 'ov.topBlocked': 'Stopped most often',
+    'empty.devices': 'No device has been stopped yet.', 'empty.recent': 'Nothing has been stopped yet.', 'empty.blocked': 'Nothing has been stopped yet.',
     'requests': 'requests', 'times': 'times',
     'dv.title': (n) => n === 1 ? 'One device uses the filter' : `${n} devices use the filter`, 'dv.sub': 'Every device that asked this filter for an address in the last 24 hours. The one with the most stopped requests comes first.',
     'dv.place': (n) => `No. ${n}`, 'dv.requests': 'Requests', 'dv.stopped': 'Stopped', 'dv.address': 'Address', 'dv.mac': 'MAC', 'dv.firmware': 'Firmware',
@@ -120,14 +120,14 @@ const T = {
   },
   de: {
     'nav.overview': 'Übersicht', 'nav.devices': 'Geräte', 'nav.filters': 'Filter', 'nav.map': 'Weltkarte', 'nav.settings': 'Einstellungen',
-    'status.on': 'Filter läuft', 'status.off': 'Filter aus', 'status.offFor': (left) => `Filter aus, wieder an in ${left}`, 'status.stay': 'Aus lassen', 'status.update': (v) => `Update auf ${v}`, 'status.err': 'Filter nicht erreichbar',
+    'status.on': 'Filter an', 'status.off': 'Filter aus', 'status.offFor': (left) => `Filter aus, wieder an in ${left}`, 'status.stay': 'Aus lassen', 'status.update': (v) => `Update auf ${v}`, 'status.err': 'Filter nicht erreichbar',
     'ov.passed': 'Anfragen durchgelassen', 'ov.blocked': 'aufgehalten', 'ov.sub': 'In den letzten 24 Stunden, live gezählt. Ein Punkt ist eine Anfrage, die gerade durch dieses Gerät ging.',
     'ov.home': 'Heimnetz', 'ov.internet': 'Internet', 'ov.flowAria': 'Live-Ansicht: Anfragen kommen blau an, werden in der Schleuse geprüft, verlassen sie grün oder zerplatzen rot',
     'lg.incoming': 'unterwegs zur Schleuse', 'lg.passed': 'durchgelassen', 'lg.blocked': 'in der Schleuse erwischt',
     'ov.last24': 'Die letzten 24 Stunden', 'ov.barsAria': 'Anfragen pro Stunde',
     'ov.share': (p) => `${p} % aller Anfragen wurden aufgehalten.`, 'ov.shareNone': 'Noch keine Anfragen. Stell bei einem Gerät diesen Filter ein, dann siehst du ihn arbeiten.',
-    'ov.topDevices': 'Aktivste Geräte', 'ov.allDevices': 'Alle Geräte', 'ov.recent': 'Zuletzt aufgehalten', 'ov.topBlocked': 'Am häufigsten aufgehalten',
-    'empty.devices': 'Noch hat kein Gerät gefragt.', 'empty.recent': 'Bisher wurde nichts aufgehalten.', 'empty.blocked': 'Bisher wurde nichts aufgehalten.',
+    'ov.topDevices': 'Meist aufgehaltene Geräte', 'ov.allDevices': 'Alle Geräte', 'ov.recent': 'Zuletzt aufgehalten', 'ov.topBlocked': 'Am häufigsten aufgehalten',
+    'empty.devices': 'Bisher wurde kein Gerät aufgehalten.', 'empty.recent': 'Bisher wurde nichts aufgehalten.', 'empty.blocked': 'Bisher wurde nichts aufgehalten.',
     'requests': 'Anfragen', 'times': 'mal',
     'dv.title': (n) => n === 1 ? 'Ein Gerät nutzt den Filter' : `${n} Geräte nutzen den Filter`, 'dv.sub': 'Jedes Gerät, das diesen Filter in den letzten 24 Stunden nach einer Adresse gefragt hat. Das mit den meisten aufgehaltenen Anfragen steht vorn.',
     'dv.place': (n) => `Platz ${n}`, 'dv.requests': 'Anfragen', 'dv.stopped': 'Aufgehalten', 'dv.address': 'Adresse', 'dv.mac': 'MAC', 'dv.firmware': 'Firmware',
@@ -453,11 +453,13 @@ function render() {
   const own = new Set([location.hostname, '127.0.0.1', '::1', ...((state.status && state.status.dns_addresses) || []).map((a) => a.split('%')[0])]);
   const isSelf = (ip) => own.has(ip) || (state.devices[ip] && state.devices[ip].kind === 'self');
   const clients = pairs(s.top_clients).filter(([ip]) => !isSelf(ip));
-  const cmax = Math.max(1, ...clients.map((c) => c[1]));
-  fill($('topDevices'), clients.slice(0, 5).map(([ip, n]) => {
+  // on the overview: who is stopped most, not who is busiest
+  const most = Object.entries(state.stopped || {}).filter(([ip, n]) => n > 0 && !isSelf(ip)).sort((a, b) => b[1] - a[1]);
+  const cmax = Math.max(1, ...most.map((c) => c[1]));
+  fill($('topDevices'), most.slice(0, 5).map(([ip, n]) => {
     const row = el('div', 'item'); const main = el('div', 'main');
     main.append(el('b', '', clientName(ip)));
-    const m = el('div', 'meter'); const bar = el('i'); bar.style.width = (n / cmax * 100) + '%'; m.append(bar); main.append(m);
+    const m = el('div', 'meter'); const bar = el('i', 'no'); bar.style.width = (n / cmax * 100) + '%'; m.append(bar); main.append(m);
     main.style.flex = '1 1 auto';
     row.append(main, el('div', 'side', fmt(n)));
     return row;
