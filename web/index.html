@@ -16,7 +16,9 @@ try {
   var z = { large: 1, medium: .88, small: .76 }[localStorage.getItem('netsluice.size')];
   if (z) document.documentElement.style.setProperty('--zoom', z);
   // the look: "sluice" (the original) or "glass", each in dark or light
-  document.documentElement.dataset.theme = localStorage.getItem('netsluice.theme') === 'glass' ? 'glass' : 'sluice';
+  var th = localStorage.getItem('netsluice.theme');
+  document.documentElement.dataset.theme = th === 'glass' || th === 'graphite' ? th : 'sluice';
+  if (a && /^#[0-9a-f]{6}$/i.test(a)) document.documentElement.dataset.accent = 'own';
   document.documentElement.dataset.mode = localStorage.getItem('netsluice.mode') === 'light' ? 'light' : 'dark';
 } catch (e) {}
 </script>
@@ -58,6 +60,13 @@ try {
 <main>
 
 <section class="screen" id="screen-overview">
+  <!-- the overview of the "Graphite" design: one stage instead of tiles -->
+  <div class="scene" id="scene">
+    <canvas id="sceneCanvas" role="img" data-i18n-aria="sc.aria"></canvas>
+    <div class="scenestat no"><b id="scBlocked">0</b><span data-i18n="ov.blocked"></span></div>
+    <div class="scenestat ok"><b id="scPassed">0</b><span data-i18n="ov.passed"></span></div>
+    <p class="scenenote" id="scNote"></p>
+  </div>
   <div class="row">
     <div class="tile hero grow2">
       <div class="glow" aria-hidden="true"></div>

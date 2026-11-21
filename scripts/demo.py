@@ -82,6 +82,15 @@ def reply_for(path, query):
     if path == "/api/system/https": return {"on": HTTPS["on"], "busy": time.time() < HTTPS["until"], "error": None, "ca": HTTPS["on"], "fingerprint": "A1:B2:C3:D4:E5:F6:07:18:29:3A:4B:5C:6D:7E:8F:90:A1:B2:C3:D4:E5:F6:07:18:29:3A:4B:5C:6D:7E:8F:90" if HTTPS["on"] else None}
     if path == "/api/system/app/hint": return {"version": "0.1.7", "latest": "0.1.8"}
     if path == "/api/devices": return {"devices": {d[0]: {"name": d[1], "kind": d[2], "vendor": d[3], "model": d[4], "firmware": d[5], "mac": d[6], "private": d[3] is None, "source": "router", "services": []} for d in DEVICES}, "blocked": {d[0]: (k * 137 + int(now() / 3) * (k % 3)) % 900 for k, d in enumerate(DEVICES)}}
+    if path == "/api/flow":                       # who asks right now, weighted like the devices' traffic
+        since = next((int(p[6:]) for p in query.split("&") if p.startswith("since=") and p[6:].isdigit()), 0)
+        seq = int(now() * 3.4)
+        pool = [d for d in DEVICES for _ in range(d[7])]
+        ev = []
+        for n in range(max(since + 1, seq - 30), seq + 1):
+            r = random.Random(n); d = r.choice(pool); bad = r.random() < (.45 if d[2] in ("tv", "speaker", "iot") else .12)
+            ev.append({"seq": n, "client": d[0], "blocked": bad, "host": r.choice(BLOCKED) if bad else ""})
+        return {"seq": seq, "events": ev}
     if path == "/api/geo":
         since = next((int(p[6:]) for p in query.split("&") if p.startswith("since=") and p[6:].isdigit()), 0)
         return geo(since)

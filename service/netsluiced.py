@@ -22,6 +22,7 @@ HTTP interface (all JSON, localhost only, the web server in front checks the ses
     GET  /auth/state | /auth/check          POST /auth/setup | login | logout | password
     GET  /api/geo?since=<seq>               countries, recent events
     GET  /api/devices
+    GET  /api/flow?since=<seq>              the newest lookups: which device asked, and whether it was stopped
     GET  /api/kids                          POST /api/kids | /api/kids/extend | /api/kids/remove
     GET  /api/settings                      POST /api/settings | /api/notify/test
     GET  /api/storage | /api/storage/progress | /api/storage/backup/download
@@ -199,6 +200,8 @@ class State:
         self.mine = {"127.0.0.1", "::1"}  # this device's own addresses
         self.devices = {}          # ip -> what we found out about it
         self.macs = {}             # ip -> hardware address, remembered
+        self.flow = []             # the newest lookups, for the live stage: newest last
+        self.flow_seq = 0
         self.blocked = {}          # hour -> { client: requests stopped }
         self.blocked_upto = ""     # time of the newest log entry counted there
         self.load()
@@ -233,6 +236,17 @@ class State:
             del self.events[:-400]
             for h in [h for h in self.buckets if h < hour - HOURS]:
                 del self.buckets[h]
+
+    def add_flow(self, client, blocked, host):
+        """One lookup as it happened. The name asked for is kept only when it was stopped."""
+        with self.lock:
+            self.flow_seq += 1
+            self.flow.append({"seq": self.flow_seq, "client": client, "blocked": blocked, "host": host if blocked else ""})
+            del self.flow[:-300]
+
+    def flow_since(self, since):
+        with self.lock:
+            return {"seq": self.flow_seq, "events": [e for e in self.flow if e["seq"] > since][-80:]}
 
     def count_blocked(self, client, when):
         """One request of this client was stopped, at this time of the query log."""
@@ -351,6 +365,8 @@ def follow(db, st, cfg=None, leds=None):
             if client:
                 st.clients.add(client)
             blocked = is_blocked(e)
+            if client and st.last_time:                 # live only, not the backlog read at start
+                st.add_flow(client, blocked, host)
             if blocked and st.last_time:                # not for the backlog read at start
                 if leds:
                     leds.flash()
@@ -1042,6 +1058,9 @@ def main():
             if path == "/auth/check":
                 self.send_response(204 if auth.valid(self.token()) else 401)
                 self.send_header("Content-Length", "0"); self.end_headers(); return
+            if path == "/api/flow":
+                since = next((int(p[6:]) for p in query.split("&") if p.startswith("since=") and p[6:].isdigit()), 0)
+                self.reply(st.flow_since(since)); return
             if path == "/api/devices":
                 self.reply({"devices": st.devices, "blocked": st.blocked_totals()}); return
             if path == "/api/kids":

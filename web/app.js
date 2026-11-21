@@ -3,6 +3,7 @@
 
 import { createSluice } from './sluice.js';
 import { createWorldMap } from './worldmap.js';
+import { createScene } from './scene.js';
 
 const T = {
   en: {
@@ -48,7 +49,8 @@ const T = {
     'nt.hint': { off: 'No messages are sent.', ntfy: 'Install the ntfy app, subscribe to a topic and enter its address here, for example https://ntfy.sh/your-topic.', webhook: 'Each message is sent as JSON (event, title, text) to this address, for Home Assistant, Telegram bridges or your own scripts.' },
     'nt.newdev': 'A new device uses the filter', 'nt.newdevSub': 'A hardware address that was never seen before.', 'nt.malware': 'A dangerous host was stopped', 'nt.malwareSub': 'Hits on malware and phishing lists, at most once an hour per device and host.', 'nt.down': 'The filter does not answer', 'nt.downSub': 'After a minute without an answer, and again when it is back.',
     'nt.sent': 'Test message sent. Check your phone.', 'nt.notSent': (m) => m === 'off' ? 'Choose a way and save an address first.' : `The message did not go out: ${m}`, 'nt.badUrl': 'That is not a usable address. It must start with https:// or http://.',
-    'lk.title': 'Appearance', 'lk.sub': 'For this browser only', 'lk.theme': 'Design', 'lk.themeSub': 'How NetSluice looks. Both come in dark and light.', 'lk.theme.sluice': 'Sluice', 'lk.theme.sluiceSub': 'The original: deep water, green tiles.', 'lk.theme.glass': 'Glass', 'lk.theme.glassSub': 'Frosted panes over soft colour.',
+    'lk.title': 'Appearance', 'lk.sub': 'For this browser only', 'lk.theme': 'Design', 'lk.themeSub': 'How NetSluice looks. Both come in dark and light.', 'lk.theme.sluice': 'Sluice', 'lk.theme.sluiceSub': 'The original: deep water, green tiles.', 'lk.theme.glass': 'Glass', 'lk.theme.glassSub': 'Frosted panes over soft colour.', 'lk.theme.graphite': 'Graphite', 'lk.theme.graphiteSub': 'Calm and flat. The overview becomes a stage with your devices.',
+    'sc.aria': 'Live view: lookups travel from the devices of this network through the sluice to the internet; stopped ones burst', 'sc.off': 'The filter is off: everything passes unchecked',
     'lk.mode': 'Dark or light', 'lk.modeSub': 'The half circle in the top bar switches it too.', 'lk.mode.dark': 'Dark', 'lk.mode.light': 'Light', 'top.mode': 'Switch between dark and light', 'top.settings': 'Settings',
     'lk.size': 'Size', 'lk.sizeSub': 'Smaller shows more on a large screen. Phones always use the large size.', 'lk.size.large': 'Large', 'lk.size.medium': 'Medium', 'lk.size.small': 'Small', 'lk.accent': 'Accent colour', 'lk.accentSub': 'Used for buttons, the selected section and the sluice.', 'lk.motion': 'Animations', 'lk.motionSub': 'Off: no moving dots, no flying packets, no transitions. The page reloads once.',
     'ex.title': 'Export and import', 'ex.sub': 'Take your setup with you', 'ex.out': 'Save everything to a file', 'ex.outSub': 'Filter lists, resolver, privacy, children\'s rules, LEDs and messages. Not the password, not the log.', 'ex.outBtn': 'Export',
@@ -169,7 +171,8 @@ const T = {
     'nt.hint': { off: 'Es werden keine Meldungen gesendet.', ntfy: 'Installiere die ntfy-App, abonniere ein Thema und trag seine Adresse hier ein, zum Beispiel https://ntfy.sh/dein-thema.', webhook: 'Jede Meldung geht als JSON (event, title, text) an diese Adresse, für Home Assistant, Telegram-Brücken oder eigene Skripte.' },
     'nt.newdev': 'Ein neues Gerät nutzt den Filter', 'nt.newdevSub': 'Eine MAC, die noch nie gesehen wurde.', 'nt.malware': 'Eine gefährliche Adresse wurde aufgehalten', 'nt.malwareSub': 'Treffer auf Listen für Schadsoftware und Phishing, höchstens einmal pro Stunde je Gerät und Adresse.', 'nt.down': 'Der Filter antwortet nicht', 'nt.downSub': 'Nach einer Minute ohne Antwort, und noch einmal, wenn er wieder da ist.',
     'nt.sent': 'Testmeldung gesendet. Sieh auf dein Handy.', 'nt.notSent': (m) => m === 'off' ? 'Wähle erst einen Weg und speichere eine Adresse.' : `Die Meldung ging nicht raus: ${m}`, 'nt.badUrl': 'Das ist keine brauchbare Adresse. Sie muss mit https:// oder http:// beginnen.',
-    'lk.title': 'Aussehen', 'lk.sub': 'Gilt nur für diesen Browser', 'lk.theme': 'Design', 'lk.themeSub': 'Wie NetSluice aussieht. Beide gibt es in Dunkel und Hell.', 'lk.theme.sluice': 'Schleuse', 'lk.theme.sluiceSub': 'Das Original: tiefes Wasser, grüne Kacheln.', 'lk.theme.glass': 'Glas', 'lk.theme.glassSub': 'Milchglas-Scheiben über weichen Farben.',
+    'lk.title': 'Aussehen', 'lk.sub': 'Gilt nur für diesen Browser', 'lk.theme': 'Design', 'lk.themeSub': 'Wie NetSluice aussieht. Beide gibt es in Dunkel und Hell.', 'lk.theme.sluice': 'Schleuse', 'lk.theme.sluiceSub': 'Das Original: tiefes Wasser, grüne Kacheln.', 'lk.theme.glass': 'Glas', 'lk.theme.glassSub': 'Milchglas-Scheiben über weichen Farben.', 'lk.theme.graphite': 'Graphit', 'lk.theme.graphiteSub': 'Ruhig und flach. Die Übersicht wird zur Bühne mit deinen Geräten.',
+    'sc.aria': 'Live-Ansicht: Anfragen wandern von den Geräten dieses Netzes durch die Schleuse ins Internet; aufgehaltene zerplatzen', 'sc.off': 'Der Filter ist aus: alles geht ungeprüft durch',
     'lk.mode': 'Dunkel oder hell', 'lk.modeSub': 'Der Halbkreis in der Kopfzeile schaltet das auch um.', 'lk.mode.dark': 'Dunkel', 'lk.mode.light': 'Hell', 'top.mode': 'Zwischen dunkel und hell umschalten', 'top.settings': 'Einstellungen',
     'lk.size': 'Größe', 'lk.sizeSub': 'Kleiner zeigt mehr auf einem großen Bildschirm. Handys nutzen immer die große Darstellung.', 'lk.size.large': 'Groß', 'lk.size.medium': 'Mittel', 'lk.size.small': 'Klein', 'lk.accent': 'Akzentfarbe', 'lk.accentSub': 'Für Knöpfe, den gewählten Bereich und die Schleuse.', 'lk.motion': 'Animationen', 'lk.motionSub': 'Aus: keine wandernden Punkte, keine fliegenden Pakete, keine Übergänge. Die Seite lädt einmal neu.',
     'ex.title': 'Export und Import', 'ex.sub': 'Nimm deine Einrichtung mit', 'ex.out': 'Alles in eine Datei speichern', 'ex.outSub': 'Filterlisten, Auflöser, Datenschutz, Kinderregeln, LEDs und Meldungen. Nicht das Passwort, nicht das Protokoll.', 'ex.outBtn': 'Exportieren',
@@ -331,6 +334,7 @@ function show(name) {
   document.querySelectorAll('.screen').forEach((s) => { s.hidden = s.id !== 'screen-' + base; });
   document.querySelectorAll('#nav button').forEach((b) => { b.setAttribute('aria-current', b.dataset.screen === base ? 'page' : 'false'); });
   $('openSettings').setAttribute('aria-current', base === 'settings' ? 'page' : 'false');
+  if (scene) scene.setVisible(base === 'overview');
   if (base === 'filters') loadFilters();
   if (base === 'settings') loadSettings();
   if (base === 'map') { renderMap(); if (geo.map) geo.map.layout(); pollGeo(); }
@@ -341,6 +345,8 @@ function clientName(ip) { const d = state.devices[ip]; return (d && d.name) || s
 function pairs(list) { return (list || []).map((o) => { const k = Object.keys(o)[0]; return [k, o[k]]; }); }
 
 const sluice = createSluice($('flow'));
+// the "Graphite" design shows the overview as one stage: devices, gate, world
+const scene = document.documentElement.dataset.theme === 'graphite' ? createScene($('sceneCanvas')) : null;
 
 // ---- world map ----
 const geo = { map: null, seq: 0, primed: false, countries: {}, home: null, busy: false };
@@ -381,6 +387,22 @@ async function pollGeo() {
   geo.busy = false;
 }
 const spawn = (kind) => sluice.add(kind);
+// The stage shows each lookup leaving the device that made it. What happened
+// before the page was opened is history, not live traffic.
+const flow = { seq: 0, primed: false, busy: false };
+async function pollFlow() {
+  if (!scene || flow.busy || screen !== 'overview' || document.hidden) return;
+  flow.busy = true;
+  try {
+    const r = await fetch('/api/flow?since=' + flow.seq);
+    if (r.ok) {
+      const d = await r.json();
+      if (flow.primed) for (const ev of d.events || []) setTimeout(() => scene.add(ev), Math.random() * 950);
+      flow.seq = d.seq || 0; flow.primed = true;
+    }
+  } catch { /* shown by the switch in the top bar */ }
+  flow.busy = false;
+}
 
 // Roll a number to its new value instead of jumping.
 const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -455,6 +477,11 @@ function render() {
   const total = s.num_dns_queries || 0, blocked = s.num_blocked_filtering || 0;
   countTo($('numPassed'), total - blocked);
   countTo($('numBlocked'), blocked);
+  if (scene) {
+    countTo($('scPassed'), total - blocked); countTo($('scBlocked'), blocked);
+    scene.setOn(on && state.reachable);
+    $('scNote').textContent = !state.reachable ? t('status.err') : on ? t('ov.sub') : t('sc.off');
+  }
   // the day at a glance: a ring for the share that was stopped, and a few figures
   const pct = total ? Math.round(blocked / total * 100) : 0;
   $('dayArc').style.strokeDasharray = `${(total ? blocked / total : 0) * 251.33} 251.33`;
@@ -489,6 +516,7 @@ function render() {
       fact(String(clients.length), t('ov.fDevices')),
     );
   }
+  if (scene) scene.setDevices(clients.slice(0, 60).map(([ip]) => ({ ip, name: clientName(ip), kind: (state.devices[ip] || {}).kind || 'unknown' })));
   // on the overview: who is stopped most, not who is busiest
   const most = Object.entries(state.stopped || {}).filter(([ip, n]) => n > 0 && !isSelf(ip)).sort((a, b) => b[1] - a[1]);
   const cmax = Math.max(1, ...most.map((c) => c[1]));
@@ -744,6 +772,7 @@ function enter() {
   setInterval(() => { if (!$('shell').hidden) pollStats(); }, FAST);
   setInterval(() => { if (!$('shell').hidden) pollRest(); }, SLOW);
   setInterval(() => { if (!$('shell').hidden) pollGeo(); }, 1200);
+  setInterval(() => { if (!$('shell').hidden) pollFlow(); }, 1000);
   // keep the on/off state of the children's devices current, but never while someone is typing a time
   setInterval(async () => {
     if ($('shell').hidden || screen !== 'settings' || (document.activeElement && document.activeElement.type === 'time')) return;
@@ -994,7 +1023,7 @@ function renderDevice() {
     return b;
   }));
   const root = document.documentElement;
-  $('themes').replaceChildren(...['sluice', 'glass'].map((k) => {
+  $('themes').replaceChildren(...['sluice', 'glass', 'graphite'].map((k) => {
     const b = el('button', 'choice theme-' + k); b.type = 'button'; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', root.dataset.theme === k ? 'true' : 'false');
     b.append(el('span', 'swatch'), el('b', '', t('lk.theme.' + k)), el('small', '', t('lk.theme.' + k + 'Sub')));
     // the drawings read their colours once, so a new design starts the page afresh

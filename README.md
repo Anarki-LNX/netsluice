@@ -35,7 +35,7 @@ a device: `python3 scripts/demo.py`, then open <http://127.0.0.1:8099/>.
 - **Children and schedules**: internet on or off per device, by hand or by
   time of day, with extra time at the press of a button.
 - **Settings** for encrypted DNS (DoH, DNSSEC), privacy, the board's LEDs and
-  button, messages to a phone (ntfy or webhook), appearance (two designs,
+  button, messages to a phone (ntfy or webhook), appearance (three designs,
   each in dark and light), export and import,
   name and system updates.
 - **Updates of NetSluice itself** from the releases here on GitHub, by hand or

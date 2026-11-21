@@ -74,6 +74,11 @@ main, .screen { display: flex; flex-direction: column; gap: 20px; }
 .row { display: flex; flex-wrap: wrap; gap: 20px; }
 .grow1 { flex: 1 1 280px; min-width: 0; }
 .grow2 { flex: 2 1 520px; min-width: 0; }
+/* on a wide screen every row shares one grid of three, so the edges of the tiles line up */
+@media (min-width: 900px) {
+  .row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .row > .grow2 { grid-column: span 2; }
+}
 .tile { position: relative; display: flex; flex-direction: column; gap: 14px; padding: 24px; border: 1px solid var(--line); border-radius: var(--r-tile); background: var(--tile); }
 .tile.hero { overflow: hidden; background: var(--panel); gap: 20px; container-type: inline-size; }
 /* The headline stays on one line and scales with the tile; it may wrap only on a phone. */
@@ -232,6 +237,7 @@ a { color: var(--accent-ink); }
 /* choosing a design: a small picture of each */
 .choice .swatch { display: block; height: 64px; margin-bottom: 8px; border-radius: 12px; border: 1px solid var(--edge-soft); }
 .choice.theme-sluice .swatch { background: linear-gradient(135deg, #06141B 0 50%, #E9F1F1 50% 100%); box-shadow: inset 0 0 0 2px rgba(92, 227, 154, .55); }
+.choice.theme-graphite .swatch { background: radial-gradient(circle at 78% 50%, rgba(140, 146, 255, .55) 0 12%, transparent 13%), linear-gradient(90deg, transparent 49%, #8C92FF 49% 51%, transparent 51%), linear-gradient(135deg, #0D0E11 0 50%, #F4F4F2 50% 100%); }
 .choice.theme-glass .swatch { background: radial-gradient(60% 120% at 10% 0%, #4078FF, transparent 70%), radial-gradient(60% 120% at 100% 0%, #BE46FF, transparent 70%), radial-gradient(70% 120% at 60% 110%, #00C8B4, transparent 70%), #0B0E1C; }
 .choice small { color: var(--muted); font-size: 14px; }
 .choice[aria-checked="true"] { border-color: var(--ok); background: var(--tint-hi); }
@@ -312,6 +318,7 @@ a.btn { display: inline-flex; align-items: center; text-decoration: none; }
    chooses how much. Phones keep the full size: their buttons have to stay easy to hit. */
 @media (min-width: 900px) and (pointer: fine) {
   body { zoom: var(--zoom, .88); }
+  html[data-theme="graphite"] body .scene { height: clamp(520px, calc(100vh / var(--zoom, .88) - 150px), 980px); }
   .shell { max-width: calc(1320px / var(--zoom, .88)); }      /* as wide on the screen as before */
   .gate { min-height: calc(100vh / var(--zoom, .88)); }
 }
@@ -340,6 +347,80 @@ html[data-mode="light"] {
 }
 html[data-mode="light"] .glow { background: radial-gradient(closest-side, rgba(30, 120, 214, .16), rgba(30, 120, 214, 0)); }
 html[data-mode="light"] .legend { color: var(--soft); }
+
+/* ---------- Graphite, dark: calm and flat, one signal colour ---------- */
+.scene { display: none; }
+html[data-theme="graphite"] {
+  --gold: #8C92FF;
+  --display: "Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --body: "Inter", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --ground: #0D0E11; --panel: #15171B; --tile: #15171B; --line: rgba(255, 255, 255, .07);
+  --text: #EDEEF0; --muted: #8A8F98; --soft: #C3C6CC;
+  --in: #8C92FF; --ok: #3DD6A8; --no: #FF6464;
+  --accent-ink: color-mix(in srgb, var(--gold) 80%, white); --on-accent: #0B0C1E;
+  --bar: transparent; --well: #1A1C21;
+  --stage: #0A0B0D; --stage-line: rgba(255, 255, 255, .07);
+  --edge: rgba(255, 255, 255, .16); --edge-soft: rgba(255, 255, 255, .09); --edge-hi: rgba(255, 255, 255, .34);
+  --tint: #15171B; --tint-hi: #1B1D22; --tint-edge: rgba(255, 255, 255, .07); --tint-edge-hi: rgba(255, 255, 255, .24);
+  --ok-wash: rgba(61, 214, 168, .14); --ok-ink: #7FE8C8;
+  --no-wash: rgba(255, 100, 100, .15); --no-ink: #FF9B9B; --no-edge: rgba(255, 100, 100, .5);
+  --off-wash: rgba(255, 255, 255, .07);
+  --track: rgba(255, 255, 255, .14); --knob: #FFFFFF; --knob-on: #FFFFFF;
+  --r-tile: 18px; --r-card: 14px;
+  --scheme: dark;
+}
+html[data-theme="graphite"] .top { border: 0; padding: 4px 2px; border-radius: 0; }
+html[data-theme="graphite"] #nav button { border-color: transparent; border-radius: 10px; }
+html[data-theme="graphite"] #nav button[aria-current="page"] { background: var(--well); border-color: var(--line); color: var(--text); }
+html[data-theme="graphite"] .iconbtn, html[data-theme="graphite"] .lang { border-color: var(--line); border-radius: 12px; }
+html[data-theme="graphite"] .iconbtn[aria-current="page"] { background: var(--well); border-color: var(--edge); color: var(--text); }
+html[data-theme="graphite"] .btn, html[data-theme="graphite"] .seg button, html[data-theme="graphite"] .days button { border-radius: 10px; }
+html[data-theme="graphite"] h1 { font-weight: 600; letter-spacing: -.035em; }
+html[data-theme="graphite"] h2, html[data-theme="graphite"] .card h3, html[data-theme="graphite"] .foldtitle b { font-weight: 600; letter-spacing: -.015em; }
+html[data-theme="graphite"] .glow { display: none; }
+html[data-theme="graphite"] .card.on { border-color: color-mix(in srgb, var(--ok) 40%, transparent); background: color-mix(in srgb, var(--ok) 5%, var(--tint)); }
+html[data-theme="graphite"] .card.on:hover { border-color: color-mix(in srgb, var(--ok) 80%, transparent); }
+html[data-theme="graphite"] .card:not(.on):not(.device) { background: transparent; }
+html[data-theme="graphite"] .place.top1 { background: var(--text); border-color: var(--text); color: var(--ground); }
+html[data-theme="graphite"] .place.top2, html[data-theme="graphite"] .place.top3 { border-color: var(--edge); color: var(--text); }
+/* its overview: one stage instead of the tiles */
+html[data-theme="graphite"] #screen-overview > .row { display: none; }
+html[data-theme="graphite"] .scene { position: relative; display: block; height: clamp(520px, calc(100vh - 150px), 900px); margin-top: -6px; }
+.scene canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.scenestat { position: absolute; top: 18px; display: flex; flex-direction: column; gap: 4px; pointer-events: none; }
+.scenestat b { font: 300 clamp(40px, 5.2vw, 76px)/1 var(--display); letter-spacing: -.045em; font-variant-numeric: tabular-nums; }
+.scenestat span { color: var(--muted); font-size: 15px; font-weight: 500; }
+.scenestat.no { right: calc(47% + 58px); text-align: right; align-items: flex-end; } .scenestat.no b { color: var(--no); }
+.scenestat.ok { left: calc(53% + 58px); } .scenestat.ok b { color: var(--ok); }
+.scenenote { position: absolute; left: 0; right: 0; bottom: 6px; text-align: center; color: var(--muted); font-size: 14px; pointer-events: none; }
+@media (max-width: 680px) {
+  html[data-theme="graphite"] .scene { height: clamp(560px, calc(100vh - 230px), 760px); }
+  /* on a phone the two figures stand above the picture, which runs from top to bottom */
+  .scene canvas { top: 86px; height: calc(100% - 112px); }
+  .scenestat { top: 4px; } .scenestat b { font-size: 38px; }
+  .scenestat.no { right: 50%; margin-right: 16px; } .scenestat.ok { left: 50%; margin-left: 16px; }
+}
+
+/* ---------- Graphite, light ---------- */
+html[data-theme="graphite"][data-mode="light"] {
+  --gold: #4B45E5;
+  --ground: #F4F4F2; --panel: #FFFFFF; --tile: #FFFFFF; --line: rgba(17, 19, 24, .09);
+  --text: #111318; --muted: #6A6F78; --soft: #3A3F48;
+  --in: #4B45E5; --ok: #0E9F75; --no: #DC3B3B;
+  --accent-ink: color-mix(in srgb, var(--gold) 85%, black); --on-accent: #111318;
+  --well: #FAFAF9;
+  --stage: #101216; --stage-line: rgba(17, 19, 24, .2);
+  --edge: rgba(17, 19, 24, .2); --edge-soft: rgba(17, 19, 24, .1); --edge-hi: rgba(17, 19, 24, .42);
+  --tint: #FFFFFF; --tint-hi: #FFFFFF; --tint-edge: rgba(17, 19, 24, .09); --tint-edge-hi: rgba(17, 19, 24, .3);
+  --ok-wash: rgba(14, 159, 117, .12); --ok-ink: #0A7355;
+  --no-wash: rgba(220, 59, 59, .1); --no-ink: #B42A2A; --no-edge: rgba(220, 59, 59, .45);
+  --off-wash: rgba(17, 19, 24, .06);
+  --track: rgba(17, 19, 24, .16);
+  --scheme: light;
+}
+/* its own indigo carries white text; an accent chosen by hand keeps the dark text */
+html[data-theme="graphite"][data-mode="light"]:not([data-accent]) { --on-accent: #FFFFFF; }
+html[data-theme="graphite"][data-mode="light"] .tile:not(.bare), html[data-theme="graphite"][data-mode="light"] .grid > .card.on, html[data-theme="graphite"][data-mode="light"] .grid > .card.device { box-shadow: 0 1px 2px rgba(17, 19, 24, .05); }
 
 /* ---------- Glass, dark: frosted panes over deep colour ---------- */
 html[data-theme="glass"] {
