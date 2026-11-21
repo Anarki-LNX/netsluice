@@ -59,6 +59,7 @@ def geo(since):
             "countries": {c[0]: [int(c[1] * 40 * (1 - c[2])), int(c[1] * 40 * c[2])] for c in COUNTRIES}}
 
 
+REFRESH = {"before": time.time() - 90000, "at": time.time() - 3600}   # when the lists were last refreshed
 OFF = {"until": 0}        # the filter switch in the top bar: off until this time
 
 
@@ -72,7 +73,9 @@ def reply_for(path, query):
         # like the real log: one lookup shows up as three requests (A, AAAA, HTTPS)
         return {"data": [{"question": {"name": BLOCKED[(i + int(now() / 4)) % len(BLOCKED)], "type": kind}, "client": DEVICES[(i * 3 + int(now() / 4)) % len(DEVICES)][0],
                           "time": time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(t - i * 37)) + "+00:00"} for i in range(8) for kind in ("A", "AAAA", "HTTPS")]}
-    if path == "/control/filtering/status": return {"enabled": True, "filters": [{"id": i + 1, "name": n, "url": u, "rules_count": r, "enabled": True} for i, (n, u, r) in enumerate(LISTS)]}
+    if path == "/control/filtering/status":
+        stamp = lambda i: time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(REFRESH["at"] + i * 0.8 if time.time() >= REFRESH["at"] + i * 0.8 else REFRESH["before"] + i))
+        return {"enabled": True, "filters": [{"id": i + 1, "name": n, "url": u, "rules_count": r, "enabled": True, "last_updated": stamp(i)} for i, (n, u, r) in enumerate(LISTS)]}
     if path == "/control/dns_info": return {"upstream_dns": ["https://dns.quad9.net/dns-query"], "bootstrap_dns": ["9.9.9.9"], "dnssec_enabled": True}
     if path == "/control/querylog/config": return {"enabled": True, "interval": 604800000, "anonymize_client_ip": False, "ignored": [], "ignored_enabled": False}
     if path == "/api/system/app/hint": return {"version": "0.1.7", "latest": "0.1.8"}
@@ -122,6 +125,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         body = self.rfile.read(int(self.headers.get("Content-Length") or 0))
+        if self.path == "/control/filtering/refresh":      # like the real filter: one list after the other
+            REFRESH["before"], REFRESH["at"] = REFRESH["at"], time.time()
+            time.sleep(len(LISTS) * 0.8 + 0.5)
         if self.path == "/control/protection":
             d = json.loads(body or b"{}")
             if d.get("enabled") and d.get("duration"):

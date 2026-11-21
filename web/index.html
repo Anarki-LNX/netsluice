@@ -108,6 +108,10 @@ try {
       <button type="button" class="btn ghost" id="refreshLists" data-i18n="fl.refresh"></button>
     </div>
     <p class="note" id="filterNote" role="status"></p>
+    <div class="progress" id="flProgress" hidden>
+      <div class="pbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" id="flBarWrap"><span id="flBar"></span></div>
+      <div class="ptext"><span id="flPhase"></span><span id="flPct"></span></div>
+    </div>
     <div class="grid" id="listGrid"></div>
   </div>
   <div class="tile">

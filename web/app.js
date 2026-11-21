@@ -24,7 +24,7 @@ const T = {
     'fl.title': 'Filter lists', 'fl.sub': 'A list names hosts that should not be reachable. NetSluice reads the same list formats as AdGuard Home and Pi-hole.',
     'fl.refresh': 'Update all now',
     'fl.custom': 'Add another list', 'fl.customSub': 'Paste the address of any hosts file or adblock-style list. It appears as a tile above.', 'fl.name': 'Name', 'fl.url': 'Address of the list', 'fl.add': 'Add list',
-    'fl.rules': 'rules', 'fl.about': 'about', 'fl.total': (lists, n) => `${lists} lists are on, ${n} rules in total.`, 'fl.lists': 'Lists', 'fl.okOn': 'List is on.', 'fl.okOff': 'List is off.', 'fl.on': 'on', 'fl.off': 'off', 'fl.remove': 'Remove',
+    'fl.p0': (n) => `Refreshing ${n} lists`, 'fl.p': (d, n) => `Refreshing the lists: ${d} of ${n}`, 'fl.pDone': (n) => `All ${n} lists are up to date`, 'fl.rules': 'rules', 'fl.about': 'about', 'fl.total': (lists, n) => `${lists} lists are on, ${n} rules in total.`, 'fl.lists': 'Lists', 'fl.okOn': 'List is on.', 'fl.okOff': 'List is off.', 'fl.on': 'on', 'fl.off': 'off', 'fl.remove': 'Remove',
     'fl.okAdd': 'List added and loaded.', 'fl.working': 'Working', 'fl.wait': 'One moment, a large list can take half a minute.', 'fl.have': 'That list is already in your lists.', 'fl.okRemove': 'List removed.', 'fl.okRefresh': 'Lists are being updated.', 'fl.fail': (m) => `That did not work: ${m}`,
     'mp.title': (n) => n === 0 ? 'Where your network talks to' : n === 1 ? 'Your network talked to one country today' : `Your network talked to ${n} countries today`,
     'mp.sub': 'Every dot is a real lookup from your home network, drawn the moment it happens. Red ones were stopped by the filter before they left.',
@@ -137,7 +137,7 @@ const T = {
     'fl.title': 'Filterlisten', 'fl.sub': 'Eine Liste nennt Gegenstellen, die nicht erreichbar sein sollen. NetSluice liest dieselben Listenformate wie AdGuard Home und Pi-hole.',
     'fl.refresh': 'Alle jetzt aktualisieren',
     'fl.custom': 'Weitere Liste hinzufügen', 'fl.customSub': 'Füge die Adresse einer beliebigen Hosts-Datei oder Adblock-Liste ein. Sie erscheint oben als Kachel.', 'fl.name': 'Name', 'fl.url': 'Adresse der Liste', 'fl.add': 'Liste hinzufügen',
-    'fl.rules': 'Regeln', 'fl.about': 'rund', 'fl.total': (lists, n) => `${lists} Listen sind an, zusammen ${n} Regeln.`, 'fl.lists': 'Listen', 'fl.okOn': 'Liste ist an.', 'fl.okOff': 'Liste ist aus.', 'fl.on': 'an', 'fl.off': 'aus', 'fl.remove': 'Entfernen',
+    'fl.p0': (n) => `Aktualisiere ${n} Listen`, 'fl.p': (d, n) => `Aktualisiere die Listen: ${d} von ${n}`, 'fl.pDone': (n) => `Alle ${n} Listen sind aktuell`, 'fl.rules': 'Regeln', 'fl.about': 'rund', 'fl.total': (lists, n) => `${lists} Listen sind an, zusammen ${n} Regeln.`, 'fl.lists': 'Listen', 'fl.okOn': 'Liste ist an.', 'fl.okOff': 'Liste ist aus.', 'fl.on': 'an', 'fl.off': 'aus', 'fl.remove': 'Entfernen',
     'fl.okAdd': 'Liste hinzugefügt und geladen.', 'fl.working': 'Läuft', 'fl.wait': 'Einen Moment, eine große Liste kann eine halbe Minute brauchen.', 'fl.have': 'Diese Liste ist schon bei deinen Listen.', 'fl.okRemove': 'Liste entfernt.', 'fl.okRefresh': 'Die Listen werden aktualisiert.', 'fl.fail': (m) => `Das hat nicht geklappt: ${m}`,
     'mp.title': (n) => n === 0 ? 'Wohin dein Netz spricht' : n === 1 ? 'Dein Netz sprach heute mit einem Land' : `Dein Netz sprach heute mit ${n} Ländern`,
     'mp.sub': 'Jeder Punkt ist eine echte Anfrage aus deinem Heimnetz, gezeichnet in dem Moment, in dem sie passiert. Rote hat der Filter aufgehalten, bevor sie das Haus verließen.',
@@ -632,7 +632,30 @@ async function pollRest() {
 $('nav').addEventListener('click', (e) => { const b = e.target.closest('button[data-screen]'); if (b) show(b.dataset.screen); });
 document.addEventListener('click', (e) => { const b = e.target.closest('[data-goto]'); if (b) show(b.dataset.goto); });
 $('lang').addEventListener('click', () => { lang = lang === 'de' ? 'en' : 'de'; try { localStorage.setItem('netsluice.lang', lang); } catch { /* private mode */ } applyLang(); });
-$('refreshLists').addEventListener('click', (e) => act(() => api('filtering/refresh', { whitelist: false }), 'fl.okRefresh', e.currentTarget));
+// Refreshing all lists: the filter stamps each list as it finishes with it, so the
+// lists with a new stamp are the progress. Until the first one is through, the bar just moves.
+$('refreshLists').addEventListener('click', async (e) => {
+  if (busy) return;
+  const on = state.filters.filter((f) => f.enabled);
+  const before = new Map(on.map((f) => [f.url, f.last_updated || '']));
+  const show = (done) => drawBar('fl', on.length ? done / on.length * 100 : 0, done > 0, false, done ? t('fl.p', done, on.length) : t('fl.p0', on.length));
+  show(0);
+  let stop = false;
+  const watch = (async () => {
+    while (!stop) {
+      await new Promise((r) => setTimeout(r, 700));
+      if (stop) break;
+      try {
+        const now = (await api('filtering/status')).filters || [];
+        show(now.filter((f) => before.has(f.url) && (f.last_updated || '') !== before.get(f.url)).length);
+      } catch { /* the refresh itself reports what went wrong */ }
+    }
+  })();
+  await act(() => api('filtering/refresh', { whitelist: false }), 'fl.okRefresh', e.currentTarget);
+  stop = true; await watch;
+  if ($('filterNote').classList.contains('bad')) $('flProgress').hidden = true;
+  else { drawBar('fl', 100, true, false, t('fl.pDone', on.length)); setTimeout(() => { if (!busy) $('flProgress').hidden = true; }, 4000); }
+});
 $('customForm').addEventListener('submit', (e) => {
   e.preventDefault();
   const name = $('customName').value.trim(), url = $('customUrl').value.trim();
