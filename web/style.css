@@ -110,6 +110,15 @@ main, .screen { display: flex; flex-direction: column; gap: 20px; }
 /* the green of a list that is switched on is the look of every tile, large and small.
    Only a list that is off stays grey: that is its message. */
 .tile, .card.on, .card.device { border-color: rgba(92, 227, 154, .45); background: rgba(92, 227, 154, .06); }
+/* the same answer to the mouse as the settings tiles: a brighter edge and a small lift.
+   Device tiles are redrawn whenever a count changes, so they take the look at once;
+   a transition would start over every second under a resting mouse. */
+.grid > .card { transition: border-color .2s, transform .2s, background .2s; }
+.grid > .card.device { transition: none; }
+.grid > .card:hover { transform: translateY(-2px); border-color: rgba(255, 255, 255, .30); }
+.grid > .card.on:hover, .grid > .card.device:hover { border-color: rgba(92, 227, 154, .85); background: rgba(92, 227, 154, .10); }
+@media (prefers-reduced-motion: reduce) { .grid > .card { transition: none; } .grid > .card:hover { transform: none; } }
+html.still .grid > .card { transition: none; } html.still .grid > .card:hover { transform: none; }
 /* a grid of tiles stands on the page itself, as in the settings: heading and tiles, no frame around them */
 .tile.bare { padding: 0; border: 0; background: none; }
 .cardfoot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: auto; padding-top: 6px; }
