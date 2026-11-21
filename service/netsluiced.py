@@ -875,6 +875,25 @@ def https_switch(on):
         https_busy.clear()
 
 
+def unthrottle():
+    """Once per device: lift the filter's limit of 20 answers a second per client, if it
+    is still the value the filter came with. One busy page asks for more than that, the
+    rest is dropped, and the browser waits a second or more for each. Whoever sets a
+    limit of their own in the filter keeps it."""
+    mark = os.path.join(os.path.dirname(STATE), "ratelimit-done")
+    if os.path.exists(mark):
+        return
+    for _ in range(30):
+        try:
+            if (agh("dns_info") or {}).get("ratelimit") == 20:
+                agh("dns_config", {"ratelimit": 0})
+            with open(mark, "w") as f:
+                f.write("")
+            return
+        except Exception:
+            time.sleep(10)                          # the filter is not up yet
+
+
 def lookout():
     """Look on GitHub for a new version about once a day, so the top bar can say so.
     Looking installs nothing; that stays a click, or the daily automatic update."""
@@ -1104,6 +1123,7 @@ def main():
     threading.Thread(target=discover, args=(st, cfg), daemon=True).start()
     threading.Thread(target=clock, args=(rules, st, cfg), daemon=True).start()
     threading.Thread(target=lookout, daemon=True).start()
+    threading.Thread(target=unthrottle, daemon=True).start()
 
     auth = Auth(AUTH)
 

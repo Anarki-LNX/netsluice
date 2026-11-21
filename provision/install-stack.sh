@@ -56,6 +56,10 @@ if [ ! -f /etc/netsluice/agh-configured ]; then
   cp -p "$Y" "$Y.tmp"
   awk 'BEGIN{skip=0} /^users:/{print "users: []"; skip=1; next} skip && /^[ ]+/{next} {skip=0; print}' "$Y.tmp" > "$Y"
   rm -f "$Y.tmp"; chmod 600 "$Y"
+  # AdGuard Home answers at most 20 requests a second per device and drops the rest.
+  # One busy page asks for more than that, and every dropped request costs the
+  # browser a second or more. In a home network there is nobody to hold back.
+  sed -i 's/^\( *ratelimit:\) 20$/\1 0/' "$Y"
   systemctl start AdGuardHome
   touch /etc/netsluice/agh-configured
 fi
