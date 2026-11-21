@@ -9,7 +9,7 @@ const T = {
   en: {
     'nav.overview': 'Overview', 'nav.devices': 'Devices', 'nav.filters': 'Filters', 'nav.map': 'World map', 'nav.settings': 'Settings',
     'status.on': 'Filter on', 'status.off': 'Filter off', 'status.offFor': (left) => `Filter off, back in ${left}`, 'status.stay': 'Keep it off', 'status.update': (v) => `Update to ${v}`, 'status.err': 'Filter not reachable',
-    'ov.passed': 'normal packets', 'ov.blocked': 'blocked requests', 'ov.sub': 'Live, last 24 hours',
+    'ov.passed': 'normal packets', 'ov.blocked': 'blocked requests', 'ov.sub': 'Last 24 hours', 'top.live': 'Live', 'top.offline': 'Offline',
     'ov.home': 'Home network', 'ov.internet': 'Internet', 'ov.flowAria': 'Live view: requests arrive blue, are checked inside the sluice, leave green or burst in red',
     'lg.incoming': 'on the way to the sluice', 'lg.passed': 'passed', 'lg.blocked': 'caught in the sluice',
     'ov.last24': 'The last 24 hours', 'ov.barsAria': 'Requests per hour',
@@ -50,7 +50,7 @@ const T = {
     'nt.newdev': 'A new device uses the filter', 'nt.newdevSub': 'A hardware address that was never seen before.', 'nt.malware': 'A dangerous host was stopped', 'nt.malwareSub': 'Hits on malware and phishing lists, at most once an hour per device and host.', 'nt.down': 'The filter does not answer', 'nt.downSub': 'After a minute without an answer, and again when it is back.',
     'nt.sent': 'Test message sent. Check your phone.', 'nt.notSent': (m) => m === 'off' ? 'Choose a way and save an address first.' : `The message did not go out: ${m}`, 'nt.badUrl': 'That is not a usable address. It must start with https:// or http://.',
     'lk.title': 'Appearance', 'lk.sub': 'For this browser only', 'lk.theme': 'Design', 'lk.themeSub': 'How NetSluice looks. Both come in dark and light.', 'lk.theme.sluice': 'Sluice', 'lk.theme.sluiceSub': 'The original: deep water, green tiles.', 'lk.theme.glass': 'Glass', 'lk.theme.glassSub': 'Frosted panes over soft colour.', 'lk.theme.graphite': 'Graphite', 'lk.theme.graphiteSub': 'Calm and flat. The overview becomes a stage with your devices.',
-    'sc.aria': 'Live view: lookups travel from the devices of this network through the sluice to the internet; stopped ones burst', 'sc.off': 'The filter is off: everything passes unchecked',
+    'sc.aria': 'Live view: lookups travel from the devices of this network through the sluice to the internet; stopped ones burst',
     'lk.mode': 'Dark or light', 'lk.modeSub': 'The half circle in the top bar switches it too.', 'lk.mode.dark': 'Dark', 'lk.mode.light': 'Light', 'top.mode': 'Switch between dark and light', 'top.settings': 'Settings',
     'lk.size': 'Size', 'lk.sizeSub': 'Smaller shows more on a large screen. Phones always use the large size.', 'lk.size.large': 'Large', 'lk.size.medium': 'Medium', 'lk.size.small': 'Small', 'lk.accent': 'Accent colour', 'lk.accentSub': 'Used for buttons, the selected section and the sluice.', 'lk.motion': 'Animations', 'lk.motionSub': 'Off: no moving dots, no flying packets, no transitions. The page reloads once.',
     'ex.title': 'Export and import', 'ex.sub': 'Take your setup with you', 'ex.out': 'Save everything to a file', 'ex.outSub': 'Filter lists, resolver, privacy, children\'s rules, LEDs and messages. Not the password, not the log.', 'ex.outBtn': 'Export',
@@ -131,7 +131,7 @@ const T = {
   de: {
     'nav.overview': 'Übersicht', 'nav.devices': 'Geräte', 'nav.filters': 'Filter', 'nav.map': 'Weltkarte', 'nav.settings': 'Einstellungen',
     'status.on': 'Filter an', 'status.off': 'Filter aus', 'status.offFor': (left) => `Filter aus, wieder an in ${left}`, 'status.stay': 'Aus lassen', 'status.update': (v) => `Update auf ${v}`, 'status.err': 'Filter nicht erreichbar',
-    'ov.passed': 'normale Pakete', 'ov.blocked': 'geblockte Anfragen', 'ov.sub': 'Live, letzte 24 Stunden',
+    'ov.passed': 'normale Pakete', 'ov.blocked': 'geblockte Anfragen', 'ov.sub': 'Letzte 24 Stunden', 'top.live': 'Live', 'top.offline': 'Offline',
     'ov.home': 'Heimnetz', 'ov.internet': 'Internet', 'ov.flowAria': 'Live-Ansicht: Anfragen kommen blau an, werden in der Schleuse geprüft, verlassen sie grün oder zerplatzen rot',
     'lg.incoming': 'unterwegs zur Schleuse', 'lg.passed': 'durchgelassen', 'lg.blocked': 'in der Schleuse erwischt',
     'ov.last24': 'Die letzten 24 Stunden', 'ov.barsAria': 'Anfragen pro Stunde',
@@ -172,7 +172,7 @@ const T = {
     'nt.newdev': 'Ein neues Gerät nutzt den Filter', 'nt.newdevSub': 'Eine MAC, die noch nie gesehen wurde.', 'nt.malware': 'Eine gefährliche Adresse wurde aufgehalten', 'nt.malwareSub': 'Treffer auf Listen für Schadsoftware und Phishing, höchstens einmal pro Stunde je Gerät und Adresse.', 'nt.down': 'Der Filter antwortet nicht', 'nt.downSub': 'Nach einer Minute ohne Antwort, und noch einmal, wenn er wieder da ist.',
     'nt.sent': 'Testmeldung gesendet. Sieh auf dein Handy.', 'nt.notSent': (m) => m === 'off' ? 'Wähle erst einen Weg und speichere eine Adresse.' : `Die Meldung ging nicht raus: ${m}`, 'nt.badUrl': 'Das ist keine brauchbare Adresse. Sie muss mit https:// oder http:// beginnen.',
     'lk.title': 'Aussehen', 'lk.sub': 'Gilt nur für diesen Browser', 'lk.theme': 'Design', 'lk.themeSub': 'Wie NetSluice aussieht. Beide gibt es in Dunkel und Hell.', 'lk.theme.sluice': 'Schleuse', 'lk.theme.sluiceSub': 'Das Original: tiefes Wasser, grüne Kacheln.', 'lk.theme.glass': 'Glas', 'lk.theme.glassSub': 'Milchglas-Scheiben über weichen Farben.', 'lk.theme.graphite': 'Graphit', 'lk.theme.graphiteSub': 'Ruhig und flach. Die Übersicht wird zur Bühne mit deinen Geräten.',
-    'sc.aria': 'Live-Ansicht: Anfragen wandern von den Geräten dieses Netzes durch die Schleuse ins Internet; aufgehaltene zerplatzen', 'sc.off': 'Der Filter ist aus: alles geht ungeprüft durch',
+    'sc.aria': 'Live-Ansicht: Anfragen wandern von den Geräten dieses Netzes durch die Schleuse ins Internet; aufgehaltene zerplatzen',
     'lk.mode': 'Dunkel oder hell', 'lk.modeSub': 'Der Halbkreis in der Kopfzeile schaltet das auch um.', 'lk.mode.dark': 'Dunkel', 'lk.mode.light': 'Hell', 'top.mode': 'Zwischen dunkel und hell umschalten', 'top.settings': 'Einstellungen',
     'lk.size': 'Größe', 'lk.sizeSub': 'Kleiner zeigt mehr auf einem großen Bildschirm. Handys nutzen immer die große Darstellung.', 'lk.size.large': 'Groß', 'lk.size.medium': 'Mittel', 'lk.size.small': 'Klein', 'lk.accent': 'Akzentfarbe', 'lk.accentSub': 'Für Knöpfe, den gewählten Bereich und die Schleuse.', 'lk.motion': 'Animationen', 'lk.motionSub': 'Aus: keine wandernden Punkte, keine fliegenden Pakete, keine Übergänge. Die Seite lädt einmal neu.',
     'ex.title': 'Export und Import', 'ex.sub': 'Nimm deine Einrichtung mit', 'ex.out': 'Alles in eine Datei speichern', 'ex.outSub': 'Filterlisten, Auflöser, Datenschutz, Kinderregeln, LEDs und Meldungen. Nicht das Passwort, nicht das Protokoll.', 'ex.outBtn': 'Exportieren',
@@ -473,6 +473,9 @@ function render() {
   $('statusText').textContent = !state.reachable ? t('status.err') : on ? t('status.on')
     : left ? t('status.offFor', `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`) : t('status.off');
   $('protectStay').hidden = !state.reachable || on || !left;
+  // "Live" in the top bar: this page is fed by the device right now
+  $('live').classList.toggle('off', !state.reachable);
+  $('liveText').textContent = t(state.reachable ? 'top.live' : 'top.offline');
   $('newVersion').hidden = !state.newVersion;
   if (state.newVersion) $('newVersion').textContent = t('status.update', state.newVersion);
   if (!s) return;
@@ -483,7 +486,6 @@ function render() {
   if (scene) {
     countTo($('scPassed'), total - blocked); countTo($('scBlocked'), blocked);
     scene.setOn(on && state.reachable);
-    $('scNote').textContent = !state.reachable ? t('status.err') : on ? t('ov.sub') : t('sc.off');
   }
   // the day at a glance: a ring for the share that was stopped, and a few figures
   const pct = total ? Math.round(blocked / total * 100) : 0;

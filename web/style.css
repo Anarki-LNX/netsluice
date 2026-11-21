@@ -67,6 +67,12 @@ button { cursor: pointer; }
 .iconbtn[aria-current="page"] { border-color: color-mix(in srgb, var(--gold) 60%, transparent); background: color-mix(in srgb, var(--gold) 12%, transparent); color: var(--accent-ink); }
 #openSettings:hover svg { transform: rotate(30deg); } #openSettings svg { transition: transform .3s; }
 html[data-mode="light"] #modeToggle svg { transform: rotate(180deg); } #modeToggle svg { transition: transform .4s cubic-bezier(.2, .7, .2, 1); }
+/* "Live" next to the gear: a green point that pulses while the device feeds this page */
+.live { display: inline-flex; align-items: center; gap: 9px; padding: 0 4px 0 2px; font-weight: 600; font-size: 15px; color: var(--soft); white-space: nowrap; }
+.live i { position: relative; width: 9px; height: 9px; border-radius: 50%; background: var(--ok); color: var(--ok); }
+.live i::after { content: ""; position: absolute; inset: -5px; border-radius: 50%; border: 2px solid currentColor; animation: pulse 2s ease-out infinite; }
+.live.off { color: var(--muted); } .live.off i { background: var(--no); color: var(--no); } .live.off i::after { display: none; }
+@media (prefers-reduced-motion: reduce) { .live i::after { animation: none; opacity: .4; } }
 .lang { min-height: 44px; min-width: 56px; padding: 0 12px; border: 1px solid var(--edge); border-radius: 999px; background: transparent; color: var(--text); font-weight: 700; }
 
 main, .screen { display: flex; flex-direction: column; gap: 20px; }
@@ -392,7 +398,6 @@ html[data-theme="graphite"] .scene { position: relative; display: block; height:
 .scenestat span { color: var(--muted); font-size: 15px; font-weight: 500; }
 .scenestat.no { right: calc(47% + 58px); text-align: right; align-items: flex-end; } .scenestat.no b { color: var(--no); }
 .scenestat.ok { left: calc(53% + 58px); } .scenestat.ok b { color: var(--ok); }
-.scenenote { position: absolute; left: 0; right: 0; bottom: 6px; text-align: center; color: var(--muted); font-size: 14px; pointer-events: none; }
 @media (max-width: 680px) {
   html[data-theme="graphite"] .scene { height: clamp(560px, calc(100vh - 230px), 760px); }
   /* on a phone the two figures stand above the picture, which runs from top to bottom */
