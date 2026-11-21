@@ -11,6 +11,7 @@ or downloaded by it.
 | IP to Country Lite by DB-IP | country of an address for the world map, downloaded at install time | CC BY 4.0 | https://db-ip.com, packaged by https://github.com/sapics/ip-location-db |
 | world-atlas `countries-110m.json` | country shapes (`web/data/`) | ISC; data from Natural Earth, public domain | https://github.com/topojson/world-atlas |
 | ISO 3166-1 country codes | `web/data/iso.json`, derived from the iso-codes project | facts; iso-codes is LGPL-2.1-or-later | https://salsa.debian.org/iso-codes-team/iso-codes |
+| Feather icons, `settings` | the gear in the top bar (`web/index.html`) | MIT | https://github.com/feathericons/feather |
 
 Filter lists are not shipped. They are downloaded by the device from their
 maintainers and keep their own licences.

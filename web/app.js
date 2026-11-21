@@ -47,7 +47,9 @@ const T = {
     'nt.hint': { off: 'No messages are sent.', ntfy: 'Install the ntfy app, subscribe to a topic and enter its address here, for example https://ntfy.sh/your-topic.', webhook: 'Each message is sent as JSON (event, title, text) to this address, for Home Assistant, Telegram bridges or your own scripts.' },
     'nt.newdev': 'A new device uses the filter', 'nt.newdevSub': 'A hardware address that was never seen before.', 'nt.malware': 'A dangerous host was stopped', 'nt.malwareSub': 'Hits on malware and phishing lists, at most once an hour per device and host.', 'nt.down': 'The filter does not answer', 'nt.downSub': 'After a minute without an answer, and again when it is back.',
     'nt.sent': 'Test message sent. Check your phone.', 'nt.notSent': (m) => m === 'off' ? 'Choose a way and save an address first.' : `The message did not go out: ${m}`, 'nt.badUrl': 'That is not a usable address. It must start with https:// or http://.',
-    'lk.title': 'Appearance', 'lk.sub': 'For this browser only', 'lk.size': 'Size', 'lk.sizeSub': 'Smaller shows more on a large screen. Phones always use the large size.', 'lk.size.large': 'Large', 'lk.size.medium': 'Medium', 'lk.size.small': 'Small', 'lk.accent': 'Accent colour', 'lk.accentSub': 'Used for buttons, the selected section and the sluice.', 'lk.motion': 'Animations', 'lk.motionSub': 'Off: no moving dots, no flying packets, no transitions. The page reloads once.',
+    'lk.title': 'Appearance', 'lk.sub': 'For this browser only', 'lk.theme': 'Design', 'lk.themeSub': 'How NetSluice looks. Both come in dark and light.', 'lk.theme.sluice': 'Sluice', 'lk.theme.sluiceSub': 'The original: deep water, green tiles.', 'lk.theme.glass': 'Glass', 'lk.theme.glassSub': 'Frosted panes over soft colour.',
+    'lk.mode': 'Dark or light', 'lk.modeSub': 'The half circle in the top bar switches it too.', 'lk.mode.dark': 'Dark', 'lk.mode.light': 'Light', 'top.mode': 'Switch between dark and light', 'top.settings': 'Settings',
+    'lk.size': 'Size', 'lk.sizeSub': 'Smaller shows more on a large screen. Phones always use the large size.', 'lk.size.large': 'Large', 'lk.size.medium': 'Medium', 'lk.size.small': 'Small', 'lk.accent': 'Accent colour', 'lk.accentSub': 'Used for buttons, the selected section and the sluice.', 'lk.motion': 'Animations', 'lk.motionSub': 'Off: no moving dots, no flying packets, no transitions. The page reloads once.',
     'ex.title': 'Export and import', 'ex.sub': 'Take your setup with you', 'ex.out': 'Save everything to a file', 'ex.outSub': 'Filter lists, resolver, privacy, children\'s rules, LEDs and messages. Not the password, not the log.', 'ex.outBtn': 'Export',
     'ex.in': 'Load a file', 'ex.inSub': 'Adds what is missing and overwrites the settings named in the file. Lists you added since are kept.', 'ex.done': (n) => `Imported: ${n} parts applied.`, 'ex.bad': 'This is not a NetSluice settings file.',
     'nw.title': 'Network', 'nw.sub': 'Name and addresses of this device', 'nw.name': 'Name on the network', 'nw.save': 'Change name', 'nw.fixed': 'Fixed address', 'nw.dhcp': 'Address from the router', 'nw.open': 'Reachable as',
@@ -165,7 +167,9 @@ const T = {
     'nt.hint': { off: 'Es werden keine Meldungen gesendet.', ntfy: 'Installiere die ntfy-App, abonniere ein Thema und trag seine Adresse hier ein, zum Beispiel https://ntfy.sh/dein-thema.', webhook: 'Jede Meldung geht als JSON (event, title, text) an diese Adresse, für Home Assistant, Telegram-Brücken oder eigene Skripte.' },
     'nt.newdev': 'Ein neues Gerät nutzt den Filter', 'nt.newdevSub': 'Eine MAC, die noch nie gesehen wurde.', 'nt.malware': 'Eine gefährliche Adresse wurde aufgehalten', 'nt.malwareSub': 'Treffer auf Listen für Schadsoftware und Phishing, höchstens einmal pro Stunde je Gerät und Adresse.', 'nt.down': 'Der Filter antwortet nicht', 'nt.downSub': 'Nach einer Minute ohne Antwort, und noch einmal, wenn er wieder da ist.',
     'nt.sent': 'Testmeldung gesendet. Sieh auf dein Handy.', 'nt.notSent': (m) => m === 'off' ? 'Wähle erst einen Weg und speichere eine Adresse.' : `Die Meldung ging nicht raus: ${m}`, 'nt.badUrl': 'Das ist keine brauchbare Adresse. Sie muss mit https:// oder http:// beginnen.',
-    'lk.title': 'Aussehen', 'lk.sub': 'Gilt nur für diesen Browser', 'lk.size': 'Größe', 'lk.sizeSub': 'Kleiner zeigt mehr auf einem großen Bildschirm. Handys nutzen immer die große Darstellung.', 'lk.size.large': 'Groß', 'lk.size.medium': 'Mittel', 'lk.size.small': 'Klein', 'lk.accent': 'Akzentfarbe', 'lk.accentSub': 'Für Knöpfe, den gewählten Bereich und die Schleuse.', 'lk.motion': 'Animationen', 'lk.motionSub': 'Aus: keine wandernden Punkte, keine fliegenden Pakete, keine Übergänge. Die Seite lädt einmal neu.',
+    'lk.title': 'Aussehen', 'lk.sub': 'Gilt nur für diesen Browser', 'lk.theme': 'Design', 'lk.themeSub': 'Wie NetSluice aussieht. Beide gibt es in Dunkel und Hell.', 'lk.theme.sluice': 'Schleuse', 'lk.theme.sluiceSub': 'Das Original: tiefes Wasser, grüne Kacheln.', 'lk.theme.glass': 'Glas', 'lk.theme.glassSub': 'Milchglas-Scheiben über weichen Farben.',
+    'lk.mode': 'Dunkel oder hell', 'lk.modeSub': 'Der Halbkreis in der Kopfzeile schaltet das auch um.', 'lk.mode.dark': 'Dunkel', 'lk.mode.light': 'Hell', 'top.mode': 'Zwischen dunkel und hell umschalten', 'top.settings': 'Einstellungen',
+    'lk.size': 'Größe', 'lk.sizeSub': 'Kleiner zeigt mehr auf einem großen Bildschirm. Handys nutzen immer die große Darstellung.', 'lk.size.large': 'Groß', 'lk.size.medium': 'Mittel', 'lk.size.small': 'Klein', 'lk.accent': 'Akzentfarbe', 'lk.accentSub': 'Für Knöpfe, den gewählten Bereich und die Schleuse.', 'lk.motion': 'Animationen', 'lk.motionSub': 'Aus: keine wandernden Punkte, keine fliegenden Pakete, keine Übergänge. Die Seite lädt einmal neu.',
     'ex.title': 'Export und Import', 'ex.sub': 'Nimm deine Einrichtung mit', 'ex.out': 'Alles in eine Datei speichern', 'ex.outSub': 'Filterlisten, Auflöser, Datenschutz, Kinderregeln, LEDs und Meldungen. Nicht das Passwort, nicht das Protokoll.', 'ex.outBtn': 'Exportieren',
     'ex.in': 'Datei einlesen', 'ex.inSub': 'Ergänzt, was fehlt, und überschreibt die Einstellungen, die in der Datei stehen. Seitdem hinzugefügte Listen bleiben.', 'ex.done': (n) => `Eingelesen: ${n} Teile übernommen.`, 'ex.bad': 'Das ist keine NetSluice-Einstellungsdatei.',
     'nw.title': 'Netzwerk', 'nw.sub': 'Name und Adressen dieses Geräts', 'nw.name': 'Name im Netz', 'nw.save': 'Namen ändern', 'nw.fixed': 'Feste Adresse', 'nw.dhcp': 'Adresse vom Router', 'nw.open': 'Erreichbar unter',
@@ -288,7 +292,7 @@ async function api(path, body, method = 'POST') {
 function applyLang() {
   document.documentElement.lang = lang;
   document.querySelectorAll('[data-i18n]').forEach((n) => { n.textContent = t(n.dataset.i18n); });
-  document.querySelectorAll('[data-i18n-aria]').forEach((n) => { n.setAttribute('aria-label', t(n.dataset.i18nAria)); });
+  document.querySelectorAll('[data-i18n-aria]').forEach((n) => { n.setAttribute('aria-label', t(n.dataset.i18nAria)); n.title = t(n.dataset.i18nAria); });
   $('lang').textContent = lang === 'de' ? 'EN' : 'DE';
   render();
   if (screen === 'settings') { renderSettings(); renderKids(); renderDevice(); renderSystem(); renderStorage(); }
@@ -324,6 +328,7 @@ function show(name) {
   if (base === 'settings') window.scrollTo(0, 0);
   document.querySelectorAll('.screen').forEach((s) => { s.hidden = s.id !== 'screen-' + base; });
   document.querySelectorAll('#nav button').forEach((b) => { b.setAttribute('aria-current', b.dataset.screen === base ? 'page' : 'false'); });
+  $('openSettings').setAttribute('aria-current', base === 'settings' ? 'page' : 'false');
   if (base === 'filters') loadFilters();
   if (base === 'settings') loadSettings();
   if (base === 'map') { renderMap(); if (geo.map) geo.map.layout(); pollGeo(); }
@@ -950,6 +955,15 @@ async function devSave(change, noteId) {
   try { dev.s = await svc('settings', change); say(noteId, 'ok', t('st.saved')); } catch (e) { say(noteId, 'bad', t('fl.fail', e.message)); }
   renderDevice();
 }
+// Dark or light, at once and without a reload: only colours change.
+function setMode(k) {
+  document.documentElement.dataset.mode = k;
+  store('netsluice.mode', k);
+  $('themeColor').content = getComputedStyle(document.documentElement).getPropertyValue('--ground').trim() || '#06141B';
+  if (typeof renderDevice === 'function') renderDevice();
+}
+$('themeColor').content = getComputedStyle(document.documentElement).getPropertyValue('--ground').trim() || '#06141B';
+$('modeToggle').addEventListener('click', () => setMode(document.documentElement.dataset.mode === 'light' ? 'dark' : 'light'));
 const ACCENTS = ['#F5C451', '#5EE6F2', '#B79CFF', '#FF8FB1', '#B6F36A'];
 const stored = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
 const store = (k, v) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } };
@@ -958,6 +972,19 @@ function renderDevice() {
   $('accents').replaceChildren(...ACCENTS.map((c) => {
     const b = el('button'); b.type = 'button'; b.style.background = c; b.setAttribute('role', 'radio'); b.setAttribute('aria-label', c); b.setAttribute('aria-checked', c === cur ? 'true' : 'false');
     b.onclick = () => { store('netsluice.accent', c); location.reload(); };
+    return b;
+  }));
+  const root = document.documentElement;
+  $('themes').replaceChildren(...['sluice', 'glass'].map((k) => {
+    const b = el('button', 'choice theme-' + k); b.type = 'button'; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', root.dataset.theme === k ? 'true' : 'false');
+    b.append(el('span', 'swatch'), el('b', '', t('lk.theme.' + k)), el('small', '', t('lk.theme.' + k + 'Sub')));
+    // the drawings read their colours once, so a new design starts the page afresh
+    b.onclick = () => { if (root.dataset.theme !== k) { store('netsluice.theme', k); location.reload(); } };
+    return b;
+  }));
+  $('modes').replaceChildren(...['dark', 'light'].map((k) => {
+    const b = el('button', '', t('lk.mode.' + k)); b.type = 'button'; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', root.dataset.mode === k ? 'true' : 'false');
+    b.onclick = () => setMode(k);
     return b;
   }));
   const size = ['large', 'medium', 'small'].includes(stored('netsluice.size')) ? stored('netsluice.size') : 'medium';
