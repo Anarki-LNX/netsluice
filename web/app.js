@@ -7,7 +7,7 @@ import { createWorldMap } from './worldmap.js';
 const T = {
   en: {
     'nav.overview': 'Overview', 'nav.devices': 'Devices', 'nav.filters': 'Filters', 'nav.map': 'World map', 'nav.settings': 'Settings',
-    'status.on': 'Filter running', 'status.off': 'Filter paused', 'status.err': 'Filter not reachable',
+    'status.on': 'Filter running', 'status.off': 'Filter off', 'status.offFor': (left) => `Filter off, back in ${left}`, 'status.stay': 'Keep it off', 'status.err': 'Filter not reachable',
     'ov.passed': 'requests passed', 'ov.blocked': 'stopped', 'ov.sub': 'In the last 24 hours, counted live. A dot is one request that just went through this device.',
     'ov.home': 'Home network', 'ov.internet': 'Internet', 'ov.flowAria': 'Live view: requests arrive blue, are checked inside the sluice, leave green or burst in red',
     'lg.incoming': 'on the way to the sluice', 'lg.passed': 'passed', 'lg.blocked': 'caught in the sluice',
@@ -120,7 +120,7 @@ const T = {
   },
   de: {
     'nav.overview': 'Übersicht', 'nav.devices': 'Geräte', 'nav.filters': 'Filter', 'nav.map': 'Weltkarte', 'nav.settings': 'Einstellungen',
-    'status.on': 'Filter läuft', 'status.off': 'Filter pausiert', 'status.err': 'Filter nicht erreichbar',
+    'status.on': 'Filter läuft', 'status.off': 'Filter aus', 'status.offFor': (left) => `Filter aus, wieder an in ${left}`, 'status.stay': 'Aus lassen', 'status.err': 'Filter nicht erreichbar',
     'ov.passed': 'Anfragen durchgelassen', 'ov.blocked': 'aufgehalten', 'ov.sub': 'In den letzten 24 Stunden, live gezählt. Ein Punkt ist eine Anfrage, die gerade durch dieses Gerät ging.',
     'ov.home': 'Heimnetz', 'ov.internet': 'Internet', 'ov.flowAria': 'Live-Ansicht: Anfragen kommen blau an, werden in der Schleuse geprüft, verlassen sie grün oder zerplatzen rot',
     'lg.incoming': 'unterwegs zur Schleuse', 'lg.passed': 'durchgelassen', 'lg.blocked': 'in der Schleuse erwischt',
@@ -390,12 +390,42 @@ function fitHero() {
   if (h.scrollWidth > h.clientWidth) h.style.fontSize = Math.max(MIN, Math.floor(MAX * h.clientWidth / h.scrollWidth)) + 'px';
 }
 
+// The filter says how many milliseconds it stays off; remember when that ends.
+function setStatus(status) {
+  state.status = status;
+  const ms = status && !status.protection_enabled ? status.protection_disabled_duration || 0 : 0;
+  state.offUntil = ms ? Date.now() + ms : 0;
+}
+
+// Switch in the top bar. Off means off for ten minutes, so that a filter switched off
+// to open one page is not forgotten; "Keep it off" makes it stay off.
+const PAUSE = 10 * 60 * 1000;
+let protectBusy = false;
+async function protect(enabled, duration) {
+  if (protectBusy) return;
+  protectBusy = true;
+  setStatus({ ...(state.status || {}), protection_enabled: enabled, protection_disabled_duration: duration });   // answer the click at once
+  render();
+  try { await api('protection', { enabled, duration }); } catch { /* the next line shows what is true */ }
+  try { setStatus(await api('status')); } catch { /* shown as not reachable by the next poll */ }
+  protectBusy = false;
+  render();
+}
+$('protect').onclick = () => protect(!(state.status ? state.status.protection_enabled : true), PAUSE);
+$('protectStay').onclick = () => protect(false, 0);
+
 function render() {
   const s = state.stats;
-  const dot = $('statusDot');
   const on = state.status ? state.status.protection_enabled : true;
-  dot.className = 'dot' + (!state.reachable ? ' err' : on ? '' : ' off');
-  $('statusText').textContent = t(!state.reachable ? 'status.err' : on ? 'status.on' : 'status.off');
+  // switched off from here the filter comes back by itself; how long that takes is counted down
+  const left = !on && state.offUntil ? Math.max(0, Math.ceil((state.offUntil - Date.now()) / 1000)) : 0;
+  const sw = $('protect');
+  sw.setAttribute('aria-checked', on ? 'true' : 'false');
+  sw.disabled = !state.reachable || protectBusy;
+  sw.classList.toggle('err', !state.reachable);
+  $('statusText').textContent = !state.reachable ? t('status.err') : on ? t('status.on')
+    : left ? t('status.offFor', `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`) : t('status.off');
+  $('protectStay').hidden = !state.reachable || on || !left;
   if (!s) return;
 
   const total = s.num_dns_queries || 0, blocked = s.num_blocked_filtering || 0;
@@ -578,7 +608,7 @@ async function pollRest() {
     for (const c of (clients && clients.auto_clients) || []) if (c.name && c.name !== c.ip) names[c.ip] = c.name.replace(/\.(localdomain|lan|local|home)$/i, '');
     state.clients = names;
     state.recent = ((log && log.data) || []).map((e) => ({ host: e.question && e.question.name, client: e.client, time: e.time }));
-    state.status = status;
+    setStatus(status);
   } catch { /* the fast loop reports reachability */ }
   try { const r = await fetch('/api/devices'); if (r.ok) { const d = await r.json(); state.devices = d.devices || {}; if (!state.stopped) state.seats = null; state.stopped = d.blocked || {}; } } catch { /* names are optional */ }
   render();

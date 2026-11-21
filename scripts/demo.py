@@ -59,10 +59,13 @@ def geo(since):
             "countries": {c[0]: [int(c[1] * 40 * (1 - c[2])), int(c[1] * 40 * c[2])] for c in COUNTRIES}}
 
 
+OFF = {"until": 0}        # the filter switch in the top bar: off until this time
+
+
 def reply_for(path, query):
     if path == "/auth/state": return {"configured": True, "authenticated": True}
     if path == "/control/stats": return stats()
-    if path == "/control/status": return {"version": "v1.0.0", "dns_port": 53, "protection_enabled": True, "dns_addresses": ["192.168.0.2"], "start_time": (T0 - 86400 * 12) * 1000}
+    if path == "/control/status": return {"version": "v1.0.0", "dns_port": 53, "protection_enabled": time.time() >= OFF["until"], "protection_disabled_duration": int(max(0, OFF["until"] - time.time()) * 1000) if OFF["until"] < 9e12 else 0, "dns_addresses": ["192.168.0.2"], "start_time": (T0 - 86400 * 12) * 1000}
     if path == "/control/clients": return {"clients": None, "auto_clients": []}
     if path == "/control/querylog":
         t = time.time()
@@ -116,7 +119,10 @@ class Handler(BaseHTTPRequestHandler):
             self.send(f.read(), TYPES.get(os.path.splitext(full)[1], "application/octet-stream"))
 
     def do_POST(self):
-        self.rfile.read(int(self.headers.get("Content-Length") or 0))
+        body = self.rfile.read(int(self.headers.get("Content-Length") or 0))
+        if self.path == "/control/protection":
+            d = json.loads(body or b"{}")
+            OFF["until"] = 0 if d.get("enabled") else (time.time() + d["duration"] / 1000 if d.get("duration") else 9e12 + 1)
         self.do_GET()
 
     do_PUT = do_POST

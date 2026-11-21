@@ -33,10 +33,12 @@ button { cursor: pointer; }
 #nav button[aria-current="page"] { border-color: color-mix(in srgb, var(--gold) 60%, transparent); background: color-mix(in srgb, var(--gold) 12%, transparent); color: color-mix(in srgb, var(--gold) 55%, white); }
 .top-right { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
 .status { display: flex; align-items: center; gap: 10px; font-weight: 600; }
-.dot { position: relative; width: 10px; height: 10px; border-radius: 50%; background: var(--ok); color: var(--ok); }
-.dot.off { background: var(--gold); color: var(--gold); }
-.dot.err { background: var(--no); color: var(--no); }
-.ring { position: absolute; inset: -6px; border-radius: 50%; border: 2px solid currentColor; animation: pulse 2.2s ease-out infinite; }
+/* the switch in the top bar: gold while the filter is off, red when it cannot be reached */
+.status .switch[aria-checked="false"] .track { background: color-mix(in srgb, var(--gold) 55%, transparent); }
+.status .switch[aria-checked="false"] { color: color-mix(in srgb, var(--gold) 60%, white); }
+.status .switch.err { color: var(--no); opacity: 1; cursor: default; }
+.status .switch.err .track { background: color-mix(in srgb, var(--no) 45%, transparent); }
+.status #statusText { font-variant-numeric: tabular-nums; }
 .lang { min-height: 44px; min-width: 56px; padding: 0 12px; border: 1px solid rgba(255, 255, 255, .22); border-radius: 999px; background: transparent; color: var(--text); font-weight: 700; }
 
 main, .screen { display: flex; flex-direction: column; gap: 20px; }
@@ -186,7 +188,7 @@ input[type="file"] { max-width: 100%; color: var(--muted); }
 @keyframes drift { 0%, 100% { opacity: .55; transform: translate(0, 0) } 50% { opacity: .9; transform: translate(4%, 6%) } }
 @keyframes enter { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: none } }
 @media (prefers-reduced-motion: reduce) {
-  .ring, .glow, .screen { animation: none; }
+  .glow, .screen { animation: none; }
   .bars i { transition: none; }
 }
 
