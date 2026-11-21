@@ -75,8 +75,10 @@ There are two ways: the ready-made image, or building it yourself.
 You need a microSD card (8 GB or more), a network cable to your router, and
 any computer to write the card.
 
-1. **Download** `netsluice-<version>-deeper-connect-mini.img.xz` from the
-   [latest release](https://github.com/Anarki-LNX/netsluice/releases/latest).
+1. **Download** the newest `netsluice-<version>-deeper-connect-mini.img.xz` from
+   the [releases](https://github.com/Anarki-LNX/netsluice/releases). Not every
+   release brings an image: small ones reach a running device as an update,
+   under Settings, Updates.
 2. **Write it to the card** with [balenaEtcher](https://etcher.balena.io/) or
    the Raspberry Pi Imager ("Use custom"). Both take the `.xz` file as it is.
 3. **Unplug the Mini, insert the card, connect it to your router, power it up.**

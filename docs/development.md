@@ -91,6 +91,12 @@ need `install-stack.sh` by hand. So for a release:
    how far the download is. Without it a device falls back to the source
    archive and shows the download without a percentage.
 
+A new image (`scripts/build-image.sh --netsluice`, attached to the release as
+further arguments of `release.sh`) is only needed when something below `web/`
+and `service/` changed: the system setup, the first start, or the bundled
+packages. Everything else reaches a card written from an older image as an
+update.
+
 ## Tests
 
 ```bash
