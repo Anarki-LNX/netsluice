@@ -16,8 +16,8 @@ const T = {
     'ov.topDevices': 'Most active devices', 'ov.allDevices': 'All devices', 'ov.recent': 'Stopped most recently', 'ov.topBlocked': 'Stopped most often',
     'empty.devices': 'No device has asked yet.', 'empty.recent': 'Nothing has been stopped yet.', 'empty.blocked': 'Nothing has been stopped yet.',
     'requests': 'requests', 'times': 'times',
-    'dv.title': (n) => n === 1 ? 'One device uses the filter' : `${n} devices use the filter`, 'dv.sub': 'Every device that asked this filter for an address in the last 24 hours, the busiest first.',
-    'dv.place': (n) => `No. ${n}`, 'dv.requests': 'Requests', 'dv.share': 'Share of all traffic', 'dv.address': 'Address', 'dv.mac': 'MAC', 'dv.firmware': 'Firmware',
+    'dv.title': (n) => n === 1 ? 'One device uses the filter' : `${n} devices use the filter`, 'dv.sub': 'Every device that asked this filter for an address in the last 24 hours. The one with the most stopped requests comes first.',
+    'dv.place': (n) => `No. ${n}`, 'dv.requests': 'Requests', 'dv.stopped': 'Stopped', 'dv.address': 'Address', 'dv.mac': 'MAC', 'dv.firmware': 'Firmware',
     'dv.private': 'private (randomised) MAC', 'dv.nothing': 'This device tells nothing about itself.',
     'kind.phone': 'Phone', 'kind.tablet': 'Tablet', 'kind.computer': 'Computer', 'kind.tv': 'TV', 'kind.speaker': 'Speaker', 'kind.iot': 'Smart home', 'kind.network': 'Network gear',
     'kind.printer': 'Printer', 'kind.vm': 'Virtual machine', 'kind.server': 'Server', 'kind.console': 'Console', 'kind.private': 'Phone or laptop', 'kind.self': 'This device', 'kind.unknown': 'Unknown',
@@ -130,8 +130,8 @@ const T = {
     'ov.topDevices': 'Aktivste Geräte', 'ov.allDevices': 'Alle Geräte', 'ov.recent': 'Zuletzt aufgehalten', 'ov.topBlocked': 'Am häufigsten aufgehalten',
     'empty.devices': 'Noch hat kein Gerät gefragt.', 'empty.recent': 'Bisher wurde nichts aufgehalten.', 'empty.blocked': 'Bisher wurde nichts aufgehalten.',
     'requests': 'Anfragen', 'times': 'mal',
-    'dv.title': (n) => n === 1 ? 'Ein Gerät nutzt den Filter' : `${n} Geräte nutzen den Filter`, 'dv.sub': 'Jedes Gerät, das diesen Filter in den letzten 24 Stunden nach einer Adresse gefragt hat, das aktivste zuerst.',
-    'dv.place': (n) => `Platz ${n}`, 'dv.requests': 'Anfragen', 'dv.share': 'Anteil am Verkehr', 'dv.address': 'Adresse', 'dv.mac': 'MAC', 'dv.firmware': 'Firmware',
+    'dv.title': (n) => n === 1 ? 'Ein Gerät nutzt den Filter' : `${n} Geräte nutzen den Filter`, 'dv.sub': 'Jedes Gerät, das diesen Filter in den letzten 24 Stunden nach einer Adresse gefragt hat. Das mit den meisten aufgehaltenen Anfragen steht vorn.',
+    'dv.place': (n) => `Platz ${n}`, 'dv.requests': 'Anfragen', 'dv.stopped': 'Aufgehalten', 'dv.address': 'Adresse', 'dv.mac': 'MAC', 'dv.firmware': 'Firmware',
     'dv.private': 'private (zufällige) MAC', 'dv.nothing': 'Dieses Gerät verrät nichts über sich.',
     'kind.phone': 'Handy', 'kind.tablet': 'Tablet', 'kind.computer': 'Rechner', 'kind.tv': 'Fernseher', 'kind.speaker': 'Lautsprecher', 'kind.iot': 'Smart Home', 'kind.network': 'Netzwerkgerät',
     'kind.printer': 'Drucker', 'kind.vm': 'Virtuelle Maschine', 'kind.server': 'Server', 'kind.console': 'Spielkonsole', 'kind.private': 'Handy oder Laptop', 'kind.self': 'Dieses Gerät', 'kind.unknown': 'Unbekannt',
@@ -444,17 +444,19 @@ function render() {
   }), 'empty.blocked');
 
   $('devicesTitle').textContent = t('dv.title', clients.length);
-  // Busiest device first when the page is opened. After that the tiles keep their
+  // The device with the most stopped requests first when the page is opened: being
+  // busy is nothing to worry about, being stopped often is worth a look. After that the tiles keep their
   // seats, or they would swap under the reader every second; only the place in the
   // top right corner follows the count. A device seen for the first time sits down last.
-  const ranked = [...clients].sort((a, b) => b[1] - a[1]);
+  const stopped = (ip) => (state.stopped || {})[ip] || 0;
+  const ranked = [...clients].sort((a, b) => stopped(b[0]) - stopped(a[0]) || b[1] - a[1]);
   const rank = new Map(ranked.map(([ip], i) => [ip, i]));
   const count = new Map(clients);
   if (!state.seats) state.seats = [];
   state.seats = state.seats.filter((ip) => count.has(ip));
   for (const [ip] of ranked) if (!state.seats.includes(ip)) state.seats.push(ip);
   const seated = state.seats.map((ip) => [ip, count.get(ip), rank.get(ip)]);
-  const drawn = lang + JSON.stringify(seated.map(([ip, n, i]) => [ip, n, i, state.devices[ip] || 0])) + total;
+  const drawn = lang + JSON.stringify(seated.map(([ip, n, i]) => [ip, n, i, stopped(ip), state.devices[ip] || 0]));
   if (drawn !== state.seatsDrawn) { state.seatsDrawn = drawn; $('deviceGrid').replaceChildren(...seated.map(([ip, n, i]) => {
     const d = state.devices[ip] || {};
     const c = el('div', 'card');
@@ -465,7 +467,8 @@ function render() {
     c.append(el('p', 'muted', what || t('dv.nothing')));
     const kv = (k, v) => { const r = el('div', 'kv'); r.append(el('span', '', k), el('span', '', v)); return r; };
     if (d.firmware) c.append(kv(t('dv.firmware'), d.firmware));
-    c.append(kv(t('dv.requests'), fmt(n)), kv(t('dv.share'), (total ? Math.round(n / total * 100) : 0) + ' %'), kv(t('dv.address'), ip));
+    const no = stopped(ip);
+    c.append(kv(t('dv.requests'), fmt(n)), kv(t('dv.stopped'), no ? `${fmt(no)} (${Math.min(100, Math.max(1, Math.round(no / Math.max(n, 1) * 100)))} %)` : '0'), kv(t('dv.address'), ip));
     if (d.mac) c.append(kv(t('dv.mac'), d.mac));
     return c;
   })); }
@@ -579,7 +582,7 @@ async function pollRest() {
     state.recent = ((log && log.data) || []).map((e) => ({ host: e.question && e.question.name, client: e.client, time: e.time }));
     state.status = status;
   } catch { /* the fast loop reports reachability */ }
-  try { const r = await fetch('/api/devices'); if (r.ok) state.devices = (await r.json()).devices || {}; } catch { /* names are optional */ }
+  try { const r = await fetch('/api/devices'); if (r.ok) { const d = await r.json(); state.devices = d.devices || {}; if (!state.stopped) state.seats = null; state.stopped = d.blocked || {}; } } catch { /* names are optional */ }
   render();
 }
 

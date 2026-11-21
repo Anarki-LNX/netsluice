@@ -33,7 +33,8 @@ HTTP interface (all JSON, localhost only, the web server in front checks the ses
 
 Standard library only.
 """
-import array, bisect, csv, hashlib, hmac, json, os, re, secrets, shutil, signal, socket, struct, subprocess, sys, threading, time, urllib.request
+import array, bisect, csv, hashlib, hmac, json, os, re, secrets, shutil, signal, socket, struct, subprocess, sys, threading, time, urllib.parse, urllib.request
+from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 AGH = os.environ.get("NETSLUICE_AGH", "http://127.0.0.1:3001")
@@ -197,6 +198,8 @@ class State:
         self.mine = {"127.0.0.1", "::1"}  # this device's own addresses
         self.devices = {}          # ip -> what we found out about it
         self.macs = {}             # ip -> hardware address, remembered
+        self.blocked = {}          # hour -> { client: requests stopped }
+        self.blocked_upto = ""     # time of the newest log entry counted there
         self.load()
 
     def load(self):
@@ -205,12 +208,14 @@ class State:
                 d = json.load(f)
             self.buckets = {int(h): v for h, v in d.get("buckets", {}).items()}
             self.home = d.get("home")
+            self.blocked = {int(h): v for h, v in d.get("blocked", {}).items()}
+            self.blocked_upto = d.get("blocked_upto", "")
         except (OSError, ValueError):
             pass
 
     def save(self):
         with self.lock:
-            d = {"buckets": self.buckets, "home": self.home}
+            d = {"buckets": self.buckets, "home": self.home, "blocked": self.blocked, "blocked_upto": self.blocked_upto}
         os.makedirs(os.path.dirname(STATE), exist_ok=True)
         tmp = STATE + ".tmp"
         with open(tmp, "w") as f:
@@ -228,6 +233,26 @@ class State:
             for h in [h for h in self.buckets if h < hour - HOURS]:
                 del self.buckets[h]
 
+    def count_blocked(self, client, when):
+        """One request of this client was stopped, at this time of the query log."""
+        hour = hour_of(when)
+        with self.lock:
+            per = self.blocked.setdefault(hour, {})
+            per[client] = per.get(client, 0) + 1
+            now = int(time.time() // 3600)
+            for h in [h for h in self.blocked if h < now - HOURS]:
+                del self.blocked[h]
+
+    def blocked_totals(self):
+        hour = int(time.time() // 3600)
+        with self.lock:
+            totals = {}
+            for h, per in self.blocked.items():
+                if h >= hour - HOURS:
+                    for client, n in per.items():
+                        totals[client] = totals.get(client, 0) + n
+            return totals
+
     def snapshot(self, since):
         hour = int(time.time() // 3600)
         with self.lock:
@@ -238,6 +263,43 @@ class State:
                         t = totals.setdefault(cc, [0, 0]); t[0] += ok; t[1] += no
             ev = [e for e in self.events if e["seq"] > since][-120:]
             return {"home": self.home, "countries": totals, "events": ev, "seq": self.seq}
+
+
+def hour_of(when):
+    """The hour (since 1970) of a time as the query log writes it, e.g. 2026-01-02T03:04:05.123456789Z."""
+    try:
+        return int(datetime.fromisoformat(re.sub(r"\.\d+", "", when).replace("Z", "+00:00")).timestamp() // 3600)
+    except ValueError:
+        return int(time.time() // 3600)
+
+
+def is_blocked(e):
+    return str(e.get("reason", "")).startswith("Filtered")
+
+
+def backfill(st):
+    """Once, on a device that never counted: who was stopped how often in the last day,
+    from the filter's query log. Pages are asked for by the time the previous one ended at."""
+    older, newest, floor = "", "", int(time.time() // 3600) - HOURS
+    for _ in range(400):
+        try:
+            url = AGH + "/control/querylog?limit=500&response_status=filtered" + ("&older_than=" + urllib.parse.quote(older) if older else "")
+            with urllib.request.urlopen(url, timeout=20) as r:
+                page = json.load(r)
+        except (OSError, ValueError):
+            return False                                  # the filter is not up yet: try again later
+        entries = page.get("data") or []
+        for e in entries:                                 # newest first
+            when, client = e.get("time", ""), e.get("client", "")
+            newest = newest or when
+            if client and client not in st.mine and is_blocked(e) and hour_of(when) >= floor:
+                st.count_blocked(client, when)
+        nxt = page.get("oldest") or ""
+        if not entries or not nxt or nxt == older or hour_of(nxt) < floor:
+            break
+        older = nxt
+    st.blocked_upto = newest or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    return True
 
 
 def follow(db, st, cfg=None, leds=None):
@@ -264,6 +326,9 @@ def follow(db, st, cfg=None, leds=None):
         except (OSError, ValueError):
             time.sleep(3)
             continue
+        if not st.blocked_upto:
+            backfill(st)
+        counted = st.blocked_upto
         fresh = []
         for e in entries:                       # newest first
             t = e.get("time", "")
@@ -274,6 +339,9 @@ def follow(db, st, cfg=None, leds=None):
         for key, e in reversed(fresh):
             st.seen.add(key)
             q = e.get("question") or {}
+            # per device every stopped request counts, whatever its record type
+            if counted and key[0] > counted and is_blocked(e) and e.get("client") and e.get("client") not in st.mine:
+                st.count_blocked(e["client"], key[0])
             if q.get("type") != "A":            # one event per lookup, not one per record type
                 continue
             host, client = q.get("name", ""), e.get("client", "")
@@ -281,7 +349,7 @@ def follow(db, st, cfg=None, leds=None):
                 continue
             if client:
                 st.clients.add(client)
-            blocked = str(e.get("reason", "")).startswith("Filtered")
+            blocked = is_blocked(e)
             if blocked and st.last_time:                # not for the backlog read at start
                 if leds:
                     leds.flash()
@@ -308,6 +376,8 @@ def follow(db, st, cfg=None, leds=None):
                 st.add(cc, blocked, host, client)
         if entries:
             st.last_time = max(st.last_time, entries[0].get("time", ""))
+            if counted:
+                st.blocked_upto = max(st.blocked_upto, entries[0].get("time", ""))
         if len(st.seen) > 5000:
             st.seen = {k for k in st.seen if k[0] >= st.last_time[:16]}
         if time.time() - last_save > 300:
@@ -890,7 +960,7 @@ def main():
                 self.send_response(204 if auth.valid(self.token()) else 401)
                 self.send_header("Content-Length", "0"); self.end_headers(); return
             if path == "/api/devices":
-                self.reply({"devices": st.devices}); return
+                self.reply({"devices": st.devices, "blocked": st.blocked_totals()}); return
             if path == "/api/kids":
                 self.reply({"rules": rules.view()}); return
             if path == "/api/settings":
