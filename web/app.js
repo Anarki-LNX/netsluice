@@ -86,7 +86,7 @@ const T = {
     'bk.e.toobig': 'This system does not fit on the internal storage.', 'bk.e.nobackup': 'There is no backup.', 'bk.e.othersize': 'This backup was made from a different storage.', 'bk.e.notnow': 'Not possible right now.',
     'up.system': 'System underneath (Debian)',
     'ap.check': 'Look for a new version', 'ap.run': (v) => `Install ${v}`, 'ap.current': 'Up to date', 'ap.version': (v) => v ? `Installed: version ${v}` : 'Installed: a version from before updates existed',
-    'ap.available': (v) => `Version ${v} is available on GitHub.`, 'ap.none': 'This is the newest version.', 'ap.never': 'Not looked yet.', 'ap.checked': (d) => `last looked ${d}`,
+    'ap.available': (v) => `Version ${v} is available on GitHub.`, 'ap.none': 'This is the newest version.', 'ap.found': (v) => `New version found: ${v}.`, 'ap.foundNone': 'No new version found.', 'ap.lookFailed': (m) => `Could not look on GitHub: ${m}`, 'up.found': (n) => n === 1 ? 'One update found.' : `${n} updates found.`, 'up.foundNone': 'No updates found.', 'ap.never': 'Not looked yet.', 'ap.checked': (d) => `last looked ${d}`,
     'ap.running': 'Installing the new version. The filter keeps working; this page reloads by itself when it is done.', 'ap.started': 'Update started.', 'ap.done': (v) => `Updated to version ${v}. Reloading.`,
     'ap.failed': (m) => `The last update did not work: ${m}. The previous version is still running.`, 'ap.rolledBack': 'The last update was undone: the new version did not start, so the previous one was put back.',
     'ap.auto': 'Install new versions automatically', 'ap.autoSub': 'Looks on GitHub once a day, early in the morning. The filter keeps working during an update.',
@@ -199,7 +199,7 @@ const T = {
     'bk.e.toobig': 'Dieses System passt nicht auf den internen Speicher.', 'bk.e.nobackup': 'Es gibt keine Sicherung.', 'bk.e.othersize': 'Diese Sicherung stammt von einem anderen Speicher.', 'bk.e.notnow': 'Gerade nicht möglich.',
     'up.system': 'System darunter (Debian)',
     'ap.check': 'Nach neuer Version suchen', 'ap.run': (v) => `${v} installieren`, 'ap.current': 'Aktuell', 'ap.version': (v) => v ? `Installiert: Version ${v}` : 'Installiert: eine Fassung von vor den Updates',
-    'ap.available': (v) => `Version ${v} ist auf GitHub verfügbar.`, 'ap.none': 'Das ist die neueste Version.', 'ap.never': 'Noch nicht gesucht.', 'ap.checked': (d) => `zuletzt gesucht ${d}`,
+    'ap.available': (v) => `Version ${v} ist auf GitHub verfügbar.`, 'ap.none': 'Das ist die neueste Version.', 'ap.found': (v) => `Neue Version gefunden: ${v}.`, 'ap.foundNone': 'Keine neue Version gefunden.', 'ap.lookFailed': (m) => `Nachsehen auf GitHub hat nicht geklappt: ${m}`, 'up.found': (n) => n === 1 ? 'Ein Update gefunden.' : `${n} Updates gefunden.`, 'up.foundNone': 'Keine Updates gefunden.', 'ap.never': 'Noch nicht gesucht.', 'ap.checked': (d) => `zuletzt gesucht ${d}`,
     'ap.running': 'Die neue Version wird installiert. Der Filter arbeitet weiter; die Seite lädt neu, sobald es fertig ist.', 'ap.started': 'Update gestartet.', 'ap.done': (v) => `Auf Version ${v} aktualisiert. Lade neu.`,
     'ap.failed': (m) => `Das letzte Update hat nicht geklappt: ${m}. Die bisherige Version läuft weiter.`, 'ap.rolledBack': 'Das letzte Update wurde rückgängig gemacht: Die neue Version startete nicht, also läuft wieder die bisherige.',
     'ap.auto': 'Neue Versionen automatisch installieren', 'ap.autoSub': 'Sieht einmal am Tag frühmorgens auf GitHub nach. Der Filter arbeitet während eines Updates weiter.',
@@ -1079,7 +1079,9 @@ async function sysCall(path, body, noteId, okKey) {
     if (r.status === 401) { gate('login'); throw new Error('login'); }
     const d = await r.json();
     if (!r.ok) throw new Error(d.error === 'name' ? t('nw.badName') : d.error || ('HTTP ' + r.status));
-    say(noteId, 'ok', t(okKey));
+    // okKey is the name of a text, or a function that reads the answer and returns [kind, text]
+    const [kind, text] = typeof okKey === 'function' ? okKey(d) : ['ok', t(okKey)];
+    say(noteId, kind, text);
   } catch (e) { say(noteId, 'bad', t('fl.fail', e.message)); }
   sys.busy = false;
   try { sys.d = await svc('system'); } catch { /* keep the old view */ }
@@ -1088,12 +1090,13 @@ async function sysCall(path, body, noteId, okKey) {
 $('nwForm').addEventListener('submit', (e) => { e.preventDefault(); sysCall('hostname', { name: $('nwName').value.trim().toLowerCase() }, 'nwNote', 'st.saved'); });
 $('upCheck').addEventListener('click', async () => {
   say('upNote', '', ''); drawBar('up', 0, false, false, t('up.checking'));        // no way to measure this one: a moving bar
-  await sysCall('updates/check', {}, 'upNote', 'st.saved');
+  await sysCall('updates/check', {}, 'upNote', (d) => { const n = (d.pending || []).length; return ['ok', n ? t('up.found', n) : t('up.foundNone')]; });
   $('upProgress').hidden = true;
 });
 $('upRun').addEventListener('click', () => { say('upNote', '', ''); drawBar('up', 1, true, false, t('up.p.start')); watchSys(); sysCall('updates/run', {}, 'upNote', 'up.started'); });
 $('upAuto').addEventListener('click', () => sys.d && sysCall('updates/auto', { on: !sys.d.updates.auto }, 'upNote', 'st.saved'));
-$('apCheck').addEventListener('click', () => { say('apNote', '', t('up.checking')); sysCall('app/check', {}, 'apNote', 'st.saved'); });
+$('apCheck').addEventListener('click', () => { say('apNote', '', t('up.checking')); sysCall('app/check', {}, 'apNote', (d) => d.error ? ['bad', t('ap.lookFailed', d.error)]
+  : d.available && d.latest ? ['ok', t('ap.found', d.latest.version)] : ['ok', t('ap.foundNone')]); });
 $('apRun').addEventListener('click', () => { say('apNote', '', ''); showProgress({ phase: 'start' }); watchApp(); sysCall('app/run', {}, 'apNote', 'ap.started'); });
 $('apAuto').addEventListener('click', () => sys.d && sysCall('app/auto', { on: !(sys.d.app || {}).auto }, 'apNote', 'st.saved'));
 
