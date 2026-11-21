@@ -248,6 +248,7 @@ const CATALOG = [
   { name: 'Xiaomi devices', rules: 410, en: 'Built-in tracking of Xiaomi phones and gadgets.', de: 'Eingebautes Tracking von Xiaomi-Handys und -Geräten.', url: 'https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/adblock/native.xiaomi.txt' },
   { name: 'LG webOS TVs', rules: 460, en: 'Built-in tracking of LG televisions.', de: 'Eingebautes Tracking von LG-Fernsehern.', url: 'https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/adblock/native.lgwebos.txt' },
   { name: 'Windows and Office', rules: 400, en: 'Telemetry of Windows and Microsoft Office.', de: 'Telemetrie von Windows und Microsoft Office.', url: 'https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/adblock/native.winoffice.txt' },
+  { name: 'AdAway Default Blocklist', en: 'Ads in mobile apps. A small, classic list.', de: 'Werbung in Handy-Apps. Eine kleine, klassische Liste.', url: 'https://adguardteam.github.io/HostlistsRegistry/assets/filter_2.txt' },
   { name: 'HaGeZi Threat Intelligence (full)', rules: 1510000, heavy: true, en: 'The complete feed. Needs about 500 MB of memory on its own.', de: 'Der komplette Bestand. Braucht allein rund 500 MB Arbeitsspeicher.', url: 'https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/adblock/tif.txt' },
 ];
 
@@ -304,6 +305,7 @@ document.querySelectorAll('#stFolds > .fold > summary').forEach((sm) => sm.addEv
 function show(name) {
   let [base, sub] = name.split('/');
   if (!SCREENS.includes(base)) { base = 'overview'; sub = null; }
+  if (base === 'devices' && screen !== 'devices') state.seats = null;       // sort afresh on every visit
   screen = base;
   if (base === 'settings') sub = settingsPage(sub);
   name = sub ? base + '/' + sub : base;
@@ -442,9 +444,18 @@ function render() {
   }), 'empty.blocked');
 
   $('devicesTitle').textContent = t('dv.title', clients.length);
-  // busiest device first, with its place in the top right corner
+  // Busiest device first when the page is opened. After that the tiles keep their
+  // seats, or they would swap under the reader every second; only the place in the
+  // top right corner follows the count. A device seen for the first time sits down last.
   const ranked = [...clients].sort((a, b) => b[1] - a[1]);
-  $('deviceGrid').replaceChildren(...ranked.map(([ip, n], i) => {
+  const rank = new Map(ranked.map(([ip], i) => [ip, i]));
+  const count = new Map(clients);
+  if (!state.seats) state.seats = [];
+  state.seats = state.seats.filter((ip) => count.has(ip));
+  for (const [ip] of ranked) if (!state.seats.includes(ip)) state.seats.push(ip);
+  const seated = state.seats.map((ip) => [ip, count.get(ip), rank.get(ip)]);
+  const drawn = lang + JSON.stringify(seated.map(([ip, n, i]) => [ip, n, i, state.devices[ip] || 0])) + total;
+  if (drawn !== state.seatsDrawn) { state.seatsDrawn = drawn; $('deviceGrid').replaceChildren(...seated.map(([ip, n, i]) => {
     const d = state.devices[ip] || {};
     const c = el('div', 'card');
     const head = el('div', 'cardhead'); head.append(el('h3', '', clientName(ip)), el('span', 'place' + (i < 3 ? ' top' + (i + 1) : ''), t('dv.place', i + 1)));
@@ -457,7 +468,7 @@ function render() {
     c.append(kv(t('dv.requests'), fmt(n)), kv(t('dv.share'), (total ? Math.round(n / total * 100) : 0) + ' %'), kv(t('dv.address'), ip));
     if (d.mac) c.append(kv(t('dv.mac'), d.mac));
     return c;
-  }));
+  })); }
 
   if (state.status) {
     const st = state.status;

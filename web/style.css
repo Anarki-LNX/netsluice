@@ -92,7 +92,7 @@ main, .screen { display: flex; flex-direction: column; gap: 20px; }
 .place.top1 { border-color: var(--gold); background: var(--gold); color: #1B1403; }
 .place.top2 { border-color: color-mix(in srgb, var(--gold) 70%, transparent); color: color-mix(in srgb, var(--gold) 55%, white); }
 .place.top3 { border-color: color-mix(in srgb, var(--gold) 40%, transparent); color: color-mix(in srgb, var(--gold) 55%, white); }
-.card p { font-size: 15px; }
+.card p { font-size: 15px; overflow-wrap: anywhere; }
 .card .kv { display: flex; justify-content: space-between; gap: 12px; }
 .card .kv span:first-child { color: var(--muted); }
 .card .kv span:last-child { font-weight: 600; font-variant-numeric: tabular-nums; }
