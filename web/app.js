@@ -521,7 +521,12 @@ function render() {
       fact(String(clients.length), t('ov.fDevices')),
     );
   }
-  if (scene) scene.setDevices(clients.slice(0, 60).map(([ip]) => ({ ip, name: clientName(ip), kind: (state.devices[ip] || {}).kind || 'unknown' })));
+  // on the stage: the ones stopped most often first, then the busiest; whoever speaks up later takes a quiet seat
+  if (scene) {
+    const no = (ip) => (state.stopped || {})[ip] || 0;
+    scene.setDevices([...clients].sort((a, b) => no(b[0]) - no(a[0]) || b[1] - a[1]).slice(0, 80)
+      .map(([ip]) => ({ ip, name: clientName(ip), kind: (state.devices[ip] || {}).kind || 'unknown' })));
+  }
   // on the overview: who is stopped most, not who is busiest
   const most = Object.entries(state.stopped || {}).filter(([ip, n]) => n > 0 && !isSelf(ip)).sort((a, b) => b[1] - a[1]);
   const cmax = Math.max(1, ...most.map((c) => c[1]));

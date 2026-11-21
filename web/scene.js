@@ -55,6 +55,7 @@ export function createScene(canvas) {
       font: cs.getPropertyValue('--body').trim() || 'system-ui, sans-serif' };
     if (still) draw(0);
   }
+  const clock = () => performance.now();
   const A = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
   new MutationObserver(readColours).observe(root, { attributes: true, attributeFilter: ['data-mode', 'style'] });
 
@@ -79,11 +80,15 @@ export function createScene(canvas) {
     if (still) draw(0);
   }
 
-  let wanted = [];
+  let wanted = [], seats = [];        // seats: the devices on show, by address, in their order on the stage
   function place() {
     const room = vert ? Math.floor((W - 24) / 62) : Math.floor((H - 30) / 56);
     const max = clamp(room, 3, vert ? 5 : 11);
-    const list = wanted.length > max ? wanted.slice(0, max - 1) : wanted.slice();
+    const known = new Map(wanted.map((d) => [d.ip, d])), size = wanted.length > max ? max - 1 : wanted.length;
+    // who sits keeps the seat; free seats go to the next in the order asked for
+    seats = seats.filter((ip) => known.has(ip)).slice(0, size);
+    for (const d of wanted) { if (seats.length >= size) break; if (!seats.includes(d.ip)) seats.push(d.ip); }
+    const list = seats.map((ip) => known.get(ip));
     const rest = wanted.length - list.length;
     const old = byIp; byIp = new Map(); nodes = [];
     const all = rest > 0 ? [...list, { ip: '+', name: '+' + rest, kind: 'more' }] : list;
@@ -91,7 +96,7 @@ export function createScene(canvas) {
       const k = all.length === 1 ? 0 : (i / (all.length - 1)) * 2 - 1;        // -1 .. 1
       const v = k * .8, u = (vert ? .1 : .17) + (vert ? .02 : .035) * (1 - k * k) * -1 + (vert ? 0 : .02);
       const prev = old.get(d.ip);
-      const n = { ...d, u, v, heat: prev ? prev.heat : 0, pulse: prev ? prev.pulse : 0 };
+      const n = { ...d, u, v, heat: prev ? prev.heat : 0, pulse: prev ? prev.pulse : 0, spoke: prev ? prev.spoke : 0 };
       nodes.push(n); byIp.set(d.ip, n);
     });
     more = byIp.get('+') || null;
@@ -100,9 +105,19 @@ export function createScene(canvas) {
   // ----- packets
   function add(ev) {
     if (!W || still || !visible || document.hidden) return;
-    const n = byIp.get(ev.client) || more;
+    let n = byIp.get(ev.client);
+    if (!n) {
+      // a device that is not on show speaks up: it takes the seat of the one that has been
+      // quiet longest, so the stage shows who is talking now. Nobody else moves.
+      const d = wanted.find((w) => w.ip === ev.client);
+      const quiet = d && nodes.filter((x) => x.kind !== 'more' && x.heat < .05 && clock() - (x.spoke || 0) > 9000).sort((a, b) => (a.spoke || 0) - (b.spoke || 0))[0];
+      if (quiet) {
+        byIp.delete(quiet.ip); seats[seats.indexOf(quiet.ip)] = d.ip;
+        Object.assign(quiet, d, { heat: 0, pulse: 0 }); byIp.set(d.ip, quiet); n = quiet;
+      } else n = more;
+    }
     if (!n || packets.length > 90) return;
-    n.heat = 1; n.pulse = 1;
+    n.heat = 1; n.pulse = 1; n.spoke = clock();
     const gv = gvOf(n.v, (Math.random() - .5) * .14);
     packets.push({ n, gv, bad: !!ev.blocked && on, host: ev.host || '', phase: 'fly', t: 0, dur: .95 + Math.random() * .45,
       size: 2.6 + Math.random() * 1.2, trail: [] });
@@ -297,5 +312,6 @@ export function createScene(canvas) {
     setDevices(list) { const sig = list.map((d) => d.ip + d.name + d.kind).join('|'); if (sig === wanted.sig) return; wanted = list; wanted.sig = sig; place(); if (still) draw(0); },
     setOn(v) { if (on !== !!v) { on = !!v; if (still) draw(0); } },
     setVisible(v) { visible = !!v; },
+    shown() { return seats.slice(); },                       // the addresses on show, in their order
   };
 }
