@@ -22,6 +22,7 @@ HTTP interface (all JSON, localhost only, the web server in front checks the ses
     GET  /auth/state | /auth/check          POST /auth/setup | login | logout | password
     GET  /api/geo?since=<seq>               countries, recent events
     GET  /api/devices
+    GET  /api/device?ip=<address>           one device in the last 24 hours: hours, names, the newest requests
     GET  /api/flow?since=<seq>              the newest lookups: which device asked, and whether it was stopped
     GET  /api/kids                          POST /api/kids | /api/kids/extend | /api/kids/remove
     GET  /api/settings                      POST /api/settings | /api/notify/test
@@ -35,7 +36,7 @@ HTTP interface (all JSON, localhost only, the web server in front checks the ses
 
 Standard library only.
 """
-import array, base64, bisect, csv, hashlib, hmac, json, os, re, secrets, shutil, signal, socket, struct, subprocess, sys, threading, time, urllib.parse, urllib.request
+import array, base64, bisect, csv, hashlib, hmac, ipaddress, json, os, re, secrets, shutil, signal, socket, struct, subprocess, sys, threading, time, urllib.parse, urllib.request
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -290,6 +291,88 @@ def hour_of(when):
 
 def is_blocked(e):
     return str(e.get("reason", "")).startswith("Filtered")
+
+
+def when_of(when):
+    """Seconds since 1970 of a time as the query log writes it."""
+    try:
+        return datetime.fromisoformat(re.sub(r"\.\d+", "", when).replace("Z", "+00:00")).timestamp()
+    except ValueError:
+        return time.time()
+
+
+DETAIL = {"lock": threading.Lock(), "cache": {}}      # one device at a time, each answer kept for a moment
+
+
+def device_detail(ip):
+    """What one device asked for in the last 24 hours, read from the filter's query log:
+    requests per hour, the names stopped and let through most often, which list
+    stopped them, and the newest requests one by one."""
+    hit = DETAIL["cache"].get(ip)
+    if hit and hit[0] > time.time() - 15:
+        return hit[1]
+    with DETAIL["lock"]:
+        # the same 24 clock hours the filter's own statistics cover: the running hour and the 23 before it
+        now = time.time(); first_hour = int(now // 3600) - 23; floor = first_hour * 3600
+        hours = [[0, 0] for _ in range(24)]
+        no_hosts, ok_hosts, lists, types, recent = {}, {}, {}, {}, []
+        total = blocked = cached = 0; ms_sum = 0.0; ms_n = 0
+        older, complete, reach = "", False, now
+        try:
+            names = {f["id"]: f.get("name") or f.get("url") or "" for f in (agh("filtering/status") or {}).get("filters") or []}
+        except Exception:
+            names = {}
+        for _ in range(60):                                   # 60 pages of 500 are 30,000 requests
+            url = AGH + "/control/querylog?limit=500&search=" + urllib.parse.quote(ip) + ("&older_than=" + urllib.parse.quote(older) if older else "")
+            try:
+                with urllib.request.urlopen(url, timeout=20) as r:
+                    page = json.load(r)
+            except (OSError, ValueError):
+                break
+            entries = page.get("data") or []
+            for e in entries:                                 # newest first
+                if e.get("client") != ip:                     # the search also finds addresses that only begin like this one
+                    continue
+                at = when_of(e.get("time", ""))
+                if at < floor:
+                    complete = True
+                    break
+                reach = at
+                q = e.get("question") or {}
+                host, kind, bad = q.get("name", ""), q.get("type", ""), is_blocked(e)
+                rule = next(iter(e.get("rules") or []), {})
+                by = (names.get(rule.get("filter_list_id")) or "") if bad else ""
+                total += 1; blocked += bad
+                i = int(at // 3600) - first_hour
+                if 0 <= i < 24:
+                    hours[i][1 if bad else 0] += 1
+                side = no_hosts if bad else ok_hosts
+                side[host] = side.get(host, 0) + 1
+                types[kind] = types.get(kind, 0) + 1
+                if bad:
+                    lists[by] = lists.get(by, 0) + 1
+                cached += bool(e.get("cached"))
+                try:
+                    if not bad and not e.get("cached"):
+                        ms_sum += float(e.get("elapsedMs") or 0); ms_n += 1
+                except ValueError:
+                    pass
+                if len(recent) < 400:
+                    recent.append({"t": int(at), "host": host, "type": kind, "blocked": bad, "by": by})
+            nxt = page.get("oldest") or ""
+            if complete or not entries or not nxt or nxt == older:
+                complete = complete or not entries or not nxt
+                break
+            older = nxt
+        top = lambda d, n: sorted(d.items(), key=lambda kv: -kv[1])[:n]
+        out = {"ip": ip, "total": total, "blocked": blocked, "hosts": len(set(no_hosts) | set(ok_hosts)), "cached": cached,
+               "avg_ms": round(ms_sum / ms_n, 1) if ms_n else None, "first_hour": first_hour, "hours": hours,
+               "top_blocked": top(no_hosts, 12), "top_passed": top(ok_hosts, 12), "lists": top(lists, 8), "types": top(types, 6),
+               "complete": complete, "since": int(reach), "recent": recent}
+        DETAIL["cache"][ip] = (time.time(), out)
+        for k in [k for k, v in DETAIL["cache"].items() if v[0] < time.time() - 120]:
+            del DETAIL["cache"][k]
+        return out
 
 
 def backfill(st):
@@ -1060,6 +1143,13 @@ def main():
             if path == "/auth/check":
                 self.send_response(204 if auth.valid(self.token()) else 401)
                 self.send_header("Content-Length", "0"); self.end_headers(); return
+            if path == "/api/device":
+                ip = urllib.parse.unquote(next((p[3:] for p in query.split("&") if p.startswith("ip=")), ""))
+                try:
+                    ipaddress.ip_address(ip)
+                except ValueError:
+                    self.reply({"error": "ip"}, 400); return
+                self.reply(device_detail(ip)); return
             if path == "/api/flow":
                 since = next((int(p[6:]) for p in query.split("&") if p.startswith("since=") and p[6:].isdigit()), 0)
                 self.reply(st.flow_since(since)); return

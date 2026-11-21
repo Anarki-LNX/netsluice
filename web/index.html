@@ -116,10 +116,46 @@ try {
 </section>
 
 <section class="screen" id="screen-devices" hidden>
-  <div class="pagehead"><h1 id="devicesTitle"></h1><p class="muted" data-i18n="dv.sub"></p></div>
-  <div class="tile bare">
-    <div class="tilehead"><div><h2 data-i18n="dv.list"></h2><p class="muted" id="deviceTotal"></p></div></div>
-    <div class="grid" id="deviceGrid"></div>
+  <div id="devList">
+    <div class="pagehead"><h1 id="devicesTitle"></h1><p class="muted" data-i18n="dv.sub"></p></div>
+    <div class="tile bare">
+      <div class="tilehead"><div><h2 data-i18n="dv.list"></h2><p class="muted" id="deviceTotal"></p></div></div>
+      <div class="grid" id="deviceGrid"></div>
+    </div>
+  </div>
+  <!-- one device: what it asked for in the last 24 hours -->
+  <div id="devDetail" hidden>
+    <div class="subnav"><a class="backlink" href="#devices" data-i18n="dd.back"></a></div>
+    <div class="pagehead"><h1 id="ddName"></h1><p class="muted" id="ddWhat"></p></div>
+    <div class="progress" id="ddProgress" hidden>
+      <div class="pbar unknown" role="progressbar" id="ddBarWrap"><span id="ddBar"></span></div>
+      <div class="ptext"><span data-i18n="dd.loading"></span><span></span></div>
+    </div>
+    <p class="note" id="ddNote" role="status"></p>
+    <div id="ddBody" hidden>
+      <div class="tile ddhead">
+        <svg class="donut big" id="ddDonut" viewBox="0 0 100 100" role="img">
+          <circle class="ok" cx="50" cy="50" r="40"/><circle class="no" id="ddArc" cx="50" cy="50" r="40" transform="rotate(-90 50 50)"/>
+          <text x="50" y="50" id="ddPct"></text><text x="50" y="65" class="sub" data-i18n="ov.stoppedWord"></text>
+        </svg>
+        <div class="facts wide" id="ddFacts"></div>
+      </div>
+      <div class="tile">
+        <div class="tilehead"><div><h2 data-i18n="dd.chart"></h2><p class="muted" id="ddReach"></p></div>
+          <div class="legend"><span><i class="sw ok"></i><span data-i18n="ov.keyOk"></span></span><span><i class="sw no"></i><span data-i18n="ov.keyNo"></span></span></div></div>
+        <div class="chart" id="ddChart"></div>
+      </div>
+      <div class="row">
+        <div class="tile grow1"><h2 data-i18n="dd.topNo"></h2><div class="list" id="ddTopNo"></div></div>
+        <div class="tile grow1"><h2 data-i18n="dd.topOk"></h2><div class="list" id="ddTopOk"></div></div>
+        <div class="tile grow1"><h2 data-i18n="dd.lists"></h2><div class="list" id="ddLists"></div><h2 data-i18n="dd.types"></h2><div class="list" id="ddTypes"></div></div>
+      </div>
+      <div class="tile">
+        <div class="tilehead"><div><h2 data-i18n="dd.log"></h2><p class="muted" id="ddLogSub"></p></div><span class="seg" id="ddFilter" role="radiogroup"></span></div>
+        <div class="log" id="ddLog"></div>
+        <button type="button" class="btn ghost" id="ddMore" data-i18n="dd.more" hidden></button>
+      </div>
+    </div>
   </div>
 </section>
 

@@ -82,6 +82,18 @@ def reply_for(path, query):
     if path == "/api/system/https": return {"on": HTTPS["on"], "busy": time.time() < HTTPS["until"], "error": None, "ca": HTTPS["on"], "fingerprint": "A1:B2:C3:D4:E5:F6:07:18:29:3A:4B:5C:6D:7E:8F:90:A1:B2:C3:D4:E5:F6:07:18:29:3A:4B:5C:6D:7E:8F:90" if HTTPS["on"] else None}
     if path == "/api/system/app/hint": return {"version": "0.1.7", "latest": "0.1.8"}
     if path == "/api/devices": return {"devices": {d[0]: {"name": d[1], "kind": d[2], "vendor": d[3], "model": d[4], "firmware": d[5], "mac": d[6], "private": d[3] is None, "source": "router", "services": []} for d in DEVICES}, "blocked": {d[0]: (k * 137 + int(now() / 3) * (k % 3)) % 900 for k, d in enumerate(DEVICES)}}
+    if path == "/api/device":                     # one device in the last 24 hours
+        ip = next((p[3:] for p in query.split("&") if p.startswith("ip=")), "")
+        d = next((x for x in DEVICES if x[0] == ip), DEVICES[0]); r = random.Random(ip); share = .45 if d[2] in ("tv", "speaker", "iot") else .12
+        hours = [[int(h * d[7] * .5 * (1 - share)), int(h * d[7] * .5 * share)] for h in HOURS]
+        total = sum(a + b for a, b in hours); no = sum(b for a, b in hours)
+        okh = ["www.example.org", "api.weather.example", "time.device.example", "cdn.video.example", "mail.example.net", "updates.vendor.example", "img.shop.example"]
+        recent = [{"t": int(time.time()) - i * 23, "host": (r.choice(BLOCKED) if i % 4 == 0 else r.choice(okh)), "type": ["A", "AAAA", "HTTPS"][i % 3], "blocked": i % 4 == 0,
+                   "by": (LISTS[i % 2][0] if i % 4 == 0 else "")} for i in range(240)]
+        return {"ip": ip, "total": total, "blocked": no, "hosts": 41, "cached": int(total * .31), "avg_ms": 18.4, "first_hour": int(time.time() // 3600) - 23, "hours": hours,
+                "top_blocked": [[h, int(no * w)] for h, w in zip(BLOCKED, (.34, .22, .16, .12, .09, .07))], "top_passed": [[h, int((total - no) * w)] for h, w in zip(okh, (.3, .2, .15, .12, .1, .08, .05))],
+                "lists": [[LISTS[0][0], int(no * .7)], [LISTS[1][0], int(no * .25)], ["", int(no * .05)]], "types": [["A", int(total * .5)], ["AAAA", int(total * .3)], ["HTTPS", int(total * .2)]],
+                "complete": True, "since": int(time.time()) - 86000, "recent": recent}
     if path == "/api/flow":                       # who asks right now, weighted like the devices' traffic
         since = next((int(p[6:]) for p in query.split("&") if p.startswith("since=") and p[6:].isdigit()), 0)
         seq = int(now() * 3.4)

@@ -29,7 +29,9 @@ a device: `python3 scripts/demo.py`, then open <http://127.0.0.1:8099/>.
   Home and Pi-hole. One switch per list.
 - **Overview** with a live view: lookups arrive, are checked, and pass or burst.
 - **Devices**, the one that is stopped most often first, with name, maker,
-  kind and, where a device announces it, model and firmware.
+  kind and, where a device announces it, model and firmware. A click on a device
+  opens its page: requests per hour, the names stopped and let through most
+  often, and its newest requests one by one.
 - **World map** of where the network talks to, coloured by traffic and by how
   much was stopped.
 - **Children and schedules**: internet on or off per device, by hand or by

@@ -312,6 +312,12 @@ export function createScene(canvas) {
     setDevices(list) { const sig = list.map((d) => d.ip + d.name + d.kind).join('|'); if (sig === wanted.sig) return; wanted = list; wanted.sig = sig; place(); if (still) draw(0); },
     setOn(v) { if (on !== !!v) { on = !!v; if (still) draw(0); } },
     setVisible(v) { visible = !!v; },
+    // which device stands at this place of the window: its address, '+' for the rest, or null
+    pick(clientX, clientY) {
+      const r = canvas.getBoundingClientRect(), x = clientX - r.left, y = clientY - r.top, nr = clamp(across() / (vert ? 16 : 30), 15, 21) + 8;
+      for (const n of nodes) { const [nx, ny] = P(n.u, n.v); if (Math.hypot(x - nx, y - ny) <= nr) return n.ip; }
+      return null;
+    },
     shown() { return seats.slice(); },                       // the addresses on show, in their order
   };
 }

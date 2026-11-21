@@ -13,6 +13,11 @@ const T = {
     'ov.home': 'Home network', 'ov.internet': 'Internet', 'ov.flowAria': 'Live view: requests arrive blue, are checked inside the sluice, leave green or burst in red',
     'lg.incoming': 'on the way to the sluice', 'lg.passed': 'passed', 'lg.blocked': 'caught in the sluice',
     'ov.last24': 'The last 24 hours', 'ov.barsAria': 'Requests per hour',
+    'dd.back': 'All devices', 'dd.loading': 'Reading the log of this device', 'dd.chart': 'Requests per hour', 'dd.reachAll': 'The last 24 hours', 'dd.reachPart': (d) => `As far back as could be read, since ${d}`,
+    'dd.topNo': 'Stopped most often', 'dd.topOk': 'Let through most often', 'dd.lists': 'Stopped by', 'dd.types': 'Kinds of request', 'dd.log': 'The newest requests', 'dd.logSub': (n, all) => `${n} of ${all} shown`, 'dd.more': 'Show more',
+    'dd.all': 'All', 'dd.onlyNo': 'Stopped', 'dd.onlyOk': 'Let through', 'dd.fTotal': 'requests', 'dd.fNo': 'stopped', 'dd.fOk': 'let through', 'dd.fHosts': 'different names', 'dd.fSpeed': 'average answer time', 'dd.fCached': 'answered from memory',
+    'dd.none': 'This device has not asked for anything in the last 24 hours.', 'dd.noneNo': 'Nothing was stopped.', 'dd.noneOk': 'Nothing was let through.', 'dd.noneLog': 'No requests of this kind.', 'dd.ownRule': 'Own rule', 'dd.fail': (m) => `The log could not be read: ${m}`,
+    'dd.old': 'This page needs the newest version of NetSluice. Please update.', 'dd.bar': (h, ok, no) => `${h}: ${ok} let through, ${no} stopped`, 'dd.passed': 'let through', 'dd.open': 'Show what this device asks for',
     'ov.stoppedWord': 'stopped', 'ov.keyNo': 'stopped', 'ov.keyOk': 'let through', 'ov.hour': (h) => `${h}:00`, 'ov.fPeak': 'busiest hour', 'ov.fPeakSub': (n) => `${n} requests`, 'ov.fRate': 'requests per minute', 'ov.fSpeed': 'average answer time', 'ov.fDevices': 'devices',
     'ov.share': (p) => `${p} % of all requests were stopped.`, 'ov.shareNone': 'No requests yet. Point a device at this filter to see it work.',
     'ov.topDevices': 'Devices stopped most often', 'ov.allDevices': 'All devices', 'ov.recent': 'Stopped most recently', 'ov.topBlocked': 'Stopped most often',
@@ -135,6 +140,11 @@ const T = {
     'ov.home': 'Heimnetz', 'ov.internet': 'Internet', 'ov.flowAria': 'Live-Ansicht: Anfragen kommen blau an, werden in der Schleuse geprüft, verlassen sie grün oder zerplatzen rot',
     'lg.incoming': 'unterwegs zur Schleuse', 'lg.passed': 'durchgelassen', 'lg.blocked': 'in der Schleuse erwischt',
     'ov.last24': 'Die letzten 24 Stunden', 'ov.barsAria': 'Anfragen pro Stunde',
+    'dd.back': 'Alle Geräte', 'dd.loading': 'Lese das Protokoll dieses Geräts', 'dd.chart': 'Anfragen pro Stunde', 'dd.reachAll': 'Die letzten 24 Stunden', 'dd.reachPart': (d) => `So weit zurück, wie sich lesen ließ, seit ${d}`,
+    'dd.topNo': 'Am häufigsten aufgehalten', 'dd.topOk': 'Am häufigsten durchgelassen', 'dd.lists': 'Aufgehalten durch', 'dd.types': 'Arten von Anfragen', 'dd.log': 'Die neuesten Anfragen', 'dd.logSub': (n, all) => `${n} von ${all} angezeigt`, 'dd.more': 'Mehr anzeigen',
+    'dd.all': 'Alle', 'dd.onlyNo': 'Aufgehalten', 'dd.onlyOk': 'Durchgelassen', 'dd.fTotal': 'Anfragen', 'dd.fNo': 'aufgehalten', 'dd.fOk': 'durchgelassen', 'dd.fHosts': 'verschiedene Adressen', 'dd.fSpeed': 'mittlere Antwortzeit', 'dd.fCached': 'aus dem Speicher beantwortet',
+    'dd.none': 'Dieses Gerät hat in den letzten 24 Stunden nichts angefragt.', 'dd.noneNo': 'Es wurde nichts aufgehalten.', 'dd.noneOk': 'Es wurde nichts durchgelassen.', 'dd.noneLog': 'Keine Anfragen dieser Art.', 'dd.ownRule': 'Eigene Regel', 'dd.fail': (m) => `Das Protokoll ließ sich nicht lesen: ${m}`,
+    'dd.old': 'Diese Seite braucht die neueste Version von NetSluice. Bitte aktualisieren.', 'dd.bar': (h, ok, no) => `${h}: ${ok} durchgelassen, ${no} aufgehalten`, 'dd.passed': 'durchgelassen', 'dd.open': 'Zeigen, was dieses Gerät anfragt',
     'ov.stoppedWord': 'aufgehalten', 'ov.keyNo': 'aufgehalten', 'ov.keyOk': 'durchgelassen', 'ov.hour': (h) => `${h} Uhr`, 'ov.fPeak': 'stärkste Stunde', 'ov.fPeakSub': (n) => `${n} Anfragen`, 'ov.fRate': 'Anfragen pro Minute', 'ov.fSpeed': 'mittlere Antwortzeit', 'ov.fDevices': 'Geräte',
     'ov.share': (p) => `${p} % aller Anfragen wurden aufgehalten.`, 'ov.shareNone': 'Noch keine Anfragen. Stell bei einem Gerät diesen Filter ein, dann siehst du ihn arbeiten.',
     'ov.topDevices': 'Meist aufgehaltene Geräte', 'ov.allDevices': 'Alle Geräte', 'ov.recent': 'Zuletzt aufgehalten', 'ov.topBlocked': 'Am häufigsten aufgehalten',
@@ -302,6 +312,7 @@ function applyLang() {
   render();
   if (screen === 'settings') { renderSettings(); renderKids(); renderDevice(); renderSystem(); renderStorage(); }
   if (screen === 'filters') renderFilters();
+  if (screen === 'devices') renderDevicePage();
   if (screen === 'map') renderMap();
 }
 
@@ -321,12 +332,122 @@ document.querySelectorAll('#stFolds > .fold > summary').forEach((sm) => sm.addEv
   if (!$('stFolds').classList.contains('sub')) location.hash = 'settings/' + sm.parentElement.dataset.key;
 }));
 
+// ---------- one device: what it asked for in the last 24 hours ----------------
+const dd = { ip: null, d: null, filter: 'all', shown: 60, busy: false };
+const clock = (sec) => new Date(sec * 1000).toLocaleTimeString(lang === 'de' ? 'de-DE' : 'en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+// Opens the page of one device, or the list when no address is given. Returns what stays in the address bar.
+function devicePage(sub) {
+  let ip = null;
+  try { ip = sub ? decodeURIComponent(sub) : null; } catch { ip = null; }
+  if (ip && !/^[0-9a-fA-F:.]{2,45}$/.test(ip)) ip = null;
+  $('devList').hidden = !!ip; $('devDetail').hidden = !ip;
+  if (!ip) { dd.ip = null; return null; }
+  if (dd.ip !== ip) { dd.ip = ip; dd.d = null; dd.filter = 'all'; dd.shown = 60; dd.chartIp = null; dd.chartSig = null; window.scrollTo(0, 0); }
+  renderDevicePage(); loadDevicePage();
+  return encodeURIComponent(ip);
+}
+async function loadDevicePage(quiet) {
+  if (dd.busy || !dd.ip) return;
+  dd.busy = true;
+  const ip = dd.ip;
+  if (!quiet && !dd.d) { $('ddProgress').hidden = false; say('ddNote', '', ''); }
+  try {
+    const r = await fetch('/api/device?ip=' + encodeURIComponent(ip));
+    if (r.status === 401) { gate('login'); throw new Error('login'); }
+    if (r.status === 404) throw new Error(t('dd.old'));
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    if (dd.ip === ip) { dd.d = d; say('ddNote', '', ''); }
+  } catch (e) { if (dd.ip === ip && !quiet && e.message !== 'login') say('ddNote', 'bad', e.message === t('dd.old') ? e.message : t('dd.fail', e.message)); }
+  dd.busy = false; $('ddProgress').hidden = true;
+  if (dd.ip === ip) renderDevicePage();
+}
+// A step for the scale that reads well: 1, 2 or 5 times a power of ten.
+function niceStep(max, lines) { const raw = Math.max(1, max) / lines, p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / p; return Math.max(1, (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p); }
+function hourChart(hours, firstHour) {
+  const W = 960, H = 300, L = 54, R = 6, T = 12, B = 32, max = Math.max(1, ...hours.map((h) => h[0] + h[1]));
+  const step = niceStep(max, 4), top = Math.ceil(max / step) * step, y = (v) => T + (H - T - B) * (1 - v / top), bw = (W - L - R) / hours.length;
+  let g = '';
+  for (let v = 0; v <= top + .5; v += step) g += `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/><text class="ax" x="${L - 10}" y="${y(v) + 4}" text-anchor="end">${fmt(v)}</text>`;
+  hours.forEach(([ok, no], i) => {
+    const hour = new Date((firstHour + i) * 3600000).getHours(), x = L + i * bw + bw * .16, w = bw * .68, yo = y(ok), yn = y(ok + no);
+    g += `<g><title>${t('dd.bar', t('ov.hour', hour), fmt(ok), fmt(no))}</title><rect class="hit" x="${L + i * bw}" y="${T}" width="${bw}" height="${H - T - B}"/>`;
+    if (ok) g += `<rect class="ok" x="${x}" y="${yo}" width="${w}" height="${y(0) - yo}" rx="3"/>`;
+    if (no) g += `<rect class="no" x="${x}" y="${yn}" width="${w}" height="${Math.max(2, yo - yn - (ok ? 2 : 0))}" rx="3"/>`;
+    g += '</g>';
+    if (hour % 3 === 0) g += `<text class="ax" x="${L + i * bw + bw / 2}" y="${H - 9}" text-anchor="middle">${t('ov.hour', hour)}</text>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" role="img">${g}</svg>`;
+}
+// Name and description come from what NetSluice found out about the device, which may arrive after the page.
+function deviceHead() {
+  if (!dd.ip) return;
+  const ip = dd.ip, dev = state.devices[ip] || {};
+  $('ddName').textContent = clientName(ip);
+  $('ddWhat').textContent = [dev.kind && dev.kind !== 'unknown' ? t('kind.' + dev.kind) : null, dev.model, dev.vendor || (dev.private ? t('dv.private') : null), clientName(ip) !== ip ? ip : null, dev.mac].filter(Boolean).join(' · ') || t('dv.nothing');
+}
+function renderDevicePage() {
+  if (!dd.ip) return;
+  const ip = dd.ip, d = dd.d;
+  deviceHead();
+  $('ddBody').hidden = !d || !d.total;
+  if (d && !d.total && !$('ddNote').textContent) say('ddNote', '', t('dd.none'));
+  if (!d || !d.total) return;
+  const share = d.blocked / d.total, pct = Math.round(share * 100), passed = d.total - d.blocked;
+  $('ddArc').style.strokeDasharray = `${share * 251.33} 251.33`; $('ddPct').textContent = pct + ' %';
+  const fact = (big, label, cls) => { const f = el('div', 'fact' + (cls ? ' ' + cls : '')); f.append(el('b', '', big), el('span', '', label)); return f; };
+  const ms = d.avg_ms;
+  $('ddFacts').replaceChildren(
+    fact(fmt(d.total), t('dd.fTotal')), fact(fmt(d.blocked), t('dd.fNo'), 'no'), fact(fmt(passed), t('dd.fOk'), 'ok'), fact(fmt(d.hosts), t('dd.fHosts')),
+    fact(ms ? (ms < 10 ? String(ms).replace('.', lang === 'de' ? ',' : '.') : Math.round(ms)) + ' ms' : '…', t('dd.fSpeed')),
+    fact(Math.round(d.cached / d.total * 100) + ' %', t('dd.fCached')),
+  );
+  // drawn anew only when the figures changed, so the refresh every half minute does not make it flicker
+  const sig = lang + ip + d.first_hour + JSON.stringify(d.hours);
+  if (sig !== dd.chartSig) { $('ddChart').classList.toggle('rise', dd.chartIp !== ip); dd.chartSig = sig; dd.chartIp = ip; $('ddChart').innerHTML = hourChart(d.hours, d.first_hour); }
+  $('ddReach').textContent = d.complete ? t('dd.reachAll') : t('dd.reachPart', new Date(d.since * 1000).toLocaleString(lang === 'de' ? 'de-DE' : 'en-US', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }));
+  const ranks = (node, rows, cls, emptyKey) => {
+    const max = Math.max(1, ...rows.map((r) => r[1]));
+    fill(node, rows.map(([name, n]) => {
+      const row = el('div', 'item'), main = el('div', 'main'); main.style.flex = '1 1 auto';
+      main.append(el('b', '', name));
+      const m = el('div', 'meter'), bar = el('i', cls); bar.style.width = (n / max * 100) + '%'; m.append(bar); main.append(m);
+      row.append(main, el('div', 'side', fmt(n))); return row;
+    }), emptyKey);
+  };
+  ranks($('ddTopNo'), d.top_blocked, 'no', 'dd.noneNo'); ranks($('ddTopOk'), d.top_passed, '', 'dd.noneOk');
+  ranks($('ddLists'), d.lists.map(([name, n]) => [name || t('dd.ownRule'), n]), 'no', 'dd.noneNo'); ranks($('ddTypes'), d.types, 'in', 'dd.noneLog');
+  $('ddFilter').replaceChildren(...[['all', 'dd.all'], ['no', 'dd.onlyNo'], ['ok', 'dd.onlyOk']].map(([k, key]) => {
+    const b = el('button', '', t(key)); b.type = 'button'; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', dd.filter === k ? 'true' : 'false');
+    b.onclick = () => { dd.filter = k; dd.shown = 60; renderDevicePage(); }; return b;
+  }));
+  const rows = d.recent.filter((r) => dd.filter === 'all' || (dd.filter === 'no') === r.blocked);
+  fill($('ddLog'), rows.slice(0, dd.shown).map((r) => {
+    const row = el('div', 'lrow' + (r.blocked ? ' no' : ''));
+    const time = el('span', 'ltime', clock(r.t)); time.title = new Date(r.t * 1000).toLocaleString(lang === 'de' ? 'de-DE' : 'en-US');
+    row.append(time, el('b', '', r.host), el('span', 'ltype', r.type), el('span', r.blocked ? 'badge heavy' : 'badge', r.blocked ? (r.by || t('dd.ownRule')) : t('dd.passed')));
+    return row;
+  }), 'dd.noneLog');
+  $('ddLogSub').textContent = t('dd.logSub', fmt(Math.min(dd.shown, rows.length)), fmt(rows.length));
+  $('ddMore').hidden = rows.length <= dd.shown;
+}
+$('ddMore').addEventListener('click', () => { dd.shown += 100; renderDevicePage(); });
+setInterval(() => { if (screen === 'devices' && dd.ip && !document.hidden && !$('shell').hidden) loadDevicePage(true); }, 30000);
+// a device tile, a row of the overview and a device on the stage all lead to its page
+const openDevice = (ip) => { if (ip) location.hash = 'devices/' + encodeURIComponent(ip); };
+for (const id of ['deviceGrid', 'topDevices']) {
+  $(id).addEventListener('click', (e) => { const n = e.target.closest('[data-ip]'); if (n) openDevice(n.dataset.ip); });
+  $(id).addEventListener('keydown', (e) => { if (e.key === 'Enter') { const n = e.target.closest('[data-ip]'); if (n) openDevice(n.dataset.ip); } });
+}
+
 function show(name) {
   let [base, sub] = name.split('/');
   if (!SCREENS.includes(base)) { base = 'overview'; sub = null; }
   if (base === 'devices' && screen !== 'devices') state.seats = null;       // sort afresh on every visit
   screen = base;
   if (base === 'settings') sub = settingsPage(sub);
+  else if (base === 'devices') sub = devicePage(sub);
+  else sub = null;
   name = sub ? base + '/' + sub : base;
   // keep the section in the address, so a reload or the back button returns to it
   if (location.hash.slice(1) !== name) history.replaceState(null, '', name === 'overview' ? location.pathname : '#' + name);
@@ -347,6 +468,11 @@ function pairs(list) { return (list || []).map((o) => { const k = Object.keys(o)
 const sluice = createSluice($('flow'));
 // the "Graphite" design shows the overview as one stage: devices, gate, world
 const scene = document.documentElement.dataset.theme === 'graphite' ? createScene($('sceneCanvas')) : null;
+if (scene) {
+  // a device on the stage leads to its page, the "+N" to the list of all
+  $('sceneCanvas').addEventListener('click', (e) => { const ip = scene.pick(e.clientX, e.clientY); if (ip === '+') location.hash = 'devices'; else if (ip) location.hash = 'devices/' + encodeURIComponent(ip); });
+  $('sceneCanvas').addEventListener('mousemove', (e) => { e.currentTarget.style.cursor = scene.pick(e.clientX, e.clientY) ? 'pointer' : ''; });
+}
 
 // ---- world map ----
 const geo = { map: null, seq: 0, primed: false, countries: {}, home: null, busy: false };
@@ -476,6 +602,7 @@ function render() {
   // "Live" in the top bar: this page is fed by the device right now
   $('live').classList.toggle('off', !state.reachable);
   $('liveText').textContent = t(state.reachable ? 'top.live' : 'top.offline');
+  if (screen === 'devices') deviceHead();
   $('newVersion').hidden = !state.newVersion;
   if (state.newVersion) $('newVersion').textContent = t('status.update', state.newVersion);
   if (!s) return;
@@ -531,7 +658,7 @@ function render() {
   const most = Object.entries(state.stopped || {}).filter(([ip, n]) => n > 0 && !isSelf(ip)).sort((a, b) => b[1] - a[1]);
   const cmax = Math.max(1, ...most.map((c) => c[1]));
   fill($('topDevices'), most.slice(0, 5).map(([ip, n]) => {
-    const row = el('div', 'item'); const main = el('div', 'main');
+    const row = el('div', 'item link'); row.dataset.ip = ip; row.tabIndex = 0; const main = el('div', 'main');
     main.append(el('b', '', clientName(ip)));
     const m = el('div', 'meter'); const bar = el('i', 'no'); bar.style.width = (n / cmax * 100) + '%'; m.append(bar); main.append(m);
     main.style.flex = '1 1 auto';
@@ -571,7 +698,7 @@ function render() {
     // built like a filter tile: name, one line about the device, the count as a badge, details in the foot
     const d = state.devices[ip] || {};
     const no = stopped(ip);
-    const c = el('div', 'card device');
+    const c = el('div', 'card device'); c.dataset.ip = ip; c.tabIndex = 0; c.setAttribute('role', 'link'); c.title = t('dd.open');
     const head = el('div', 'cardhead'); head.append(el('h3', '', clientName(ip)), el('span', 'place' + (i < 3 ? ' top' + (i + 1) : ''), t('dv.place', i + 1)));
     c.append(head);
     const what = [d.kind && d.kind !== 'unknown' ? t('kind.' + d.kind) : null, d.model, d.vendor || (d.private ? t('dv.private') : null),

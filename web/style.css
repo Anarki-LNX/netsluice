@@ -116,6 +116,41 @@ main, .screen { display: flex; flex-direction: column; gap: 20px; }
 .bars i { display: block; border-radius: 2px; min-height: 0; transition: height .6s cubic-bezier(.2, .7, .2, 1); }
 .bars i.ok { background: var(--ok); } .bars i.no { background: var(--no); }
 
+/* ---- one device: its page ---- */
+.card.device, .item.link { cursor: pointer; }
+.item.link:hover .main b { color: var(--accent-ink); }
+#devDetail, #devList, #ddBody { display: flex; flex-direction: column; gap: 20px; }
+#devDetail[hidden], #devList[hidden], #ddBody[hidden] { display: none; }
+.ddhead { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 26px; }
+.donut.big { width: 148px; height: 148px; }
+.facts.wide { flex: 1 1 420px; margin: 0; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.facts.wide .fact { padding: 14px 16px; }
+.facts.wide .fact b { font-size: 28px; font-weight: 600; letter-spacing: -.02em; }
+.fact.no b { color: var(--no); } .fact.ok b { color: var(--ok); }
+/* requests per hour, with a scale on the left and the hours below */
+.chart { overflow-x: auto; }
+.chart svg { display: block; width: 100%; min-width: 560px; height: auto; }
+.chart .grid { stroke: var(--edge-soft); stroke-width: 1; }
+.chart .ax { fill: var(--muted); font: 500 12px/1 var(--body); font-variant-numeric: tabular-nums; }
+.chart rect.ok { fill: var(--ok); } .chart rect.no { fill: var(--no); } .chart rect.hit { fill: transparent; }
+/* the bars rise once, when the page of a device is opened, each column as a whole */
+.chart.rise g { transform-box: fill-box; transform-origin: 50% 100%; animation: rise .6s cubic-bezier(.2, .7, .2, 1) both; }
+.chart g:hover rect.hit { fill: var(--off-wash); }
+@keyframes rise { from { transform: scaleY(0); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .chart.rise g { animation: none; } }
+.meter i.in { background: var(--in); }
+#ddLists + h2 { margin-top: 10px; }
+/* the newest requests, one line each */
+.log { display: flex; flex-direction: column; }
+.lrow { display: grid; grid-template-columns: 84px minmax(0, 1fr) 62px auto; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.lrow:last-child { border-bottom: 0; }
+.lrow b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lrow.no b { color: var(--no-ink); }
+.lrow .ltime, .lrow .ltype { color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; }
+.lrow .badge { align-self: center; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#ddMore { align-self: flex-start; }
+@media (max-width: 600px) { .lrow { grid-template-columns: 70px minmax(0, 1fr) auto; } .lrow .ltype { display: none; } .lrow .badge { max-width: 120px; } .donut.big { width: 116px; height: 116px; } }
+
 /* the day at a glance, under the bars: a ring for the share that was stopped, then four figures */
 .daystats { display: flex; align-items: center; gap: 18px; padding-top: 4px; }
 .donut { flex: 0 0 auto; width: 104px; height: 104px; }
