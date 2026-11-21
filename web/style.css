@@ -107,7 +107,9 @@ main, .screen { display: flex; flex-direction: column; gap: 20px; }
 .badge.heavy { background: rgba(255, 90, 90, .16); color: #FF9A8D; }
 .card.device .cardfoot { align-items: flex-end; color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; }
 .card.device .where { display: flex; flex-direction: column; align-items: flex-end; text-align: right; }
-.card.on { border-color: rgba(92, 227, 154, .45); background: rgba(92, 227, 154, .06); }
+/* the green of a list that is switched on is the look of every tile, large and small.
+   Only a list that is off stays grey: that is its message. */
+.tile, .card.on, .card.device { border-color: rgba(92, 227, 154, .45); background: rgba(92, 227, 154, .06); }
 .cardfoot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: auto; padding-top: 6px; }
 .switch { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 0; border: 0; background: transparent; color: var(--text); font-weight: 600; }
 .switch .track { position: relative; flex: 0 0 auto; width: 46px; height: 26px; border-radius: 13px; background: rgba(255, 255, 255, .16); transition: background .2s; }
@@ -202,7 +204,7 @@ input[type="file"] { max-width: 100%; color: var(--muted); }
 /* Settings: tiles on the overview, one section per page when opened */
 #stFolds:not(.sub) { display: grid; grid-template-columns: repeat(auto-fill, minmax(max(260px, calc((100% - 48px) / 4)), 1fr)); gap: 16px; }
 #stFolds:not(.sub) > .fold { border-radius: 22px; transition: border-color .2s, transform .2s, background .2s; }
-#stFolds:not(.sub) > .fold:hover { border-color: color-mix(in srgb, var(--gold) 55%, transparent); transform: translateY(-2px); }
+#stFolds:not(.sub) > .fold:hover { border-color: rgba(92, 227, 154, .85); background: rgba(92, 227, 154, .10); transform: translateY(-2px); }
 #stFolds:not(.sub) > .fold > summary { display: grid; grid-template-columns: 1fr auto; align-items: start; gap: 10px 12px; min-height: 150px; padding: 20px 20px 44px; border-radius: 22px; }
 #stFolds:not(.sub) > .fold > summary::after { position: absolute; right: 22px; bottom: 22px; margin: 0; border-color: var(--gold); transform: rotate(-45deg); }
 #stFolds:not(.sub) > .fold > summary .foldtitle { gap: 6px; }
