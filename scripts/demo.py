@@ -123,6 +123,8 @@ class Handler(BaseHTTPRequestHandler):
         body = self.rfile.read(int(self.headers.get("Content-Length") or 0))
         if self.path == "/control/protection":
             d = json.loads(body or b"{}")
+            if d.get("enabled") and d.get("duration"):
+                self.send_response(400); self.send_header("Content-Length", "0"); self.end_headers(); return
             OFF["until"] = 0 if d.get("enabled") else (time.time() + d["duration"] / 1000 if d.get("duration") else 9e12 + 1)
         self.do_GET()
 

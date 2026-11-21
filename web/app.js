@@ -404,12 +404,15 @@ let protectBusy = false;
 async function protect(enabled, duration) {
   if (protectBusy) return;
   protectBusy = true;
+  if (enabled) duration = 0;                  // the filter refuses a duration when it is switched on
   setStatus({ ...(state.status || {}), protection_enabled: enabled, protection_disabled_duration: duration });   // answer the click at once
   render();
-  try { await api('protection', { enabled, duration }); } catch { /* the next line shows what is true */ }
+  let failed = null;
+  try { await api('protection', { enabled, duration }); } catch (e) { failed = e; }
   try { setStatus(await api('status')); } catch { /* shown as not reachable by the next poll */ }
   protectBusy = false;
   render();
+  if (failed && failed.message !== 'login') console.error('filter switch:', failed.message);
 }
 $('protect').onclick = () => protect(!(state.status ? state.status.protection_enabled : true), PAUSE);
 $('protectStay').onclick = () => protect(false, 0);
