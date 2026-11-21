@@ -69,8 +69,9 @@ def reply_for(path, query):
     if path == "/control/clients": return {"clients": None, "auto_clients": []}
     if path == "/control/querylog":
         t = time.time()
-        return {"data": [{"question": {"name": BLOCKED[(i + int(now() / 4)) % len(BLOCKED)]}, "client": DEVICES[(i * 3 + int(now() / 4)) % len(DEVICES)][0],
-                          "time": time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(t - i * 37)) + "+00:00"} for i in range(8)]}
+        # like the real log: one lookup shows up as three requests (A, AAAA, HTTPS)
+        return {"data": [{"question": {"name": BLOCKED[(i + int(now() / 4)) % len(BLOCKED)], "type": kind}, "client": DEVICES[(i * 3 + int(now() / 4)) % len(DEVICES)][0],
+                          "time": time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(t - i * 37)) + "+00:00"} for i in range(8) for kind in ("A", "AAAA", "HTTPS")]}
     if path == "/control/filtering/status": return {"enabled": True, "filters": [{"id": i + 1, "name": n, "url": u, "rules_count": r, "enabled": True} for i, (n, u, r) in enumerate(LISTS)]}
     if path == "/control/dns_info": return {"upstream_dns": ["https://dns.quad9.net/dns-query"], "bootstrap_dns": ["9.9.9.9"], "dnssec_enabled": True}
     if path == "/control/querylog/config": return {"enabled": True, "interval": 604800000, "anonymize_client_ip": False, "ignored": [], "ignored_enabled": False}

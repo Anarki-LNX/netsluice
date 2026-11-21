@@ -610,11 +610,15 @@ async function pollStats() {
 
 async function pollRest() {
   try {
-    const [status, log, clients] = await Promise.all([api('status'), api('querylog?limit=20&response_status=blocked'), api('clients')]);
+    const [status, log, clients] = await Promise.all([api('status'), api('querylog?limit=80&response_status=blocked'), api('clients')]);
     const names = {};
     for (const c of (clients && clients.auto_clients) || []) if (c.name && c.name !== c.ip) names[c.ip] = c.name.replace(/\.(localdomain|lan|local|home)$/i, '');
     state.clients = names;
-    state.recent = ((log && log.data) || []).map((e) => ({ host: e.question && e.question.name, client: e.client, time: e.time }));
+    // One lookup arrives as several requests (IPv4, IPv6, HTTPS record), and apps repeat
+    // themselves: show each host once per device, with the time it was last stopped.
+    const once = new Set();
+    state.recent = ((log && log.data) || []).map((e) => ({ host: e.question && e.question.name, client: e.client, time: e.time }))
+      .filter((r) => { const k = r.client + ' ' + r.host; if (once.has(k)) return false; once.add(k); return true; });
     setStatus(status);
   } catch { /* the fast loop reports reachability */ }
   try { const r = await fetch('/api/system/app/hint'); if (r.ok) state.newVersion = (await r.json()).latest || null; } catch { /* a hint, nothing more */ }
