@@ -77,6 +77,10 @@ main, .screen { display: flex; flex-direction: column; gap: 20px; }
 .tile { position: relative; display: flex; flex-direction: column; gap: 14px; padding: 24px; border: 1px solid var(--line); border-radius: var(--r-tile); background: var(--tile); }
 .tile.hero { overflow: hidden; background: var(--panel); gap: 20px; container-type: inline-size; }
 /* The headline stays on one line and scales with the tile; it may wrap only on a phone. */
+/* two figures side by side, in the colours of the dots below */
+.tile.hero h1 .pair + .pair { margin-left: .7em; }
+.tile.hero h1 b { font-weight: inherit; font-variant-numeric: tabular-nums; }
+.tile.hero h1 b.ok { color: var(--ok); } .tile.hero h1 b.no { color: var(--no); }
 /* the line is cut off at the sides, so it needs room below for g, p and y */
 .tile.hero h1 { font-size: clamp(18px, 3.7cqi, 46px); white-space: nowrap; overflow: hidden; line-height: 1.3; }
 .glow { position: absolute; left: -10%; top: -40%; width: 70%; height: 150%; border-radius: 50%; background: radial-gradient(closest-side, rgba(78, 168, 255, .18), rgba(78, 168, 255, 0)); pointer-events: none; animation: drift 14s ease-in-out infinite; }

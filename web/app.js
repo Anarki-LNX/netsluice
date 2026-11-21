@@ -8,7 +8,7 @@ const T = {
   en: {
     'nav.overview': 'Overview', 'nav.devices': 'Devices', 'nav.filters': 'Filters', 'nav.map': 'World map', 'nav.settings': 'Settings',
     'status.on': 'Filter on', 'status.off': 'Filter off', 'status.offFor': (left) => `Filter off, back in ${left}`, 'status.stay': 'Keep it off', 'status.update': (v) => `Update to ${v}`, 'status.err': 'Filter not reachable',
-    'ov.passed': 'requests passed', 'ov.blocked': 'stopped', 'ov.sub': 'In the last 24 hours, counted live. A dot is one request that just went through this device.',
+    'ov.passed': 'normal packets', 'ov.blocked': 'blocked requests', 'ov.sub': 'Live, last 24 hours',
     'ov.home': 'Home network', 'ov.internet': 'Internet', 'ov.flowAria': 'Live view: requests arrive blue, are checked inside the sluice, leave green or burst in red',
     'lg.incoming': 'on the way to the sluice', 'lg.passed': 'passed', 'lg.blocked': 'caught in the sluice',
     'ov.last24': 'The last 24 hours', 'ov.barsAria': 'Requests per hour',
@@ -129,7 +129,7 @@ const T = {
   de: {
     'nav.overview': 'Übersicht', 'nav.devices': 'Geräte', 'nav.filters': 'Filter', 'nav.map': 'Weltkarte', 'nav.settings': 'Einstellungen',
     'status.on': 'Filter an', 'status.off': 'Filter aus', 'status.offFor': (left) => `Filter aus, wieder an in ${left}`, 'status.stay': 'Aus lassen', 'status.update': (v) => `Update auf ${v}`, 'status.err': 'Filter nicht erreichbar',
-    'ov.passed': 'Anfragen durchgelassen', 'ov.blocked': 'aufgehalten', 'ov.sub': 'In den letzten 24 Stunden, live gezählt. Ein Punkt ist eine Anfrage, die gerade durch dieses Gerät ging.',
+    'ov.passed': 'normale Pakete', 'ov.blocked': 'geblockte Anfragen', 'ov.sub': 'Live, letzte 24 Stunden',
     'ov.home': 'Heimnetz', 'ov.internet': 'Internet', 'ov.flowAria': 'Live-Ansicht: Anfragen kommen blau an, werden in der Schleuse geprüft, verlassen sie grün oder zerplatzen rot',
     'lg.incoming': 'unterwegs zur Schleuse', 'lg.passed': 'durchgelassen', 'lg.blocked': 'in der Schleuse erwischt',
     'ov.last24': 'Die letzten 24 Stunden', 'ov.barsAria': 'Anfragen pro Stunde',
