@@ -9,8 +9,8 @@ or downloaded by it.
 | Caddy | web server, installed from Debian | Apache-2.0 | https://caddyserver.com |
 | Armbian / Debian | base system | various, mostly GPL | https://www.armbian.com |
 | IP to Country Lite by DB-IP | country of an address for the world map, downloaded at install time | CC BY 4.0 | https://db-ip.com, packaged by https://github.com/sapics/ip-location-db |
-| world-atlas `countries-110m.json` | country shapes (`web/data/`) | ISC; data from Natural Earth, public domain | https://github.com/topojson/world-atlas |
-| ISO 3166-1 country codes | `web/data/iso.json`, derived from the iso-codes project | facts; iso-codes is LGPL-2.1-or-later | https://salsa.debian.org/iso-codes-team/iso-codes |
+| world-atlas `countries-110m.json` | country shapes (`web/data/`) | ISC. Data from Natural Earth, public domain | https://github.com/topojson/world-atlas |
+| ISO 3166-1 country codes | `web/data/iso.json`, derived from the iso-codes project | facts. Iso-codes is LGPL-2.1-or-later | https://salsa.debian.org/iso-codes-team/iso-codes |
 | Feather icons, `settings` | the gear in the top bar (`web/index.html`) | MIT | https://github.com/feathericons/feather |
 
 Filter lists are not shipped. They are downloaded by the device from their
@@ -21,7 +21,7 @@ maintainers and keep their own licences.
 The image attached to a release is an unmodified Armbian community image for
 the NanoPi R2S (Debian 13 "trixie"), with the device tree below, the NetSluice
 files and a first-boot script added by `scripts/build-image.sh`. Armbian and
-Debian packages in it keep their own licences; their sources are available
+Debian packages in it keep their own licences. Their sources are available
 from https://github.com/armbian/build and https://www.debian.org/distrib/packages.
 The image also carries what the first start needs, collected by
 `scripts/fetch-bundle.py`: the Debian packages of Caddy and avahi with their

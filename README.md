@@ -57,7 +57,7 @@ the board marking `mini_v21_20210521`. It runs that owner's home network.
 | Works | a ready-made image for the microSD card, boot from microSD, backup of the internal storage, installation to it and putting the backup back, all from the interface, both Ethernet ports at 1 Gbit/s, LEDs, button, everything listed above |
 | Not built yet | inline ("sluice") and listening mode, changing the fixed address from the interface |
 | Not working | USB-C as a data port (it still powers the device) |
-| Untested | other board revisions; the other Deeper models (Pico, Nano, Air) are different hardware |
+| Untested | other board revisions. The other Deeper models (Pico, Nano, Air) are different hardware |
 
 If you try this on another board, please report what you find, including failures.
 
@@ -66,7 +66,7 @@ If you try this on another board, please report what you find, including failure
 Not planned yet, but it would fit: a WireGuard tunnel, so that a phone or a
 laptop uses this filter from anywhere, not only at home. The device already
 brings WireGuard along. A page would add a device and show a QR code for the
-WireGuard app; only the name lookups would travel through the tunnel. What
+WireGuard app. Only the name lookups would travel through the tunnel. What
 NetSluice cannot do by itself is make the device reachable from outside: that
 needs a forwarded port on the router and an address that can be found. If you
 would use this, say so in the [issues](https://github.com/Anarki-LNX/netsluice/issues).
@@ -80,7 +80,7 @@ suitable card is all it takes: no soldering, no opening the case, and the
 original system comes back when you remove the card.
 
 A stock NanoPi R2S image does not boot, though. Three things differ on this
-board; `dts/patch_dts.py` corrects them. See [docs/hardware.md](docs/hardware.md).
+board. `dts/patch_dts.py` corrects them. See [docs/hardware.md](docs/hardware.md).
 
 There are two ways: the ready-made image, or building it yourself.
 
@@ -98,7 +98,7 @@ any computer to write the card.
 3. **Unplug the Mini, insert the card, connect it to your router, power it up.**
    The green LED blinks while NetSluice sets itself up. This takes a few
    minutes and needs no internet: the image brings everything along. When the
-   green LED is steady, it is ready. A steady red LED means a step failed; it
+   green LED is steady, it is ready. A steady red LED means a step failed. It
    is tried again every minute. While it works, the device shows a page with
    the current step, and what is wrong if one fails, at the same address as
    the interface later.
@@ -107,7 +107,7 @@ Then open **http://netsluice.local/** (or the address your router shows for
 the device "netsluice"). The first visitor chooses the password, so do this
 right away. Finally enter the device's address as the DNS server in your
 router, and every device at home is filtered. The filter lists are downloaded
-as soon as the device reaches the internet; until then nothing is stopped.
+as soon as the device reaches the internet. Until then nothing is stopped.
 
 Good to know:
 
@@ -118,7 +118,7 @@ Good to know:
 - **There is no login to the system underneath.** SSH is off and the system
   account is locked. If you want SSH, put your public key on the card as
   `/boot/netsluice-ssh.pub` before a start (the card is ext4, so this needs a
-  Linux computer); SSH then accepts that key and no passwords.
+  Linux computer). SSH then accepts that key and no passwords.
 - **Updates** arrive through the interface, under Settings → Updates.
 - To check the download: `sha256sum -c netsluice-*.img.xz.sha256`.
 
@@ -145,7 +145,7 @@ sudo dd if=deeper-connect-mini-armbian.img of=/dev/sdX bs=4M conv=fsync status=p
 
 Double-check the device name, `dd` erases it. Unplug the Mini, insert the
 card, connect one Ethernet port and power it up. The first boot takes two to
-three minutes. Log in over SSH as `root`; Armbian asks for a new password on
+three minutes. Log in over SSH as `root`. Armbian asks for a new password on
 the first login. Its default password is public, so do this right away.
 
 ### 2. Install NetSluice on it

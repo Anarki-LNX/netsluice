@@ -43,7 +43,7 @@ and `boot.scr`, in `/` and `/boot/` of the first bootable partition. It loads
 `rockchip/rk3328-nanopi-r2-rev00.dtb` as the device tree.
 
 The vendor system on the eMMC is Armbian with kernel 5.9.11. Its root file
-system is LUKS-encrypted; this project does not touch or need it.
+system is LUKS-encrypted. This project does not touch or need it.
 
 ## The three differences from a NanoPi R2S
 
@@ -108,7 +108,7 @@ known bad.
 ### Smaller changes
 
 - eMMC and PWM2 are enabled, as in the vendor tree.
-- The NanoPi's `lan_led` is removed; that pin is not an LED here.
+- The NanoPi's `lan_led` is removed. That pin is not an LED here.
 
 ## Probing a board
 

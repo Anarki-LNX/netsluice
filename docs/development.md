@@ -25,12 +25,12 @@
   messages. One Python file, standard library only, no privileges. Its header
   lists the sections and the HTTP interface.
 - **netsluice-root** (`service/netsluice-root.py`) is the only part with root
-  rights. The service drops a request file; systemd starts the helper; the
+  rights. The service drops a request file. Systemd starts the helper. The
   helper accepts a short list of commands and validates every argument.
   Requests older than 20 seconds are dropped, never carried out late.
 - **The interface** (`web/`) is plain HTML, CSS and JavaScript modules. No
   framework, no build step. `app.js` holds the texts in both languages and the
-  logic of every section; `sluice.js` and `worldmap.js` draw on canvases.
+  logic of every section. `sluice.js`, `worldmap.js` and `scene.js` draw on canvases.
 
 ## Layout
 
@@ -38,8 +38,8 @@
 |---|---|
 | `web/` | the interface |
 | `service/` | `netsluiced.py`, the root helper, and `netsluice-install.sh`, which moves the system from the card to the eMMC |
-| `provision/install-stack.sh` | turns a running Armbian into a NetSluice; safe to run again |
-| `scripts/build-image.sh` | adapts a stock Armbian image to this board; with `--netsluice` it builds the ready-made image |
+| `provision/install-stack.sh` | turns a running Armbian into a NetSluice. Safe to run again |
+| `scripts/build-image.sh` | adapts a stock Armbian image to this board. With `--netsluice` it builds the ready-made image |
 | `scripts/deploy-dev.sh` | copies `web/` and `service/` to a device |
 | `scripts/demo.py` | the interface on your own computer, with made-up data |
 | `scripts/probe/` | boot script that reads out the bootloader |
@@ -82,7 +82,7 @@ chromium --headless=new --hide-scrollbars --window-size=1440,960 --virtual-time-
 A device updates itself from the releases of this repository. It takes the
 newest one by version number, pre-releases included, downloads the source
 archive of its tag and refuses it unless the `VERSION` file in it matches the
-tag. Only `web/` and `service/` are replaced; changes to `provision/` still
+tag. Only `web/` and `service/` are replaced. Changes to `provision/` still
 need `install-stack.sh` by hand. So for a release:
 
 1. raise `VERSION` (for example `0.1.3`), commit and push,
@@ -121,17 +121,17 @@ the interface yet.
   on the eMMC is the one thing that makes this device hard to recover. Backup,
   installation and putting a backup back all leave sectors 64 to 32767 alone,
   and the last two check them. To try these in QEMU, attach a second disk and
-  set `NETSLUICE_INTERNAL_DISK` for `netsluice-root.service`; without it only a
+  set `NETSLUICE_INTERNAL_DISK` for `netsluice-root.service`. Without it only a
   real eMMC is ever accepted as the target.
 - **Country lookup is IPv4 only** and counts one event per `A` lookup, so the
   map shows fewer requests than the overview.
 - **Blocking a device** is done by refusing its DNS lookups. A device with its
   own DNS setting gets around it.
-- Texts are written in English first; the German text sits next to it in
+- Texts are written in English first. The German text sits next to it in
   `web/app.js`.
 
 ## Wanted
 
 Reports from other board revisions, a light theme, tests for the
 interface, and board support in Armbian. The WireGuard tunnel is an idea for
-later; the README says what it would be.
+later. The README says what it would be.
