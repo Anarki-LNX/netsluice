@@ -131,5 +131,6 @@ the interface yet.
 
 ## Wanted
 
-Reports from other board revisions, a ready-made image, HTTPS, the WireGuard
-tunnel, a light theme, tests for the interface, and board support in Armbian.
+Reports from other board revisions, HTTPS, a light theme, tests for the
+interface, and board support in Armbian. The WireGuard tunnel is an idea for
+later; the README says what it would be.

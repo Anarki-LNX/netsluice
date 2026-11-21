@@ -6,7 +6,7 @@ import { createWorldMap } from './worldmap.js';
 
 const T = {
   en: {
-    'nav.overview': 'Overview', 'nav.devices': 'Devices', 'nav.filters': 'Filters', 'nav.map': 'World map', 'nav.tunnel': 'Tunnel', 'nav.settings': 'Settings',
+    'nav.overview': 'Overview', 'nav.devices': 'Devices', 'nav.filters': 'Filters', 'nav.map': 'World map', 'nav.settings': 'Settings',
     'status.on': 'Filter running', 'status.off': 'Filter paused', 'status.err': 'Filter not reachable',
     'ov.passed': 'requests passed', 'ov.blocked': 'stopped', 'ov.sub': 'In the last 24 hours, counted live. A dot is one request that just went through this device.',
     'ov.home': 'Home network', 'ov.internet': 'Internet', 'ov.flowAria': 'Live view: requests arrive blue, are checked inside the sluice, leave green or burst in red',
@@ -34,7 +34,6 @@ const T = {
     'mp.empty': 'No destinations yet. They appear as soon as a device looks something up.',
     'mp.howTitle': 'How to read this', 'mp.how': 'The country is where the answering server is registered. Large networks such as Cloudflare, Google or Amazon answer from the nearest data centre, so much of the traffic shown for the USA never leaves Europe.',
     'mp.credit': 'IP geolocation by',
-    'soon.tunnel': 'The tunnel is not built yet', 'soon.tunnelSub': 'WireGuard will let phones and laptops use this filter while away from home.',
     'kd.title': 'Children and schedules', 'kd.sub': 'Internet on or off for chosen devices', 'kd.text': 'A device that is switched off gets no answers from the filter, so nothing new loads. A page or video that is already open can keep running for a moment. A child who enters a different DNS server on the device gets around this.',
     'kd.add': 'Add a device', 'kd.addSub': 'Only devices that have used the filter appear here.', 'kd.addBtn': 'Add', 'kd.none': 'No devices yet. Add one below.', 'kd.badge': (n, off) => n ? `${n} devices, ${off} off` : 'none',
     'kd.on': 'Always on', 'kd.plan': 'By schedule', 'kd.off': 'Off', 'kd.isOn': 'Internet on', 'kd.isOff': 'Internet off', 'kd.from': 'allowed from', 'kd.to': 'to', 'kd.remove': 'Remove from list',
@@ -120,7 +119,7 @@ const T = {
     'st.device': 'This device', 'st.version': 'Filter engine', 'st.dnsPort': 'DNS port', 'st.addresses': 'Answers on', 'st.since': 'Running since',
   },
   de: {
-    'nav.overview': 'Übersicht', 'nav.devices': 'Geräte', 'nav.filters': 'Filter', 'nav.map': 'Weltkarte', 'nav.tunnel': 'Tunnel', 'nav.settings': 'Einstellungen',
+    'nav.overview': 'Übersicht', 'nav.devices': 'Geräte', 'nav.filters': 'Filter', 'nav.map': 'Weltkarte', 'nav.settings': 'Einstellungen',
     'status.on': 'Filter läuft', 'status.off': 'Filter pausiert', 'status.err': 'Filter nicht erreichbar',
     'ov.passed': 'Anfragen durchgelassen', 'ov.blocked': 'aufgehalten', 'ov.sub': 'In den letzten 24 Stunden, live gezählt. Ein Punkt ist eine Anfrage, die gerade durch dieses Gerät ging.',
     'ov.home': 'Heimnetz', 'ov.internet': 'Internet', 'ov.flowAria': 'Live-Ansicht: Anfragen kommen blau an, werden in der Schleuse geprüft, verlassen sie grün oder zerplatzen rot',
@@ -148,7 +147,6 @@ const T = {
     'mp.empty': 'Noch keine Ziele. Sie erscheinen, sobald ein Gerät etwas nachschlägt.',
     'mp.howTitle': 'So liest du die Karte', 'mp.how': 'Das Land ist der Ort, an dem der antwortende Server registriert ist. Große Netze wie Cloudflare, Google oder Amazon antworten vom nächstgelegenen Rechenzentrum; vieles, was hier bei den USA steht, verlässt Europa also gar nicht.',
     'mp.credit': 'Länderzuordnung der Adressen von',
-    'soon.tunnel': 'Der Tunnel ist noch nicht gebaut', 'soon.tunnelSub': 'Mit WireGuard nutzen Handy und Laptop diesen Filter später auch unterwegs.',
     'kd.title': 'Kinder und Zeitpläne', 'kd.sub': 'Internet an oder aus für ausgewählte Geräte', 'kd.text': 'Ein ausgeschaltetes Gerät bekommt vom Filter keine Antworten mehr, es lädt also nichts Neues. Eine schon geöffnete Seite oder ein laufendes Video kann noch einen Moment weiterlaufen. Ein Kind, das am Gerät einen anderen DNS-Server einträgt, kommt daran vorbei.',
     'kd.add': 'Gerät hinzufügen', 'kd.addSub': 'Hier erscheinen nur Geräte, die den Filter schon benutzt haben.', 'kd.addBtn': 'Hinzufügen', 'kd.none': 'Noch keine Geräte. Füge unten eines hinzu.', 'kd.badge': (n, off) => n ? `${n} Geräte, ${off} aus` : 'keine',
     'kd.on': 'Immer an', 'kd.plan': 'Nach Zeitplan', 'kd.off': 'Aus', 'kd.isOn': 'Internet an', 'kd.isOff': 'Internet aus', 'kd.from': 'erlaubt von', 'kd.to': 'bis', 'kd.remove': 'Aus der Liste nehmen',
@@ -258,7 +256,7 @@ let lang = (() => { const q = new URLSearchParams(location.search).get('lang'); 
   || ((navigator.language || 'en').toLowerCase().startsWith('de') ? 'de' : 'en');
 let screen = 'overview';
 const state = { stats: null, status: null, clients: {}, devices: {}, filters: [], recent: [], reachable: true, last: null };
-const SCREENS = ['overview', 'devices', 'filters', 'map', 'tunnel', 'settings'];
+const SCREENS = ['overview', 'devices', 'filters', 'map', 'settings'];
 const PLANNED = [];            // sections that are decided but not built; shown in the settings as such
 
 const $ = (id) => document.getElementById(id);

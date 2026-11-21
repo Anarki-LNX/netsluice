@@ -51,11 +51,21 @@ the board marking `mini_v21_20210521`. It runs that owner's home network.
 | | |
 |---|---|
 | Works | a ready-made image for the microSD card, boot from microSD, backup of the internal storage, installation to it and putting the backup back, all from the interface, both Ethernet ports at 1 Gbit/s, LEDs, button, everything listed above |
-| Not built yet | HTTPS, the WireGuard tunnel, inline ("sluice") and listening mode, changing the fixed address from the interface |
+| Not built yet | HTTPS, inline ("sluice") and listening mode, changing the fixed address from the interface |
 | Not working | USB-C as a data port (it still powers the device) |
 | Untested | other board revisions; the other Deeper models (Pico, Nano, Air) are different hardware |
 
 If you try this on another board, please report what you find, including failures.
+
+### An idea for later: the tunnel
+
+Not planned yet, but it would fit: a WireGuard tunnel, so that a phone or a
+laptop uses this filter from anywhere, not only at home. The device already
+brings WireGuard along. A page would add a device and show a QR code for the
+WireGuard app; only the name lookups would travel through the tunnel. What
+NetSluice cannot do by itself is make the device reachable from outside: that
+needs a forwarded port on the router and an address that can be found. If you
+would use this, say so in the [issues](https://github.com/Anarki-LNX/netsluice/issues).
 
 ## How it gets onto the device
 

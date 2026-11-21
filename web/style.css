@@ -53,7 +53,6 @@ main, .screen { display: flex; flex-direction: column; gap: 20px; }
 .tilehead { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .pagehead { display: flex; flex-direction: column; gap: 6px; padding: 6px 4px; }
 .pagehead p { max-width: 70ch; }
-.soon { background: var(--panel); }
 
 .flowrow { display: flex; align-items: center; gap: 14px; }
 .flowlabel { flex: 0 0 auto; font-weight: 600; font-size: 14px; color: var(--muted); }
