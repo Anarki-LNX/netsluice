@@ -204,7 +204,9 @@ export async function createWorldMap(canvas, tip, opts = {}) {
       if (hover && hover.a2) {
         const v = data[hover.a2] || [0, 0];
         tip.hidden = false; tip.textContent = opts.label ? opts.label(hover.a2, v[0], v[1]) : `${hover.a2}: ${v[0]} / ${v[1]}`;
-        tip.style.left = Math.min(W - 180, e.clientX - r.left + 14) + 'px'; tip.style.top = (e.clientY - r.top + 14) + 'px';
+        // the mouse is measured on the screen, the label is placed inside a page that may be drawn smaller
+        const z = parseFloat(getComputedStyle(document.body).zoom) || 1;
+        tip.style.left = Math.min(W - 180, e.clientX - r.left + 14) / z + 'px'; tip.style.top = (e.clientY - r.top + 14) / z + 'px';
       } else tip.hidden = true;
     }
     if (still) draw(0);

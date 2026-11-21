@@ -13,6 +13,8 @@ try {
   var a = localStorage.getItem('netsluice.accent');
   if (a && /^#[0-9a-f]{6}$/i.test(a)) document.documentElement.style.setProperty('--gold', a);
   if (localStorage.getItem('netsluice.still') === '1') document.documentElement.classList.add('still');
+  var z = { large: 1, medium: .88, small: .76 }[localStorage.getItem('netsluice.size')];
+  if (z) document.documentElement.style.setProperty('--zoom', z);
 } catch (e) {}
 </script>
 </head>
@@ -226,6 +228,7 @@ try {
       <summary><span class="foldtitle"><b data-i18n="lk.title"></b><small data-i18n="lk.sub"></small></span></summary>
       <div class="foldbody">
         <div class="line"><span class="linetext"><b data-i18n="lk.accent"></b><small data-i18n="lk.accentSub"></small></span><span class="swatches" id="accents" role="radiogroup"></span></div>
+        <div class="line"><span class="linetext"><b data-i18n="lk.size"></b><small data-i18n="lk.sizeSub"></small></span><span class="seg" id="sizes" role="radiogroup"></span></div>
         <div class="line"><span class="linetext"><b data-i18n="lk.motion"></b><small data-i18n="lk.motionSub"></small></span><button type="button" class="switch" role="switch" id="motion"><span class="track"></span><span></span></button></div>
       </div>
     </details>

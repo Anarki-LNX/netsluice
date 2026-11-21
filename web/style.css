@@ -236,3 +236,11 @@ a.btn { display: inline-flex; align-items: center; text-decoration: none; }
 .steps { display: flex; flex-direction: column; gap: 14px; }
 .steps[hidden] { display: none; }
 #bkNote:empty { display: none; }
+
+/* On a large screen everything is drawn a size smaller, so more fits; Settings, Appearance
+   chooses how much. Phones keep the full size: their buttons have to stay easy to hit. */
+@media (min-width: 900px) and (pointer: fine) {
+  body { zoom: var(--zoom, .88); }
+  .shell { max-width: calc(1320px / var(--zoom, .88)); }      /* as wide on the screen as before */
+  .gate { min-height: calc(100vh / var(--zoom, .88)); }
+}

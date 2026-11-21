@@ -47,7 +47,7 @@ const T = {
     'nt.hint': { off: 'No messages are sent.', ntfy: 'Install the ntfy app, subscribe to a topic and enter its address here, for example https://ntfy.sh/your-topic.', webhook: 'Each message is sent as JSON (event, title, text) to this address, for Home Assistant, Telegram bridges or your own scripts.' },
     'nt.newdev': 'A new device uses the filter', 'nt.newdevSub': 'A hardware address that was never seen before.', 'nt.malware': 'A dangerous host was stopped', 'nt.malwareSub': 'Hits on malware and phishing lists, at most once an hour per device and host.', 'nt.down': 'The filter does not answer', 'nt.downSub': 'After a minute without an answer, and again when it is back.',
     'nt.sent': 'Test message sent. Check your phone.', 'nt.notSent': (m) => m === 'off' ? 'Choose a way and save an address first.' : `The message did not go out: ${m}`, 'nt.badUrl': 'That is not a usable address. It must start with https:// or http://.',
-    'lk.title': 'Appearance', 'lk.sub': 'For this browser only', 'lk.accent': 'Accent colour', 'lk.accentSub': 'Used for buttons, the selected section and the sluice.', 'lk.motion': 'Animations', 'lk.motionSub': 'Off: no moving dots, no flying packets, no transitions. The page reloads once.',
+    'lk.title': 'Appearance', 'lk.sub': 'For this browser only', 'lk.size': 'Size', 'lk.sizeSub': 'Smaller shows more on a large screen. Phones always use the large size.', 'lk.size.large': 'Large', 'lk.size.medium': 'Medium', 'lk.size.small': 'Small', 'lk.accent': 'Accent colour', 'lk.accentSub': 'Used for buttons, the selected section and the sluice.', 'lk.motion': 'Animations', 'lk.motionSub': 'Off: no moving dots, no flying packets, no transitions. The page reloads once.',
     'ex.title': 'Export and import', 'ex.sub': 'Take your setup with you', 'ex.out': 'Save everything to a file', 'ex.outSub': 'Filter lists, resolver, privacy, children\'s rules, LEDs and messages. Not the password, not the log.', 'ex.outBtn': 'Export',
     'ex.in': 'Load a file', 'ex.inSub': 'Adds what is missing and overwrites the settings named in the file. Lists you added since are kept.', 'ex.done': (n) => `Imported: ${n} parts applied.`, 'ex.bad': 'This is not a NetSluice settings file.',
     'nw.title': 'Network', 'nw.sub': 'Name and addresses of this device', 'nw.name': 'Name on the network', 'nw.save': 'Change name', 'nw.fixed': 'Fixed address', 'nw.dhcp': 'Address from the router', 'nw.open': 'Reachable as',
@@ -160,7 +160,7 @@ const T = {
     'nt.hint': { off: 'Es werden keine Meldungen gesendet.', ntfy: 'Installiere die ntfy-App, abonniere ein Thema und trag seine Adresse hier ein, zum Beispiel https://ntfy.sh/dein-thema.', webhook: 'Jede Meldung geht als JSON (event, title, text) an diese Adresse, für Home Assistant, Telegram-Brücken oder eigene Skripte.' },
     'nt.newdev': 'Ein neues Gerät nutzt den Filter', 'nt.newdevSub': 'Eine MAC, die noch nie gesehen wurde.', 'nt.malware': 'Eine gefährliche Adresse wurde aufgehalten', 'nt.malwareSub': 'Treffer auf Listen für Schadsoftware und Phishing, höchstens einmal pro Stunde je Gerät und Adresse.', 'nt.down': 'Der Filter antwortet nicht', 'nt.downSub': 'Nach einer Minute ohne Antwort, und noch einmal, wenn er wieder da ist.',
     'nt.sent': 'Testmeldung gesendet. Sieh auf dein Handy.', 'nt.notSent': (m) => m === 'off' ? 'Wähle erst einen Weg und speichere eine Adresse.' : `Die Meldung ging nicht raus: ${m}`, 'nt.badUrl': 'Das ist keine brauchbare Adresse. Sie muss mit https:// oder http:// beginnen.',
-    'lk.title': 'Aussehen', 'lk.sub': 'Gilt nur für diesen Browser', 'lk.accent': 'Akzentfarbe', 'lk.accentSub': 'Für Knöpfe, den gewählten Bereich und die Schleuse.', 'lk.motion': 'Animationen', 'lk.motionSub': 'Aus: keine wandernden Punkte, keine fliegenden Pakete, keine Übergänge. Die Seite lädt einmal neu.',
+    'lk.title': 'Aussehen', 'lk.sub': 'Gilt nur für diesen Browser', 'lk.size': 'Größe', 'lk.sizeSub': 'Kleiner zeigt mehr auf einem großen Bildschirm. Handys nutzen immer die große Darstellung.', 'lk.size.large': 'Groß', 'lk.size.medium': 'Mittel', 'lk.size.small': 'Klein', 'lk.accent': 'Akzentfarbe', 'lk.accentSub': 'Für Knöpfe, den gewählten Bereich und die Schleuse.', 'lk.motion': 'Animationen', 'lk.motionSub': 'Aus: keine wandernden Punkte, keine fliegenden Pakete, keine Übergänge. Die Seite lädt einmal neu.',
     'ex.title': 'Export und Import', 'ex.sub': 'Nimm deine Einrichtung mit', 'ex.out': 'Alles in eine Datei speichern', 'ex.outSub': 'Filterlisten, Auflöser, Datenschutz, Kinderregeln, LEDs und Meldungen. Nicht das Passwort, nicht das Protokoll.', 'ex.outBtn': 'Exportieren',
     'ex.in': 'Datei einlesen', 'ex.inSub': 'Ergänzt, was fehlt, und überschreibt die Einstellungen, die in der Datei stehen. Seitdem hinzugefügte Listen bleiben.', 'ex.done': (n) => `Eingelesen: ${n} Teile übernommen.`, 'ex.bad': 'Das ist keine NetSluice-Einstellungsdatei.',
     'nw.title': 'Netzwerk', 'nw.sub': 'Name und Adressen dieses Geräts', 'nw.name': 'Name im Netz', 'nw.save': 'Namen ändern', 'nw.fixed': 'Feste Adresse', 'nw.dhcp': 'Adresse vom Router', 'nw.open': 'Erreichbar unter',
@@ -885,6 +885,12 @@ function renderDevice() {
   $('accents').replaceChildren(...ACCENTS.map((c) => {
     const b = el('button'); b.type = 'button'; b.style.background = c; b.setAttribute('role', 'radio'); b.setAttribute('aria-label', c); b.setAttribute('aria-checked', c === cur ? 'true' : 'false');
     b.onclick = () => { store('netsluice.accent', c); location.reload(); };
+    return b;
+  }));
+  const size = ['large', 'medium', 'small'].includes(stored('netsluice.size')) ? stored('netsluice.size') : 'medium';
+  $('sizes').replaceChildren(...['large', 'medium', 'small'].map((k) => {
+    const b = el('button', '', t('lk.size.' + k)); b.type = 'button'; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', k === size ? 'true' : 'false');
+    b.onclick = () => { store('netsluice.size', k); location.reload(); };
     return b;
   }));
   setSwitch($('motion'), stored('netsluice.still') !== '1');
