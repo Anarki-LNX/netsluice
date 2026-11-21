@@ -17,7 +17,7 @@ const T = {
     'empty.devices': 'No device has been stopped yet.', 'empty.recent': 'Nothing has been stopped yet.', 'empty.blocked': 'Nothing has been stopped yet.',
     'requests': 'requests', 'times': 'times',
     'dv.title': (n) => n === 1 ? 'One device uses the filter' : `${n} devices use the filter`, 'dv.sub': 'Every device that asked this filter for an address in the last 24 hours. The one with the most stopped requests comes first.',
-    'dv.place': (n) => `No. ${n}`, 'dv.requests': 'Requests', 'dv.stopped': 'Stopped', 'dv.address': 'Address', 'dv.mac': 'MAC', 'dv.firmware': 'Firmware',
+    'dv.place': (n) => `No. ${n}`, 'dv.requests': 'Requests', 'dv.list': 'Devices', 'dv.total': (n, no) => `${n} ${n === 1 ? 'device' : 'devices'}, ${no} requests stopped in 24 hours`, 'dv.stoppedN': (n, pct) => `${n} stopped (${pct} %)`, 'dv.stopped0': 'nothing stopped', 'dv.requestsN': (n) => `${n} requests`, 'dv.address': 'Address', 'dv.mac': 'MAC', 'dv.firmware': 'Firmware',
     'dv.private': 'private (randomised) MAC', 'dv.nothing': 'This device tells nothing about itself.',
     'kind.phone': 'Phone', 'kind.tablet': 'Tablet', 'kind.computer': 'Computer', 'kind.tv': 'TV', 'kind.speaker': 'Speaker', 'kind.iot': 'Smart home', 'kind.network': 'Network gear',
     'kind.printer': 'Printer', 'kind.vm': 'Virtual machine', 'kind.server': 'Server', 'kind.console': 'Console', 'kind.private': 'Phone or laptop', 'kind.self': 'This device', 'kind.unknown': 'Unknown',
@@ -130,7 +130,7 @@ const T = {
     'empty.devices': 'Bisher wurde kein Gerät aufgehalten.', 'empty.recent': 'Bisher wurde nichts aufgehalten.', 'empty.blocked': 'Bisher wurde nichts aufgehalten.',
     'requests': 'Anfragen', 'times': 'mal',
     'dv.title': (n) => n === 1 ? 'Ein Gerät nutzt den Filter' : `${n} Geräte nutzen den Filter`, 'dv.sub': 'Jedes Gerät, das diesen Filter in den letzten 24 Stunden nach einer Adresse gefragt hat. Das mit den meisten aufgehaltenen Anfragen steht vorn.',
-    'dv.place': (n) => `Platz ${n}`, 'dv.requests': 'Anfragen', 'dv.stopped': 'Aufgehalten', 'dv.address': 'Adresse', 'dv.mac': 'MAC', 'dv.firmware': 'Firmware',
+    'dv.place': (n) => `Platz ${n}`, 'dv.requests': 'Anfragen', 'dv.list': 'Geräte', 'dv.total': (n, no) => `${n} ${n === 1 ? 'Gerät' : 'Geräte'}, ${no} Anfragen aufgehalten in 24 Stunden`, 'dv.stoppedN': (n, pct) => `${n} aufgehalten (${pct} %)`, 'dv.stopped0': 'nichts aufgehalten', 'dv.requestsN': (n) => `${n} Anfragen`, 'dv.address': 'Adresse', 'dv.mac': 'MAC', 'dv.firmware': 'Firmware',
     'dv.private': 'private (zufällige) MAC', 'dv.nothing': 'Dieses Gerät verrät nichts über sich.',
     'kind.phone': 'Handy', 'kind.tablet': 'Tablet', 'kind.computer': 'Rechner', 'kind.tv': 'Fernseher', 'kind.speaker': 'Lautsprecher', 'kind.iot': 'Smart Home', 'kind.network': 'Netzwerkgerät',
     'kind.printer': 'Drucker', 'kind.vm': 'Virtuelle Maschine', 'kind.server': 'Server', 'kind.console': 'Spielkonsole', 'kind.private': 'Handy oder Laptop', 'kind.self': 'Dieses Gerät', 'kind.unknown': 'Unbekannt',
@@ -479,6 +479,7 @@ function render() {
   }), 'empty.blocked');
 
   $('devicesTitle').textContent = t('dv.title', clients.length);
+  $('deviceTotal').textContent = t('dv.total', clients.length, fmt(blocked));
   // The device with the most stopped requests first when the page is opened: being
   // busy is nothing to worry about, being stopped often is worth a look. After that the tiles keep their
   // seats, or they would swap under the reader every second; only the place in the
@@ -493,18 +494,20 @@ function render() {
   const seated = state.seats.map((ip) => [ip, count.get(ip), rank.get(ip)]);
   const drawn = lang + JSON.stringify(seated.map(([ip, n, i]) => [ip, n, i, stopped(ip), state.devices[ip] || 0]));
   if (drawn !== state.seatsDrawn) { state.seatsDrawn = drawn; $('deviceGrid').replaceChildren(...seated.map(([ip, n, i]) => {
+    // built like a filter tile: name, one line about the device, the count as a badge, details in the foot
     const d = state.devices[ip] || {};
-    const c = el('div', 'card');
+    const no = stopped(ip);
+    const c = el('div', 'card device');
     const head = el('div', 'cardhead'); head.append(el('h3', '', clientName(ip)), el('span', 'place' + (i < 3 ? ' top' + (i + 1) : ''), t('dv.place', i + 1)));
     c.append(head);
-    c.append(el('span', 'badge ' + (d.kind && d.kind !== 'unknown' ? '' : 'off'), t('kind.' + (d.kind || 'unknown'))));
-    const what = [d.model, d.vendor || (d.private ? t('dv.private') : null)].filter(Boolean).join(' · ');
+    const what = [d.kind && d.kind !== 'unknown' ? t('kind.' + d.kind) : null, d.model, d.vendor || (d.private ? t('dv.private') : null),
+      d.firmware ? `${t('dv.firmware')} ${d.firmware}` : null].filter(Boolean).join(' · ');
     c.append(el('p', 'muted', what || t('dv.nothing')));
-    const kv = (k, v) => { const r = el('div', 'kv'); r.append(el('span', '', k), el('span', '', v)); return r; };
-    if (d.firmware) c.append(kv(t('dv.firmware'), d.firmware));
-    const no = stopped(ip);
-    c.append(kv(t('dv.requests'), fmt(n)), kv(t('dv.stopped'), no ? `${fmt(no)} (${Math.min(100, Math.max(1, Math.round(no / Math.max(n, 1) * 100)))} %)` : '0'), kv(t('dv.address'), ip));
-    if (d.mac) c.append(kv(t('dv.mac'), d.mac));
+    c.append(el('span', no ? 'badge heavy' : 'badge off', no ? t('dv.stoppedN', fmt(no), Math.min(100, Math.max(1, Math.round(no / Math.max(n, 1) * 100)))) : t('dv.stopped0')));
+    const foot = el('div', 'cardfoot');
+    const where = el('span', 'where'); where.append(el('span', '', ip)); if (d.mac) where.append(el('span', '', d.mac));
+    foot.append(el('span', '', t('dv.requestsN', fmt(n))), where);
+    c.append(foot);
     return c;
   })); }
 

@@ -105,6 +105,8 @@ main, .screen { display: flex; flex-direction: column; gap: 20px; }
 .badge { align-self: flex-start; padding: 3px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; background: rgba(92, 227, 154, .14); color: #9BF0C2; }
 .badge.off { background: rgba(255, 255, 255, .10); color: var(--muted); }
 .badge.heavy { background: rgba(255, 90, 90, .16); color: #FF9A8D; }
+.card.device .cardfoot { align-items: flex-end; color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; }
+.card.device .where { display: flex; flex-direction: column; align-items: flex-end; text-align: right; }
 .card.on { border-color: rgba(92, 227, 154, .45); background: rgba(92, 227, 154, .06); }
 .cardfoot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: auto; padding-top: 6px; }
 .switch { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 0; border: 0; background: transparent; color: var(--text); font-weight: 600; }
