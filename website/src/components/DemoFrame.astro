@@ -14,7 +14,9 @@ interface Props {
 }
 const { locale, eager = false } = Astro.props;
 const tr = t(locale);
-const src = `/demo/app/?lang=${locale}`;
+// index.html spelled out: the dev server does not map a folder in public/ to its index,
+// and the demo reloads itself when you change the design.
+const src = `/demo/app/index.html?lang=${locale}`;
 // the build runs from the website folder
 const demoIndex = join(process.cwd(), 'public', 'demo', 'app', 'index.html');
 const available = existsSync(demoIndex);

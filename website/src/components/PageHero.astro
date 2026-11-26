@@ -12,7 +12,6 @@ const { num, label, title, lead, tone = 'water' } = Astro.props;
 ---
 
 <section class:list={['ph', `ph--${tone}`]}>
-  <div class="lightlines" aria-hidden="true"></div>
   <div class="container ph__inner">
     {(num || label) && (
       <p class="label ph__label">

@@ -23,7 +23,7 @@ something (the gate glows, the globe has an atmosphere) and nowhere else.
 
 | Source | Taken | Left out |
 |---|---|---|
-| loopout.tech project page | Instrument Serif headlines, numbered mono labels (`01 · OPEN SOURCE · …`), thin vertical light lines (`.lightlines`), numbered lists 01–04, pill buttons with ↗ | its green accent (the site uses the product's semantics instead) |
+| loopout.tech project page | Instrument Serif headlines, numbered mono labels (`01 · OPEN SOURCE · …`), numbered lists 01–04, pill buttons with ↗ | its green accent (the site uses the product's semantics instead) |
 | Ref. 3 (Nexus globe) | the large dotted/wireframe globe on deep navy as the hero visual, a pill nav rail, a light outlined/filled pill CTA | marketing badges ("trusted by …"), a full-bleed purple glow |
 | Ref. 1 (dashboard) | glowing blue/green data points on dark, used only in the canvas and in the real screenshot | charts with invented numbers, orb bubbles, dense panels |
 | Ref. 2 (docs) | left sidebar with sections, 3×2 card grid with icon + title + text + arrow links, centered copyable command | search (no JS search index; the sidebar and the docs index cover 17 pages) |
@@ -94,7 +94,7 @@ Two shadows (`--shadow-1`, `--shadow-2`) and one water glow, used on hover only.
 | `Footer` | brand + tagline, newest version (when passed), donate, four link columns, trademark note, "no cookies" line. |
 | `Button` | pill; `primary` (light fill), `secondary` (outline), `ghost`, `donate`; external links get `target=_blank`, `rel="noopener noreferrer"`, ↗ and a hidden "(opens in a new tab)". |
 | `SectionHeader` | mono numbered label + serif h2 (+ optional italic accent) + lead. |
-| `PageHero` | the h1 block of every inner page, with light lines. |
+| `PageHero` | the h1 block of every inner page. (The vertical light lines were removed at the owner's request, 2026-11-26.) |
 | `FeatureCard` | 3×2 grid card: icon tile, number, title, text, arrow links, whole card clickable when it has one target. |
 | `StatusBadge` | Tested (green filled dot) · Experimental (gold half dot) · Untested (slate ring, dashed border) · Not supported (red bar) · Not implemented (violet square). Colour **and** shape differ; only Tested is green. |
 | `Callout` | info (blue) / warn (gold) / danger (red), icon + title. |
@@ -168,7 +168,7 @@ scroll at 320 px; tables and code scroll inside their own box.
 - Copy buttons: real `<button>`, label "Copy to clipboard", result in `aria-live`.
 - External links say "(opens in a new tab)" to screen readers.
 - Decorative canvas and SVG ornaments are `aria-hidden`; diagrams have `title` + `desc`.
-- `forced-colors` mode: borders become system colours, light lines are removed.
+- `forced-colors` mode: borders become system colours.
 - Reduced motion as above.
 
 ## 8. Performance and security constraints

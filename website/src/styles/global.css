@@ -237,45 +237,6 @@ html.dialog-open {
   font-weight: 500;
 }
 
-/* thin glowing vertical light lines, from the loopout.tech project page */
-.lightlines {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  overflow: hidden;
-  z-index: 0;
-}
-.lightlines::before,
-.lightlines::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 1px;
-  background: linear-gradient(
-    to bottom,
-    transparent,
-    rgb(103 216 232 / 0.22) 30%,
-    rgb(103 216 232 / 0.06) 70%,
-    transparent
-  );
-  box-shadow: 0 0 12px rgb(103 216 232 / 0.25);
-}
-.lightlines::before {
-  left: max(var(--gutter), calc(50% - var(--container) / 2));
-}
-.lightlines::after {
-  right: max(var(--gutter), calc(50% - var(--container) / 2));
-  background: linear-gradient(
-    to bottom,
-    transparent,
-    rgb(245 196 81 / 0.05) 40%,
-    rgb(245 196 81 / 0.16) 75%,
-    transparent
-  );
-  box-shadow: 0 0 12px rgb(245 196 81 / 0.15);
-}
-
 /* ---------- scroll reveal (only when JS has marked the page) ---------- */
 @media (prefers-reduced-motion: no-preference) {
   .js-reveal [data-reveal] {
@@ -435,9 +396,6 @@ pre.astro-code {
 
 /* ---------- forced colours / high contrast ---------- */
 @media (forced-colors: active) {
-  .lightlines {
-    display: none;
-  }
   :focus-visible {
     outline: 2px solid CanvasText;
   }

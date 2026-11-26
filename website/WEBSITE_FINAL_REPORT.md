@@ -20,7 +20,7 @@ retook the screenshots, reviewed security and tested in the browser.
 |---|---|---|
 | Architecture audit and plans (`WEBSITE_*_PLAN.md`, audit) | **COMPLETED** | |
 | Stack: Astro 7 static, TypeScript strictest, plain CSS tokens, zod | **COMPLETED** | reasons in `WEBSITE_ARCHITECTURE_AUDIT.md` §6 |
-| Design system and visual identity | **COMPLETED** | loopout.tech typography (Instrument Serif, Geist, Geist Mono, numbered labels, light lines) + the product's colour semantics + the three references (globe hero, dashboard depth, docs layout). The existing logo was kept. |
+| Design system and visual identity | **COMPLETED** | loopout.tech typography (Instrument Serif, Geist, Geist Mono, numbered labels; the vertical light lines were removed at the owner's request) + the product's colour semantics + the three references (globe hero, dashboard depth, docs layout). The existing logo was kept. |
 | Pages, both languages (34 routes + language choice + 404, 68 HTML pages) | **COMPLETED** | Home, Features, How it works, Hardware, Getting started, Docs (17 articles), Downloads, Changelog, FAQ (23), Demo, Security, Privacy, About, Contributing, License (+ disclaimer), Support |
 | German and English, `/de/` and `/en/`, no auto-redirect | **COMPLETED** | `/` offers both, highlights the browser language without redirecting |
 | Live demo of the real interface ("live views", no login) | **COMPLETED** | the device's own `web/` code with an in-browser port of `demo.py`; banner "Demo · invented data" on every screen; never contacts a device |
