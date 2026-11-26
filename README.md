@@ -9,6 +9,10 @@ A sluice is a gate that lets water through or holds it back. NetSluice does
 that for the traffic of a home network: it answers the DNS lookups of every
 device, stops the ones on your block lists, and shows you what happened.
 
+**Website: <https://netsluice.loopout.tech>** (English and German), with the
+documentation, the downloads with their checksums, and a live demo of the
+interface that runs in your browser with made-up data.
+
 > This project is not affiliated with, endorsed by, or supported by Deeper
 > Network. "Deeper Connect" is their trademark and is used here only to say
 > which hardware this runs on.
