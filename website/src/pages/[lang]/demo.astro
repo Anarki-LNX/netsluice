@@ -1,0 +1,94 @@
+---
+import PageLayout from '~/layouts/PageLayout.astro';
+import DemoFrame from '~/components/DemoFrame.astro';
+import Gallery from '~/components/Gallery.astro';
+import SectionHeader from '~/components/SectionHeader.astro';
+import CodeBlock from '~/components/CodeBlock.astro';
+import { localeStaticPaths, t, type Locale } from '~/i18n';
+import { maybeCopy } from '~/i18n/copy';
+
+export const getStaticPaths = localeStaticPaths;
+const locale = Astro.params.lang as Locale;
+const tr = t(locale);
+const copy = maybeCopy(locale);
+const dc = copy?.demo;
+const meta = copy?.meta.demo;
+const c =
+  locale === 'de'
+    ? {
+        description:
+          'Die echte NetSluice-Oberfläche im Browser, gefüllt mit erfundenen Daten. Sie verbindet sich mit keinem Gerät.',
+        galleryTitle: 'Bildschirmfotos',
+        localTitle: 'Die Demo auf dem eigenen Rechner',
+        localLead: 'Aus dem Repository, ohne Gerät:',
+      }
+    : {
+        description:
+          'The real NetSluice interface in your browser, filled with invented data. It does not connect to any device.',
+        galleryTitle: 'Screenshots',
+        localTitle: 'Run the demo on your own computer',
+        localLead: 'From the repository, without a device:',
+      };
+---
+
+<PageLayout
+  locale={locale}
+  title={meta?.title ?? tr('nav.demo')}
+  heading={dc?.title}
+  description={meta?.description ?? c.description}
+  lead={dc?.intro ?? c.description}
+  num="D"
+  label={copy?.common.demoLabel ?? tr('demo.badge')}
+  tone="gate"
+>
+  {dc && (
+    <ul role="list" class="demo-points" slot="hero">
+      {dc.points.map((p) => (
+        <li>{p}</li>
+      ))}
+    </ul>
+  )}
+  <section class="section section--tight">
+    <div class="container">
+      <DemoFrame locale={locale} eager />
+    </div>
+  </section>
+  <section class="section">
+    <div class="container">
+      <SectionHeader num="01" label={tr('gallery.label')} title={c.galleryTitle} />
+      <Gallery locale={locale} />
+    </div>
+  </section>
+  <section class="section">
+    <div class="container container--narrow">
+      <SectionHeader
+        num="02"
+        label="python3"
+        title={dc?.local.title ?? c.localTitle}
+        lead={dc?.local.text ?? c.localLead}
+      />
+      <CodeBlock locale={locale} lang="shell" code={dc?.local.command ?? 'python3 scripts/demo.py'} />
+    </div>
+  </section>
+</PageLayout>
+
+<style>
+  .demo-points {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2) var(--s-6);
+    margin-top: var(--s-2);
+    color: var(--muted);
+    font-size: var(--fs-small);
+  }
+  .demo-points li::before {
+    content: '';
+    display: inline-block;
+    width: 0.45rem;
+    height: 0.45rem;
+    margin-right: 0.55rem;
+    border-radius: 50%;
+    background: var(--gate);
+    vertical-align: 0.1em;
+  }
+</style>

@@ -1,0 +1,181 @@
+---
+import Icon from './Icon.astro';
+import type { Release } from '~/lib/release-types';
+import { formatBytes, renderNotes } from '~/lib/releases';
+import { type Locale, t, formatDate } from '~/i18n';
+
+// Every release, newest first. Notes are untrusted text from GitHub and are only
+// ever rendered through renderNotes() (escaped, safe subset of Markdown).
+interface Props {
+  locale: Locale;
+  releases: Release[];
+  /** how many open by default */
+  openFirst?: number | undefined;
+}
+const { locale, releases, openFirst = 1 } = Astro.props;
+const tr = t(locale);
+const nt = tr('a11y.newTab');
+---
+
+<ol class="rh" role="list">
+  {releases.map((r, i) => (
+    <li class="rh__item" id={`v${r.version}`}>
+      <details class="rh__details" open={i < openFirst}>
+        <summary class="rh__sum">
+          <span class="rh__ver">v{r.version}</span>
+          <time class="rh__date" datetime={r.publishedAt}>
+            {formatDate(r.publishedAt, locale)}
+          </time>
+          <span class="rh__tags">
+            {r.image && <span class="rh__tag rh__tag--img">{tr('release.image')}</span>}
+            {r.prerelease && <span class="rh__tag">{tr('release.prerelease')}</span>}
+          </span>
+          <Icon name="chevron-down" size={18} class="rh__chev" />
+        </summary>
+        <div class="rh__body">
+          {r.notes.trim() ? <div class="prose rh__notes" set:html={renderNotes(r.notes)} /> : null}
+          {r.assets.length > 0 && (
+            <div class="rh__assets">
+              <p class="label">{tr('release.assets')}</p>
+              <ul role="list">
+                {r.assets.map((a) => (
+                  <li>
+                    <a href={a.url} rel="noopener noreferrer">
+                      <code>{a.name}</code>
+                    </a>
+                    <span class="rh__size">{formatBytes(a.size, locale)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <a class="rh__gh" href={r.htmlUrl} target="_blank" rel="noopener noreferrer">
+            {tr('release.onGitHub')}
+            <Icon name="arrow-up-right" size={15} />
+            <span class="visually-hidden"> {nt}</span>
+          </a>
+        </div>
+      </details>
+    </li>
+  ))}
+</ol>
+
+<style>
+  .rh {
+    position: relative;
+    display: grid;
+  }
+  .rh::before {
+    content: '';
+    position: absolute;
+    left: 0.35rem;
+    top: 1.6rem;
+    bottom: 1rem;
+    width: 1px;
+    background: linear-gradient(to bottom, var(--gate), rgb(103 216 232 / 0.1));
+  }
+  .rh__item {
+    position: relative;
+    padding-left: 2rem;
+  }
+  .rh__item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 1.35rem;
+    width: 0.7rem;
+    height: 0.7rem;
+    border: 1px solid var(--gate);
+    border-radius: 50%;
+    background: var(--bg);
+  }
+  .rh__item:first-child::before {
+    background: var(--gate);
+    box-shadow: 0 0 12px rgb(245 196 81 / 0.6);
+  }
+  .rh__details {
+    border-bottom: 1px solid var(--line);
+  }
+  .rh__sum {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--s-2) var(--s-4);
+    min-height: 3.5rem;
+    padding: var(--s-3) 0;
+    list-style: none;
+    cursor: pointer;
+  }
+  .rh__sum::-webkit-details-marker {
+    display: none;
+  }
+  .rh__ver {
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 1.0625rem;
+    font-weight: 560;
+  }
+  .rh__date {
+    color: var(--muted);
+    font-size: var(--fs-small);
+  }
+  .rh__tags {
+    display: inline-flex;
+    gap: var(--s-2);
+  }
+  .rh__tag {
+    padding: 0.1rem 0.5rem;
+    border: 1px solid var(--line-2);
+    border-radius: var(--r-pill);
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .rh__tag--img {
+    border-color: rgb(92 227 154 / 0.45);
+    color: var(--ok-ink);
+  }
+  .rh__sum :global(.rh__chev) {
+    margin-left: auto;
+    align-self: center;
+    color: var(--muted);
+    transition: transform var(--t-med);
+  }
+  .rh__details[open] :global(.rh__chev) {
+    transform: rotate(180deg);
+  }
+  .rh__body {
+    display: grid;
+    gap: var(--s-5);
+    padding: 0 0 var(--s-6);
+  }
+  .rh__notes {
+    font-size: var(--fs-small);
+  }
+  .rh__assets ul {
+    display: grid;
+    gap: var(--s-2);
+    margin-top: var(--s-2);
+  }
+  .rh__assets li {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2) var(--s-4);
+    align-items: baseline;
+  }
+  .rh__size {
+    color: var(--faint);
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+  }
+  .rh__gh {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    justify-self: start;
+    min-height: var(--tap);
+    font-size: var(--fs-small);
+  }
+</style>

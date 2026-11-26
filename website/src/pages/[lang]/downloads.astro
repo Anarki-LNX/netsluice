@@ -1,0 +1,98 @@
+---
+import PageLayout from '~/layouts/PageLayout.astro';
+import DownloadPanel from '~/components/DownloadPanel.astro';
+import Callout from '~/components/Callout.astro';
+import Button from '~/components/Button.astro';
+import { getReleaseData } from '~/lib/releases';
+import { maybeCopy } from '~/i18n/copy';
+import { REPO } from '~/config/site';
+import { localeStaticPaths, t, localizePath, routes, formatDate, type Locale } from '~/i18n';
+
+export const getStaticPaths = localeStaticPaths;
+const locale = Astro.params.lang as Locale;
+const tr = t(locale);
+const data = await getReleaseData();
+const copy = maybeCopy(locale);
+const c = copy?.downloads;
+const meta = copy?.meta.downloads;
+const latest = data.latest;
+const img = data.latestImage;
+const relation =
+  c && latest && img
+    ? img.version === latest.version
+      ? c.sameRelease(latest.version)
+      : c.differentRelease(img.version, latest.version)
+    : c && latest && !img
+      ? c.noImage
+      : undefined;
+const sourceLine =
+  c && data.fetchedAt
+    ? data.source === 'live'
+      ? c.source.live(formatDate(data.fetchedAt, locale))
+      : data.source === 'cache'
+        ? c.source.cache(formatDate(data.fetchedAt, locale))
+        : c.source.none
+    : c?.source.none;
+---
+
+<PageLayout
+  locale={locale}
+  title={meta?.title ?? tr('nav.downloads')}
+  heading={c?.title}
+  description={meta?.description ?? tr('nav.downloads')}
+  lead={c?.intro}
+  num="↓"
+  label={tr('nav.downloads')}
+  tone="ok"
+  version={latest?.version}
+  versionUrl={latest?.htmlUrl}
+>
+  <section class="section section--tight">
+    <div class="container dl">
+      <DownloadPanel
+        locale={locale}
+        data={data}
+        imageText={c?.latestImage.text}
+        updateText={c?.latestVersion.text}
+        verify={c?.verify}
+        relation={relation}
+      />
+      {c && <p class="dl__note">{c.updateOnly}</p>}
+      {sourceLine && <p class="dl__source">{sourceLine}</p>}
+      <div class="dl__more">
+        <Button href={localizePath(routes.gettingStarted, locale)} variant="secondary" icon="arrow-right">
+          {tr('nav.gettingStarted')}
+        </Button>
+        <Button href={localizePath(routes.changelog, locale)} variant="ghost" icon="arrow-right">
+          {tr('release.history')}
+        </Button>
+        <Button href={REPO.releases} variant="ghost" external newTabText={tr('a11y.newTab')}>
+          {c?.labels.allReleases ?? tr('cta.allReleases')}
+        </Button>
+      </div>
+      <Callout locale={locale} type="warn">
+        <p>{copy?.common.disclaimerShort ?? tr('footer.trademark')}</p>
+      </Callout>
+    </div>
+  </section>
+</PageLayout>
+
+<style>
+  .dl {
+    display: grid;
+    gap: var(--s-8);
+  }
+  .dl__note {
+    color: var(--muted);
+    max-width: 48rem;
+  }
+  .dl__source {
+    color: var(--faint);
+    font-size: 0.875rem;
+  }
+  .dl__more {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-3);
+  }
+</style>

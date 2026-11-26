@@ -1,0 +1,87 @@
+# NetSluice website: static files only (repository Anarki-LNX/netsluice, folder website/).
+#
+# Goes into the Caddyfile of the wetter-crinitz server (server/caddy/Caddyfile), below the
+# other loopout.tech blocks. It needs one extra read-only volume on the caddy service in
+# /opt/wetter-crinitz/docker-compose.yml:
+#
+#     - /opt/netsluice-web:/srv/netsluice:ro
+#
+# /opt/netsluice-web/current is a symlink to releases/<id>/ and is swapped atomically by
+# deploy/deploy.sh or deploy/server/netsluice-web-pull. Files must be world-readable
+# (dirs 755, files 644): this Caddy runs with cap_drop ALL and cannot bypass file modes.
+#
+# No reverse_proxy: nothing here reaches a NetSluice device, an admin port or a home
+# network. No access log: there is no `log` directive (Caddy's default). Caddy's own
+# runtime log (stderr → docker logs, rotated 3 × 10 MB) records certificate events and,
+# for server errors (5xx) only, the failing request including the client address.
+#
+# The (sicherheit) snippet of the other sites is deliberately not imported: this block
+# sets the same headers itself, plus CSP, CORP, includeSubDomains and a longer
+# Permissions-Policy. Two `header` directives for the same field would leave the
+# result up to directive order.
+
+(netsluice_headers) {
+	header {
+		# HTTPS only, for a year. includeSubDomains covers *.netsluice.loopout.tech only (none exist),
+		# never loopout.tech or its other subdomains. No preload: that would need the apex.
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		# Only files from this host. The demo (/demo/app/) runs under the same policy: its scripts and
+		# styles are files, it fetches only /demo/app/data/*.json, and its API calls never leave the
+		# page (answered by demo-mock.js). JSON-LD blocks are data, not scripts, and need no exception.
+		Content-Security-Policy "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; frame-src 'self'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; upgrade-insecure-requests"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "accelerometer=(), autoplay=(), browsing-topics=(), camera=(), clipboard-read=(), clipboard-write=(self), display-capture=(), encrypted-media=(), fullscreen=(self), geolocation=(), gyroscope=(), hid=(), idle-detection=(), magnetometer=(), microphone=(), midi=(), payment=(), picture-in-picture=(), publickey-credentials-get=(), screen-wake-lock=(), serial=(), usb=(), xr-spatial-tracking=()"
+		Cross-Origin-Opener-Policy "same-origin"
+		Cross-Origin-Resource-Policy "same-origin"
+		-Server
+	}
+}
+
+netsluice.loopout.tech {
+	import netsluice_headers
+	root * /srv/netsluice/current
+	encode zstd gzip
+
+	# A static site: reading only.
+	@write not method GET HEAD
+	header @write Allow "GET, HEAD"
+	respond @write 405
+
+	# Caching. Files under /_astro/ carry a content hash in their name: keep them a year.
+	# Pages and the demo are revalidated every time, so a new build shows at once.
+	@hashed path /_astro/*
+	header @hashed Cache-Control "public, max-age=31536000, immutable"
+	@pages path / */ *.html /demo/app/*
+	header @pages Cache-Control "no-cache"
+	@health path /build.json
+	header @health Cache-Control "no-store"
+	header ?Cache-Control "public, max-age=86400"
+
+	try_files {path} {path}/
+	file_server {
+		hide .*
+	}
+
+	# Caddy drops the headers above when an error answers, so they are set again here.
+	# The site's own 404 page when it exists; otherwise a plain answer (a missing page must
+	# never make the error handler fail, which would be logged with the client address).
+	handle_errors {
+		import netsluice_headers
+		header Cache-Control "no-cache"
+		root * /srv/netsluice/current
+		@page404 {
+			expression `{err.status_code} == 404`
+			file /404.html
+		}
+		handle @page404 {
+			rewrite * /404.html
+			file_server
+		}
+		handle {
+			header Content-Type "text/plain; charset=utf-8"
+			respond "{err.status_code} {err.status_text}"
+		}
+	}
+}

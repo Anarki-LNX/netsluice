@@ -1,0 +1,122 @@
+---
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+import ScreenshotFrame from './ScreenshotFrame.astro';
+import Icon from './Icon.astro';
+import { type Locale, t } from '~/i18n';
+
+// The live demo (the real device interface with invented data, built by
+// `npm run demo:sync` into public/demo/app/) in a clearly labelled frame.
+// If the demo is not part of this build, a screenshot stands in.
+interface Props {
+  locale: Locale;
+  eager?: boolean | undefined;
+}
+const { locale, eager = false } = Astro.props;
+const tr = t(locale);
+// index.html spelled out: the dev server does not map a folder in public/ to its index,
+// and the demo reloads itself when you change the design.
+const src = `/demo/app/index.html?lang=${locale}`;
+// the build runs from the website folder
+const demoIndex = join(process.cwd(), 'public', 'demo', 'app', 'index.html');
+const available = existsSync(demoIndex);
+---
+
+<div class="demo">
+  <div class="demo__head">
+    <span class="demo__badge">
+      <span class="demo__dot" aria-hidden="true"></span>
+      {tr('demo.badge')}
+    </span>
+    {available && (
+      <a class="demo__open" href={src} target="_blank" rel="noopener">
+        {tr('demo.open')}
+        <Icon name="arrow-up-right" size={15} />
+        <span class="visually-hidden"> {tr('a11y.newTab')}</span>
+      </a>
+    )}
+  </div>
+  {available ? (
+    <div class="demo__frame">
+      <iframe
+        class="demo__iframe"
+        src={src}
+        title={tr('demo.frameTitle')}
+        loading={eager ? 'eager' : 'lazy'}
+        referrerpolicy="no-referrer"
+      />
+    </div>
+  ) : (
+    <div class="demo__fallback">
+      <p class="demo__missing">{tr('demo.missing')}</p>
+      <ScreenshotFrame locale={locale} shotKey="overview" eager={eager} />
+    </div>
+  )}
+</div>
+
+<style>
+  .demo {
+    display: grid;
+    gap: var(--s-3);
+  }
+  .demo__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-3);
+  }
+  .demo__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.4rem 0.85rem;
+    border: 1px solid rgb(245 196 81 / 0.5);
+    border-radius: var(--r-pill);
+    background: var(--gate-wash);
+    color: var(--gate-ink);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .demo__dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: var(--gate);
+    box-shadow: 0 0 10px var(--gate);
+  }
+  .demo__open {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: var(--tap);
+    font-size: var(--fs-small);
+  }
+  .demo__frame {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgb(245 196 81 / 0.35);
+    border-radius: var(--r-lg);
+    background: var(--ground);
+    box-shadow:
+      0 0 0 6px rgb(245 196 81 / 0.04),
+      0 40px 120px -40px rgb(0 0 0 / 0.9);
+  }
+  .demo__iframe {
+    width: 100%;
+    height: min(82vh, 900px);
+    min-height: 560px;
+    border: 0;
+    background: var(--ground);
+  }
+  .demo__fallback {
+    display: grid;
+    gap: var(--s-4);
+  }
+  .demo__missing {
+    color: var(--muted);
+    font-size: var(--fs-small);
+  }
+</style>

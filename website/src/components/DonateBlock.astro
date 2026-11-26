@@ -1,0 +1,151 @@
+---
+import Icon from './Icon.astro';
+import { DONATE_URL } from '~/config/site';
+import { type Locale, t } from '~/i18n';
+import { maybeCopy } from '~/i18n/copy';
+
+// The support block at the bottom of every page. Text comes from the page copy
+// when there is one; otherwise the short chrome text is used.
+interface Props {
+  locale: Locale;
+  title?: string | undefined;
+  text?: string | undefined;
+}
+const { locale, title, text } = Astro.props;
+const tr = t(locale);
+const d = maybeCopy(locale)?.donate;
+const fallbackText =
+  (d?.text ?? locale === 'de')
+    ? 'NetSluice ist Open Source unter der MIT-Lizenz. Wenn es dir nützt, unterstützt eine Spende die weitere Arbeit daran.'
+    : 'NetSluice is open source under the MIT licence. If it is useful to you, a donation supports the work on it.';
+---
+
+<section class="donate" aria-labelledby="donate-title">
+  <div class="container">
+    <div class="donate__card" data-reveal>
+      <svg class="donate__gate" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+        <rect x="5" y="5" width="54" height="54" rx="12" fill="none" stroke="currentColor" stroke-width="2"></rect>
+        <path d="M32 17V47" stroke="currentColor" stroke-width="3" stroke-linecap="round"></path>
+      </svg>
+      <div class="donate__text">
+        <p class="label">
+          <span class="num">♥</span> · {tr('nav.support')}
+        </p>
+        <h2 id="donate-title">{title ?? d?.title ?? tr('donate.cta')}</h2>
+        <p class="donate__lead">{text ?? fallbackText}</p>
+        {d?.points && (
+          <ul role="list" class="donate__points">
+            {d.points.map((p) => (
+              <li>{p}</li>
+            ))}
+          </ul>
+        )}
+      </div>
+      <div class="donate__action">
+        <a class="donate__btn" href={DONATE_URL} target="_blank" rel="noopener noreferrer">
+          <Icon name="heart" size={18} />
+          <span>{d?.button ?? tr('donate.cta')}</span>
+          <Icon name="arrow-up-right" size={16} />
+          <span class="visually-hidden"> {tr('a11y.newTab')}</span>
+        </a>
+        <p class="donate__note">{d?.note ?? tr('donate.note')}</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .donate {
+    padding-block: var(--s-12) 0;
+  }
+  .donate__card {
+    position: relative;
+    display: grid;
+    gap: var(--s-6);
+    align-items: center;
+    overflow: hidden;
+    padding: clamp(1.75rem, 1rem + 3vw, 3.5rem);
+    border: 1px solid rgb(245 196 81 / 0.22);
+    border-radius: var(--r-lg);
+    background:
+      radial-gradient(70% 120% at 100% 0%, rgb(245 196 81 / 0.1), transparent 60%),
+      radial-gradient(60% 100% at 0% 100%, rgb(103 216 232 / 0.06), transparent 60%), var(--panel);
+  }
+  .donate__gate {
+    position: absolute;
+    right: -2rem;
+    bottom: -2.5rem;
+    width: 14rem;
+    height: 14rem;
+    color: rgb(245 196 81 / 0.08);
+    pointer-events: none;
+  }
+  .donate__text {
+    position: relative;
+    display: grid;
+    gap: var(--s-3);
+  }
+  .donate__text .num {
+    color: var(--gate);
+  }
+  .donate__lead {
+    max-width: 36rem;
+    color: var(--soft);
+  }
+  .donate__points {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2) var(--s-5);
+    color: var(--muted);
+    font-size: var(--fs-small);
+  }
+  .donate__points li::before {
+    content: '·';
+    margin-right: 0.5rem;
+    color: var(--gate);
+  }
+  .donate__action {
+    position: relative;
+    display: grid;
+    gap: var(--s-2);
+    justify-items: start;
+  }
+  .donate__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-height: 52px;
+    padding: 0 1.5rem;
+    border-radius: var(--r-pill);
+    background: var(--gate);
+    color: var(--on-gate);
+    font-weight: 600;
+    text-decoration: none;
+    box-shadow: 0 10px 40px -12px rgb(245 196 81 / 0.55);
+    transition:
+      background-color var(--t-fast),
+      box-shadow var(--t-med),
+      transform var(--t-fast);
+  }
+  .donate__btn:hover {
+    background: #ffd56e;
+    color: var(--on-gate);
+    box-shadow: 0 12px 48px -10px rgb(245 196 81 / 0.7);
+  }
+  .donate__btn:focus-visible {
+    border-radius: var(--r-pill);
+  }
+  .donate__note {
+    color: var(--muted);
+    font-size: 0.8125rem;
+  }
+  @media (min-width: 860px) {
+    .donate__card {
+      grid-template-columns: 1fr auto;
+    }
+    .donate__action {
+      justify-items: end;
+      text-align: right;
+    }
+  }
+</style>

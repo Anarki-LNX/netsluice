@@ -1,0 +1,133 @@
+---
+import StatusBadge, { type Status } from './StatusBadge.astro';
+import type { Locale } from '~/i18n';
+
+// Rows of hardware (or parts of it) with an honest status. Data comes from the
+// page copy; this component only presents it.
+export interface HardwareRow {
+  name: string;
+  detail?: string | undefined;
+  status: Status;
+  note?: string | undefined;
+}
+interface Props {
+  locale: Locale;
+  rows: HardwareRow[];
+  caption: string;
+  headers: { name: string; status: string; note: string };
+}
+const { locale, rows, caption, headers } = Astro.props;
+---
+
+<div class="hwt" data-reveal>
+  <table>
+    <caption class="visually-hidden">{caption}</caption>
+    <thead>
+      <tr>
+        <th scope="col">{headers.name}</th>
+        <th scope="col">{headers.status}</th>
+        <th scope="col">{headers.note}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {rows.map((r) => (
+        <tr>
+          <th scope="row">
+            <span class="hwt__name">{r.name}</span>
+            {r.detail && <span class="hwt__detail">{r.detail}</span>}
+          </th>
+          <td>
+            <StatusBadge status={r.status} locale={locale} size="sm" />
+          </td>
+          <td class="hwt__note">{r.note}</td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
+
+<style>
+  .hwt {
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    background: rgb(255 255 255 / 0.015);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--fs-small);
+  }
+  thead th {
+    padding: var(--s-4) var(--s-5);
+    border-bottom: 1px solid var(--line-2);
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--fs-label);
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-align: left;
+    text-transform: uppercase;
+  }
+  tbody th,
+  tbody td {
+    padding: var(--s-4) var(--s-5);
+    border-bottom: 1px solid var(--line);
+    text-align: left;
+    vertical-align: top;
+  }
+  tbody tr:last-child > * {
+    border-bottom: 0;
+  }
+  .hwt__name {
+    display: block;
+    color: var(--text);
+    font-weight: 540;
+  }
+  .hwt__detail {
+    display: block;
+    margin-top: 0.15rem;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    font-weight: 400;
+  }
+  .hwt__note {
+    color: var(--soft);
+    min-width: 14rem;
+  }
+  /* phone: each row becomes a small card */
+  @media (max-width: 639px) {
+    table,
+    tbody,
+    tr,
+    th,
+    td {
+      display: block;
+    }
+    thead {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+    }
+    tbody tr {
+      display: grid;
+      gap: var(--s-2);
+      padding: var(--s-4) var(--s-5);
+      border-bottom: 1px solid var(--line);
+    }
+    tbody tr:last-child {
+      border-bottom: 0;
+    }
+    tbody th,
+    tbody td {
+      padding: 0;
+      border: 0;
+    }
+    .hwt__note {
+      min-width: 0;
+    }
+  }
+</style>

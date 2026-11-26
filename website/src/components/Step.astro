@@ -1,0 +1,92 @@
+---
+interface Props {
+  num: number;
+  title: string;
+  text?: string | undefined;
+  headingLevel?: 2 | 3 | undefined;
+}
+const { num, title, text, headingLevel = 3 } = Astro.props;
+const H = headingLevel === 2 ? 'h2' : 'h3';
+---
+
+<li class="step" data-reveal>
+  <span class="step__num" aria-hidden="true">
+    {String(num).padStart(2, '0')}
+  </span>
+  <div class="step__body">
+    <H class="step__title">{title}</H>
+    {text && <p class="step__text">{text}</p>}
+    {Astro.slots.has('default') && (
+      <div class="step__extra">
+        <slot />
+      </div>
+    )}
+  </div>
+</li>
+
+<style>
+  .step {
+    position: relative;
+    display: grid;
+    grid-template-columns: 3.25rem minmax(0, 1fr);
+    gap: var(--s-4);
+    padding-bottom: var(--s-10);
+  }
+  /* the line between the numbers: water running from step to step */
+  .step:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: calc(1.625rem - 0.5px);
+    top: 3.25rem;
+    bottom: 0.5rem;
+    width: 1px;
+    background: linear-gradient(to bottom, rgb(245 196 81 / 0.55), rgb(103 216 232 / 0.12));
+  }
+  .step__num {
+    display: grid;
+    place-items: center;
+    width: 3.25rem;
+    height: 3.25rem;
+    border: 1px solid rgb(245 196 81 / 0.5);
+    border-radius: 50%;
+    background: var(--gate-wash);
+    color: var(--gate-ink);
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    letter-spacing: 0.04em;
+  }
+  .step__body {
+    display: grid;
+    gap: var(--s-2);
+    min-width: 0;
+    padding-top: 0.65rem;
+  }
+  .step__title {
+    color: var(--text);
+  }
+  .step__text {
+    color: var(--muted);
+    max-width: 42rem;
+  }
+  .step__extra {
+    margin-top: var(--s-3);
+    min-width: 0;
+  }
+  @media (max-width: 479px) {
+    .step {
+      grid-template-columns: 2.5rem minmax(0, 1fr);
+      gap: var(--s-3);
+    }
+    .step__num {
+      width: 2.5rem;
+      height: 2.5rem;
+    }
+    .step:not(:last-child)::before {
+      left: calc(1.25rem - 0.5px);
+      top: 2.5rem;
+    }
+    .step__body {
+      padding-top: 0.35rem;
+    }
+  }
+</style>

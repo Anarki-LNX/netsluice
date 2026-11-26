@@ -1,0 +1,141 @@
+---
+import Icon from './Icon.astro';
+import type { ReleaseData } from '~/lib/release-types';
+import { formatBytes } from '~/lib/releases';
+import { REPO } from '~/config/site';
+import { type Locale, t, formatDate, localizePath, routes } from '~/i18n';
+
+// A small teaser of the newest release, for the home page.
+interface Props {
+  locale: Locale;
+  data: ReleaseData;
+}
+const { locale, data } = Astro.props;
+const tr = t(locale);
+const latest = data.latest;
+const image = data.latestImage;
+---
+
+<article class="rc" data-reveal>
+  {latest ? (
+    <>
+      <div class="rc__head">
+        <p class="label">
+          <span class="num">{tr('release.latest')}</span>
+        </p>
+        {latest.prerelease && <span class="rc__pre">{tr('release.prerelease')}</span>}
+      </div>
+      <p class="rc__version">v{latest.version}</p>
+      <p class="rc__date">
+        {tr('release.published')} <time datetime={latest.publishedAt}>{formatDate(latest.publishedAt, locale)}</time>
+      </p>
+      <dl class="rc__facts">
+        <div>
+          <dt class="label">{tr('release.latestImage')}</dt>
+          <dd>
+            {image?.image ? (
+              <>
+                v{image.version} · {formatBytes(image.image.size, locale)}
+              </>
+            ) : (
+              '–'
+            )}
+          </dd>
+        </div>
+      </dl>
+      <div class="rc__actions">
+        <a class="rc__link" href={localizePath(routes.downloads, locale)}>
+          {tr('release.download')}
+          <Icon name="arrow-right" size={16} />
+        </a>
+        <a class="rc__link rc__link--quiet" href={latest.htmlUrl} target="_blank" rel="noopener noreferrer">
+          {tr('release.onGitHub')}
+          <Icon name="arrow-up-right" size={15} />
+          <span class="visually-hidden"> {tr('a11y.newTab')}</span>
+        </a>
+      </div>
+    </>
+  ) : (
+    <>
+      <p class="label">{tr('release.latest')}</p>
+      <p class="rc__date">{tr('release.unavailable')}</p>
+      <a class="rc__link" href={REPO.releases} target="_blank" rel="noopener noreferrer">
+        {tr('cta.allReleases')}
+        <Icon name="arrow-up-right" size={15} />
+        <span class="visually-hidden"> {tr('a11y.newTab')}</span>
+      </a>
+    </>
+  )}
+  {data.source === 'cache' && data.fetchedAt && (
+    <p class="rc__stale">
+      {tr('release.stale')} <time datetime={data.fetchedAt}>{formatDate(data.fetchedAt, locale)}</time>
+    </p>
+  )}
+</article>
+
+<style>
+  .rc {
+    position: relative;
+    display: grid;
+    gap: var(--s-3);
+    padding: clamp(1.5rem, 1rem + 2vw, 2.5rem);
+    border: 1px solid var(--line-2);
+    border-radius: var(--r-lg);
+    background: radial-gradient(90% 120% at 100% 0%, rgb(92 227 154 / 0.08), transparent 55%), var(--panel);
+    box-shadow: var(--shadow-1);
+  }
+  .rc__head {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--s-3);
+  }
+  .rc__pre {
+    color: var(--gate-ink);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .rc__version {
+    font-family: var(--font-display);
+    font-size: clamp(3rem, 2rem + 4vw, 4.75rem);
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+  .rc__date {
+    color: var(--muted);
+  }
+  .rc__facts {
+    margin: var(--s-2) 0 0;
+    padding-top: var(--s-4);
+    border-top: 1px solid var(--line);
+  }
+  .rc__facts dd {
+    margin: 0.2rem 0 0;
+    color: var(--soft);
+    font-family: var(--font-mono);
+    font-size: 0.9375rem;
+  }
+  .rc__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2) var(--s-6);
+    margin-top: var(--s-2);
+  }
+  .rc__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: var(--tap);
+    font-weight: 540;
+  }
+  .rc__link--quiet {
+    color: var(--muted);
+    font-weight: 450;
+  }
+  .rc__stale {
+    color: var(--faint);
+    font-size: 0.8125rem;
+  }
+</style>

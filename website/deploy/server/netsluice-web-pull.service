@@ -1,0 +1,48 @@
+# /etc/systemd/system/netsluice-web-pull.service
+# Fetches the newest website build from GitHub Actions and switches to it (see netsluice-web-pull).
+# Builds nothing on this server. Started by netsluice-web-pull.timer.
+[Unit]
+Description=NetSluice website: fetch and switch to the newest CI build
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=netsluice-web
+Group=netsluice-web
+# GITHUB_TOKEN=… (read-only, see WEBSITE_DEPLOYMENT_GUIDE.md); file root:root 600, read by systemd only
+EnvironmentFile=/etc/netsluice-web/pull.env
+ExecStart=/usr/local/bin/netsluice-web-pull
+Nice=19
+IOSchedulingClass=idle
+MemoryMax=256M
+CPUQuota=50%
+TimeoutStartSec=10min
+UMask=0022
+
+# Hardening: may write only to the web root, reach the network, nothing else
+NoNewPrivileges=yes
+ProtectSystem=strict
+ReadWritePaths=/opt/netsluice-web
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectProc=invisible
+ProcSubset=pid
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged @resources

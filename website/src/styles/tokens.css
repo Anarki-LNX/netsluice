@@ -1,0 +1,124 @@
+/*
+ * NetSluice website — design tokens.
+ * The four signal colours are the product's own and keep their meaning everywhere:
+ *   blue  = a lookup arriving   gold = the sluice gate
+ *   green = passed              red  = stopped
+ * Contrast ratios for the important pairs are listed in WEBSITE_DESIGN_PLAN.md.
+ */
+:root {
+  color-scheme: dark;
+
+  /* ground: deep navy-anthracite, a shade darker than the device's #06141B */
+  --bg: #050f15;
+  --bg-deep: #030a0f;
+  --ground: #06141b; /* the product's ground, used for framed screenshots */
+  --panel: #0a1e27;
+  --panel-2: #0e2731;
+  --panel-glass: rgb(10 30 39 / 0.72);
+
+  /* text */
+  --text: #eaf6f7;
+  --soft: #c6e0e4;
+  --muted: #93b4bc;
+  --faint: #7898a1; /* smallest allowed text tone: ≥ 4.5:1 on every surface */
+
+  /* lines */
+  --line: rgb(255 255 255 / 0.08);
+  --line-2: rgb(255 255 255 / 0.14);
+  --line-3: rgb(255 255 255 / 0.24);
+
+  /* signals (the product's semantics) */
+  --in: #4ea8ff;
+  --in-ink: #8cc6ff;
+  --gate: #f5c451;
+  --gate-ink: #f8d88a;
+  --ok: #5ce39a;
+  --ok-ink: #9bf0c2;
+  --no: #ff5a5a;
+  --no-ink: #ff8f84;
+  --water: #67d8e8; /* cyan light, used for depth only, never for meaning */
+  --violet: #b3a6ff; /* "not implemented" only */
+  --on-gate: #1b1403;
+
+  /* washes */
+  --in-wash: rgb(78 168 255 / 0.12);
+  --gate-wash: rgb(245 196 81 / 0.12);
+  --ok-wash: rgb(92 227 154 / 0.12);
+  --no-wash: rgb(255 90 90 / 0.13);
+  --violet-wash: rgb(179 166 255 / 0.12);
+  --water-wash: rgb(103 216 232 / 0.08);
+
+  /* type */
+  --font-display: 'Instrument Serif', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+  --font-body: 'Geist Variable', 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'Geist Mono Variable', 'Geist Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+
+  /* fluid type scale (min at 360px, max at 1440px) */
+  --fs-hero: clamp(3.25rem, 1.9rem + 6vw, 7.5rem);
+  --fs-h1: clamp(2.75rem, 1.9rem + 3.8vw, 5rem);
+  --fs-h2: clamp(2.125rem, 1.6rem + 2.3vw, 3.5rem);
+  --fs-h3: clamp(1.25rem, 1.15rem + 0.4vw, 1.5rem);
+  --fs-lead: clamp(1.125rem, 1.05rem + 0.35vw, 1.3125rem);
+  --fs-body: 1.0625rem;
+  --fs-small: 0.9375rem;
+  --fs-label: 0.75rem;
+  --fs-code: 0.9rem;
+
+  --lh-tight: 1.02;
+  --lh-head: 1.15;
+  --lh-body: 1.65;
+  --track-label: 0.14em;
+
+  /* spacing, 4px steps */
+  --s-1: 0.25rem;
+  --s-2: 0.5rem;
+  --s-3: 0.75rem;
+  --s-4: 1rem;
+  --s-5: 1.25rem;
+  --s-6: 1.5rem;
+  --s-8: 2rem;
+  --s-10: 2.5rem;
+  --s-12: 3rem;
+  --s-16: 4rem;
+  --s-20: 5rem;
+  --s-24: 6rem;
+  --section: clamp(4.5rem, 3rem + 6vw, 9rem);
+
+  /* layout */
+  --container: 76rem;
+  --container-narrow: 46rem;
+  --gutter: clamp(1rem, 0.5rem + 2.5vw, 2.5rem);
+  --header-h: 4.25rem;
+
+  /* shape */
+  --r-xs: 6px;
+  --r-sm: 10px;
+  --r-md: 16px;
+  --r-lg: 24px;
+  --r-pill: 999px;
+
+  /* depth: light used sparingly */
+  --shadow-1: 0 1px 0 rgb(255 255 255 / 0.04) inset, 0 12px 32px -16px rgb(0 0 0 / 0.7);
+  --shadow-2: 0 1px 0 rgb(255 255 255 / 0.05) inset, 0 30px 80px -30px rgb(0 0 0 / 0.85);
+  --glow-water: 0 0 0 1px rgb(103 216 232 / 0.12), 0 20px 60px -20px rgb(103 216 232 / 0.25);
+
+  /* focus: gold, like the device's own interface */
+  --focus: var(--gate);
+  --focus-ring: 0 0 0 3px var(--bg), 0 0 0 5px var(--focus);
+
+  /* motion */
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --t-fast: 140ms;
+  --t-med: 260ms;
+  --t-slow: 700ms;
+
+  --tap: 44px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --t-fast: 0ms;
+    --t-med: 0ms;
+    --t-slow: 0ms;
+  }
+}

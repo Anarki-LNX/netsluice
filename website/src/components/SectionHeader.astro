@@ -1,0 +1,69 @@
+---
+// "03 · OPEN SOURCE · NETWORK FILTER" in mono, then a serif title, then an optional lead.
+interface Props {
+  num?: string | undefined;
+  label?: string | undefined;
+  title: string;
+  /** an italic tail for the title, set in Instrument Serif italic */
+  titleAccent?: string | undefined;
+  lead?: string | undefined;
+  level?: 1 | 2 | undefined;
+  id?: string | undefined;
+  align?: 'start' | 'center' | undefined;
+  class?: string | undefined;
+}
+const { num, label, title, titleAccent, lead, level = 2, id, align = 'start', class: cls } = Astro.props;
+const Tag = level === 1 ? 'h1' : 'h2';
+---
+
+<header class:list={['sh', `sh--${align}`, cls]} data-reveal>
+  {(num || label) && (
+    <p class="label sh__label">
+      {num && <span class="num">{num}</span>}
+      {num && label && <span aria-hidden="true"> · </span>}
+      {label && <span>{label}</span>}
+    </p>
+  )}
+  <Tag id={id} class="sh__title">
+    {title}
+    {titleAccent && <em class="serif-italic sh__accent"> {titleAccent}</em>}
+  </Tag>
+  {lead && <p class="lead sh__lead">{lead}</p>}
+  <slot />
+</header>
+
+<style>
+  .sh {
+    display: grid;
+    gap: var(--s-4);
+    max-width: 48rem;
+    margin-bottom: clamp(2rem, 1.5rem + 2vw, 3.5rem);
+  }
+  .sh--center {
+    margin-inline: auto;
+    text-align: center;
+    justify-items: center;
+  }
+  .sh__label {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.15rem;
+  }
+  .sh__label::before {
+    content: '';
+    width: 1.75rem;
+    height: 1px;
+    margin-right: 0.65rem;
+    background: linear-gradient(to right, transparent, var(--gate));
+  }
+  .sh--center .sh__label::before {
+    display: none;
+  }
+  .sh__accent {
+    color: var(--muted);
+  }
+  .sh__lead {
+    margin-top: var(--s-1);
+  }
+</style>

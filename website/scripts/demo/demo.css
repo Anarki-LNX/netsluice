@@ -1,0 +1,53 @@
+/* Website demo only: the "invented data" banner over the device interface. */
+body {
+  padding-bottom: 56px;
+}
+.demo-banner {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2147483000;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 16px;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+  background: #f5c451;
+  color: #06141b;
+  font:
+    600 14px/1.35 system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.35);
+}
+.demo-banner .demo-text::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: #06141b;
+  vertical-align: 1px;
+}
+.demo-banner a {
+  color: #06141b;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.demo-banner a:focus-visible {
+  outline: 2px solid #06141b;
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+.demo-toast {
+  flex-basis: 100%;
+  text-align: center;
+  font-weight: 500;
+}
+.demo-toast[hidden] {
+  display: none;
+}

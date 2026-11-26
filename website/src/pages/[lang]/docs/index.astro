@@ -1,0 +1,71 @@
+---
+import Base from '~/layouts/Base.astro';
+import PageHero from '~/components/PageHero.astro';
+import FeatureCard from '~/components/FeatureCard.astro';
+import DonateBlock from '~/components/DonateBlock.astro';
+import type { IconName } from '~/components/Icon.astro';
+import { getDocLinks, groupBySection } from '~/layouts/docs-nav';
+import { localeStaticPaths, t, type Locale } from '~/i18n';
+import type { DocSection } from '~/content.config';
+import { maybeCopy } from '~/i18n/copy';
+
+export const getStaticPaths = localeStaticPaths;
+const locale = Astro.params.lang as Locale;
+const tr = t(locale);
+const links = await getDocLinks(locale);
+const groups = groupBySection(links);
+const icons: Record<DocSection, IconName> = {
+  start: 'play',
+  install: 'download',
+  use: 'activity',
+  hardware: 'cpu',
+  develop: 'code',
+};
+const tones = ['water', 'gate', 'ok', 'in', 'water'] as const;
+const copy = maybeCopy(locale);
+const meta = copy?.meta.docs;
+const description =
+  (copy?.docs.intro ?? locale === 'de')
+    ? 'Installation, Bedienung, Hardware und Entwicklung von NetSluice.'
+    : 'Installing, using, the hardware and developing NetSluice.';
+---
+
+<Base locale={locale} title={meta?.title ?? tr('nav.docs')} description={meta?.description ?? description}>
+  <PageHero num="D" label={tr('footer.docs')} title={copy?.docs.title ?? tr('footer.docs')} lead={description} />
+  <section class="section section--tight">
+    <div class="container">
+      <ul role="list" class="docs-grid">
+        {groups.map((g, i) => (
+          <li>
+            <FeatureCard
+              num={String(i + 1).padStart(2, '0')}
+              icon={icons[g.section]}
+              tone={tones[i % tones.length]}
+              title={copy?.common.docSections[g.section] ?? tr(`docs.section.${g.section}`)}
+              headingLevel={2}
+              links={g.links.map((l) => ({ href: l.href, text: l.title }))}
+            />
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+  <DonateBlock locale={locale} />
+</Base>
+
+<style>
+  .docs-grid {
+    display: grid;
+    gap: var(--s-5);
+  }
+  @media (min-width: 720px) {
+    .docs-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (min-width: 1080px) {
+    .docs-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+</style>

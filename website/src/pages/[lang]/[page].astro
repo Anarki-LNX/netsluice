@@ -1,0 +1,89 @@
+---
+// Long-form pages from the `pages` collection: security, privacy, about,
+// contributing, license, support. The license page also shows the disclaimer.
+import { getCollection, render } from 'astro:content';
+import PageLayout from '~/layouts/PageLayout.astro';
+import Callout from '~/components/Callout.astro';
+import { entrySlug } from '~/content.config';
+import { locales, t, type Locale, type UiKey } from '~/i18n';
+
+const ROUTED = ['security', 'privacy', 'about', 'contributing', 'license', 'support'] as const;
+type Routed = (typeof ROUTED)[number];
+
+export async function getStaticPaths() {
+  // getStaticPaths runs on its own: it cannot see constants of this file
+  const pages = ['security', 'privacy', 'about', 'contributing', 'license', 'support'];
+  return locales.flatMap((lang) => pages.map((page) => ({ params: { lang, page } })));
+}
+
+const locale = Astro.params.lang as Locale;
+const page = Astro.params.page as Routed;
+const tr = t(locale);
+const all = await getCollection('pages', (e) => e.data.lang === locale);
+const entry = all.find((e) => entrySlug(e.id) === page);
+const disclaimer = page === 'license' ? all.find((e) => entrySlug(e.id) === 'disclaimer') : undefined;
+const { Content } = entry ? await render(entry) : { Content: null };
+const { Content: Disclaimer } = disclaimer ? await render(disclaimer) : { Content: null };
+
+const numbers: Record<Routed, string> = {
+  security: 'S1',
+  privacy: 'S2',
+  about: 'A1',
+  contributing: 'A2',
+  license: 'L1',
+  support: '♥',
+};
+const navKey: Record<Routed, UiKey> = {
+  security: 'nav.security',
+  privacy: 'nav.privacy',
+  about: 'nav.about',
+  contributing: 'nav.contributing',
+  license: 'nav.license',
+  support: 'nav.support',
+};
+const title = entry?.data.title ?? tr(navKey[page]);
+const description = entry?.data.description ?? tr(navKey[page]);
+---
+
+<PageLayout
+  locale={locale}
+  title={title}
+  description={description}
+  num={numbers[page]}
+  label={tr(navKey[page])}
+  tone={page === 'support' ? 'gate' : 'water'}
+>
+  <section class="section section--tight">
+    <div class="container">
+      {Content ? (
+        <div class="prose" data-reveal>
+          <Content />
+        </div>
+      ) : (
+        // TODO(copy): this language version is not written yet
+        <Callout locale={locale} type="info">
+          <p>{tr('common.todo')}</p>
+        </Callout>
+      )}
+      {Disclaimer && disclaimer && (
+        <div class="disclaimer">
+          <h2>{disclaimer.data.title}</h2>
+          <div class="prose">
+            <Disclaimer />
+          </div>
+        </div>
+      )}
+    </div>
+  </section>
+</PageLayout>
+
+<style>
+  .disclaimer {
+    margin-top: var(--s-16);
+    padding-top: var(--s-10);
+    border-top: 1px solid var(--line);
+  }
+  .disclaimer h2 {
+    margin-bottom: var(--s-6);
+  }
+</style>

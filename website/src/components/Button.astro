@@ -1,0 +1,174 @@
+---
+import Icon, { type IconName } from './Icon.astro';
+import type { HTMLAttributes } from 'astro/types';
+
+// A pill. A link when `href` is given, otherwise a button.
+// External links open in a new tab with rel="noopener noreferrer" and say so to screen readers.
+interface Props {
+  href?: string | undefined;
+  variant?: 'primary' | 'secondary' | 'ghost' | 'donate' | undefined;
+  size?: 'sm' | 'md' | 'lg' | undefined;
+  icon?: IconName | undefined;
+  iconLeft?: IconName | undefined;
+  external?: boolean | undefined;
+  newTabText?: string | undefined;
+  class?: string | undefined;
+  type?: 'button' | 'submit' | undefined;
+  ariaLabel?: string | undefined;
+  attrs?: (HTMLAttributes<'a'> & HTMLAttributes<'button'>) | undefined;
+}
+const {
+  href,
+  variant = 'secondary',
+  size = 'md',
+  icon,
+  iconLeft,
+  external = false,
+  newTabText,
+  class: cls,
+  type = 'button',
+  ariaLabel,
+  attrs = {},
+} = Astro.props;
+const classes = ['btn', `btn--${variant}`, `btn--${size}`, cls];
+const extIcon: IconName | undefined = external && !icon ? 'arrow-up-right' : icon;
+---
+
+{href ? (
+  <a
+    class:list={classes}
+    href={href}
+    aria-label={ariaLabel}
+    {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+    {...attrs}
+  >
+    {iconLeft && <Icon name={iconLeft} />}
+    <span class="btn__text">
+      <slot />
+    </span>
+    {extIcon && <Icon name={extIcon} class="btn__icon" />}
+    {external && newTabText && <span class="visually-hidden"> {newTabText}</span>}
+  </a>
+) : (
+  <button class:list={classes} type={type} aria-label={ariaLabel} {...attrs}>
+    {iconLeft && <Icon name={iconLeft} />}
+    <span class="btn__text">
+      <slot />
+    </span>
+    {icon && <Icon name={icon} class="btn__icon" />}
+  </button>
+)}
+
+<style>
+  .btn {
+    --btn-h: var(--tap);
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    min-height: var(--btn-h);
+    padding: 0 1.25rem;
+    border: 1px solid var(--line-3);
+    border-radius: var(--r-pill);
+    background: transparent;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 0.9688rem;
+    font-weight: 540;
+    letter-spacing: -0.005em;
+    line-height: 1;
+    text-decoration: none;
+    white-space: nowrap;
+    transition:
+      background-color var(--t-fast),
+      border-color var(--t-fast),
+      color var(--t-fast),
+      box-shadow var(--t-med),
+      transform var(--t-fast);
+  }
+  .btn :global(.btn__icon) {
+    transition: transform var(--t-med) var(--ease-out);
+  }
+  .btn:hover :global(.btn__icon) {
+    transform: translateX(2px);
+  }
+  .btn:active {
+    transform: translateY(1px);
+  }
+  .btn:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 3px;
+    border-radius: var(--r-pill);
+  }
+
+  .btn--sm {
+    --btn-h: 40px;
+    padding: 0 0.95rem;
+    font-size: 0.875rem;
+  }
+  .btn--lg {
+    --btn-h: 52px;
+    padding: 0 1.6rem;
+    font-size: 1.0313rem;
+  }
+  /* the sm size keeps a 44px hit area through a transparent extension */
+  .btn--sm::after {
+    content: '';
+    position: absolute;
+    inset: -2px 0;
+  }
+
+  .btn--primary {
+    border-color: transparent;
+    background: var(--text);
+    color: var(--bg);
+    box-shadow:
+      0 0 0 1px rgb(255 255 255 / 0.2) inset,
+      0 8px 30px -10px rgb(103 216 232 / 0.45);
+  }
+  .btn--primary:hover {
+    background: #ffffff;
+    color: var(--bg);
+    box-shadow:
+      0 0 0 1px rgb(255 255 255 / 0.3) inset,
+      0 10px 40px -10px rgb(103 216 232 / 0.6);
+  }
+
+  .btn--secondary {
+    background: rgb(255 255 255 / 0.03);
+    backdrop-filter: blur(6px);
+  }
+  .btn--secondary:hover {
+    border-color: rgb(255 255 255 / 0.45);
+    background: rgb(255 255 255 / 0.07);
+    color: var(--text);
+  }
+
+  .btn--ghost {
+    border-color: transparent;
+    color: var(--soft);
+  }
+  .btn--ghost:hover {
+    color: var(--text);
+    background: rgb(255 255 255 / 0.05);
+  }
+
+  .btn--donate {
+    border-color: rgb(245 196 81 / 0.55);
+    background: var(--gate-wash);
+    color: var(--gate-ink);
+  }
+  .btn--donate:hover {
+    border-color: var(--gate);
+    background: rgb(245 196 81 / 0.2);
+    color: #fff3d6;
+    box-shadow: 0 0 24px -6px rgb(245 196 81 / 0.45);
+  }
+
+  @media (forced-colors: active) {
+    .btn {
+      border: 1px solid ButtonText;
+    }
+  }
+</style>

@@ -1,0 +1,107 @@
+---
+import { type Locale, t } from '~/i18n';
+
+// The five honest status words. Each has its own colour and its own shape, so
+// colour is never the only signal. Only "Tested" is green.
+export type Status = 'tested' | 'experimental' | 'untested' | 'notSupported' | 'notImplemented';
+
+interface Props {
+  status: Status;
+  locale: Locale;
+  size?: 'sm' | 'md' | undefined;
+}
+const { status, locale, size = 'md' } = Astro.props;
+const tr = t(locale);
+const keyOf = {
+  tested: 'status.tested',
+  experimental: 'status.experimental',
+  untested: 'status.untested',
+  notSupported: 'status.notSupported',
+  notImplemented: 'status.notImplemented',
+} as const;
+---
+
+<span class:list={['badge', `badge--${status}`, `badge--${size}`]}>
+  <span class="badge__mark" aria-hidden="true"></span>
+  {tr(keyOf[status])}
+</span>
+
+<style>
+  .badge {
+    --c: var(--muted);
+    --w: rgb(255 255 255 / 0.05);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.32rem 0.7rem 0.32rem 0.6rem;
+    border: 1px solid color-mix(in srgb, var(--c) 45%, transparent);
+    border-radius: var(--r-pill);
+    background: var(--w);
+    color: var(--c);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+  .badge--sm {
+    padding: 0.2rem 0.55rem 0.2rem 0.45rem;
+    font-size: 0.6875rem;
+  }
+  .badge__mark {
+    width: 0.55rem;
+    height: 0.55rem;
+    flex: none;
+    border-radius: 50%;
+    background: var(--c);
+  }
+  /* Tested: filled green dot */
+  .badge--tested {
+    --c: var(--ok-ink);
+    --w: var(--ok-wash);
+  }
+  /* Experimental: gold, half-filled */
+  .badge--experimental {
+    --c: var(--gate-ink);
+    --w: var(--gate-wash);
+  }
+  .badge--experimental .badge__mark {
+    background: linear-gradient(90deg, var(--c) 50%, transparent 50%);
+    box-shadow: inset 0 0 0 1.5px var(--c);
+  }
+  /* Untested: neutral slate, hollow ring, dashed border */
+  .badge--untested {
+    --c: var(--soft);
+    border-style: dashed;
+  }
+  .badge--untested .badge__mark {
+    background: transparent;
+    box-shadow: inset 0 0 0 1.5px var(--c);
+  }
+  /* Not supported: red, a bar instead of a dot */
+  .badge--notSupported {
+    --c: var(--no-ink);
+    --w: var(--no-wash);
+  }
+  .badge--notSupported .badge__mark {
+    height: 2px;
+    border-radius: 1px;
+  }
+  /* Not implemented: violet, hollow square */
+  .badge--notImplemented {
+    --c: var(--violet);
+    --w: var(--violet-wash);
+  }
+  .badge--notImplemented .badge__mark {
+    border-radius: 2px;
+    background: transparent;
+    box-shadow: inset 0 0 0 1.5px var(--c);
+  }
+  @media (forced-colors: active) {
+    .badge {
+      border: 1px solid CanvasText;
+    }
+  }
+</style>

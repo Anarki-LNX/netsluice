@@ -1,0 +1,120 @@
+# Website (netsluice.loopout.tech): check, test, build, security check.
+#
+# This workflow never deploys. On main (not on pull requests) it uploads the built
+# site as the artifact "netsluice-website-site"; the server fetches it on its own
+# (website/deploy/server/netsluice-web-pull, off until the owner installs it).
+# Release data is read at build time, so a new or edited release triggers a build.
+#
+# Actions are pinned to full commit SHAs (looked up 2026-11-26 with `gh api`).
+
+name: Website
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'website/**'
+      - 'web/**'
+      - 'scripts/demo.py'
+      - '.github/workflows/website.yml'
+  pull_request:
+    paths:
+      - 'website/**'
+      - 'web/**'
+      - 'scripts/demo.py'
+      - '.github/workflows/website.yml'
+  release:
+    types: [published, edited, deleted]
+  schedule:
+    # once a day as a safety net (release data, expiring artifacts)
+    - cron: '23 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: website-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: website
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # a release event points at the tag; the website is always built from main
+          ref: ${{ github.event_name == 'release' && 'main' || '' }}
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '26'
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+
+      - name: Install
+        run: npm ci --no-audit --no-fund
+
+      # Last good release data: used only when GitHub's API fails during the build.
+      - name: Restore release cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: website/.cache/releases.json
+          key: releases-${{ github.run_id }}
+          restore-keys: releases-
+
+      - name: Type check
+        run: npx astro check
+
+      - name: Unit tests
+        run: npx vitest run
+
+      - name: Build
+        env:
+          # read-only (permissions: contents: read); only raises the API rate limit
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          rm -f .cache/release-status.json
+          npm run build
+          node scripts/write-build-info.mjs ${{ github.event_name != 'pull_request' && '--require-release-data' || '' }}
+
+      - name: Security check of the output
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run check:security
+
+      - name: Dependency audit (production)
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Save release cache
+        if: github.event_name != 'pull_request'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: website/.cache/releases.json
+          key: releases-${{ github.run_id }}
+
+      # Pull requests: the build for review only.
+      - name: Upload build (review)
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: netsluice-website-preview
+          path: website/dist
+          retention-days: 5
+          if-no-files-found: error
+
+      # main only: what the server may fetch. Name and branch are checked by netsluice-web-pull.
+      - name: Upload build (site)
+        if: github.event_name == 'release' || (github.event_name != 'pull_request' && github.ref == 'refs/heads/main')
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: netsluice-website-site
+          path: website/dist
+          retention-days: 14
+          if-no-files-found: error
+          include-hidden-files: false

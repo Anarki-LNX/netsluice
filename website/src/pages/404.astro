@@ -1,0 +1,140 @@
+---
+// One 404 for both languages (static hosting serves a single file). English
+// first, German below, each marked with its language.
+import Base from '~/layouts/Base.astro';
+import Logo from '~/components/Logo.astro';
+import Icon from '~/components/Icon.astro';
+import { ui } from '~/i18n';
+---
+
+<Base
+  locale={null}
+  title={`404 · ${ui.en['404.title']}`}
+  description={ui.en['404.text']}
+  noindex
+  alternates={false}
+  chrome={false}
+>
+  <div class="nf">
+    <div class="container nf__inner">
+      <a href="/" class="nf__logo" aria-label="NetSluice">
+        <Logo size={40} />
+      </a>
+      <svg class="nf__gate" viewBox="0 0 240 120" aria-hidden="true" focusable="false">
+        <path d="M10 60 H 104" stroke="#4EA8FF" stroke-width="3" stroke-linecap="round" stroke-dasharray="2 10"></path>
+        <rect
+          x="108"
+          y="14"
+          width="24"
+          height="92"
+          rx="6"
+          fill="rgba(245,196,81,0.08)"
+          stroke="#F5C451"
+          stroke-width="2"
+        ></rect>
+        <path d="M120 24 V 96" stroke="#F5C451" stroke-width="4" stroke-linecap="round"></path>
+        <circle cx="100" cy="60" r="5" fill="#FF5A5A"></circle>
+        <path
+          d="M140 60 H 230"
+          stroke="rgba(255,255,255,0.12)"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-dasharray="2 10"
+        ></path>
+      </svg>
+      <p class="label">
+        <span class="num">404</span>
+      </p>
+      <div class="nf__cols">
+        <section lang="en">
+          <h1>{ui.en['404.title']}</h1>
+          <p>{ui.en['404.text']}</p>
+          <a class="nf__btn" href="/en/">
+            <Icon name="arrow-left" size={16} />
+            {ui.en['404.home']}
+          </a>
+        </section>
+        <section lang="de">
+          <h2>{ui.de['404.title']}</h2>
+          <p>{ui.de['404.text']}</p>
+          <a class="nf__btn" href="/de/">
+            <Icon name="arrow-left" size={16} />
+            {ui.de['404.home']}
+          </a>
+        </section>
+      </div>
+    </div>
+  </div>
+</Base>
+
+<style>
+  .nf {
+    position: relative;
+    display: grid;
+    min-height: 100vh;
+    min-height: 100dvh;
+    place-items: center;
+    padding-block: var(--s-16);
+  }
+  .nf__inner {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    justify-items: center;
+    gap: var(--s-6);
+    text-align: center;
+  }
+  .nf__logo {
+    display: inline-flex;
+    min-height: var(--tap);
+    align-items: center;
+    color: var(--text);
+    text-decoration: none;
+  }
+  .nf__gate {
+    width: min(320px, 80vw);
+    height: auto;
+  }
+  .nf__cols {
+    display: grid;
+    gap: var(--s-10);
+    max-width: 52rem;
+  }
+  @media (min-width: 760px) {
+    .nf__cols {
+      grid-template-columns: 1fr 1fr;
+      text-align: left;
+    }
+  }
+  .nf__cols section {
+    display: grid;
+    gap: var(--s-4);
+    justify-items: center;
+  }
+  @media (min-width: 760px) {
+    .nf__cols section {
+      justify-items: start;
+    }
+  }
+  .nf__cols h1,
+  .nf__cols h2 {
+    font-size: clamp(2rem, 1.5rem + 2vw, 3rem);
+  }
+  .nf__cols p {
+    color: var(--soft);
+  }
+  .nf__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: var(--tap);
+    padding: 0 1.2rem;
+    border: 1px solid var(--line-3);
+    border-radius: var(--r-pill);
+    color: var(--text);
+    text-decoration: none;
+  }
+  .nf__btn:hover {
+    border-color: var(--gate);
+  }
+</style>

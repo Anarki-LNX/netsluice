@@ -1,0 +1,452 @@
+---
+import Logo from './Logo.astro';
+import Icon from './Icon.astro';
+import { DONATE_URL, REPO } from '~/config/site';
+import {
+  type Locale,
+  t,
+  localizePath,
+  alternatePath,
+  otherLocale,
+  primaryNav,
+  moreNav,
+  navKey,
+  routes,
+  stripLocale,
+  type RouteKey,
+} from '~/i18n';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const tr = t(locale);
+const current = stripLocale(Astro.url.pathname);
+const other = otherLocale(locale);
+const switchHref = alternatePath(Astro.url.pathname, other);
+
+const isCurrent = (key: RouteKey) => current === routes[key];
+const isSection = (key: RouteKey) => key !== 'home' && current.startsWith(routes[key]);
+const linkFor = (key: RouteKey) => localizePath(routes[key], locale);
+const moreActive = moreNav.some((k) => isSection(k));
+---
+
+<header class="site-header" data-header>
+  <div class="site-header__inner container">
+    <a class="site-header__brand" href={localizePath('/', locale)} aria-label={tr('a11y.home')}>
+      <Logo />
+    </a>
+
+    <nav class="desk-nav" aria-label={tr('a11y.mainNav')}>
+      <ul role="list" class="desk-nav__list">
+        {primaryNav.map((key) => (
+          <li>
+            <a
+              class="nav-link"
+              href={linkFor(key)}
+              aria-current={isCurrent(key) ? 'page' : isSection(key) ? 'true' : undefined}
+            >
+              {tr(navKey[key])}
+            </a>
+          </li>
+        ))}
+        <li>
+          <details class="more" data-disclosure>
+            <summary class:list={['nav-link', 'more__summary', { 'is-active': moreActive }]}>
+              {tr('nav.more')}
+              <Icon name="chevron-down" size={15} />
+            </summary>
+            <ul role="list" class="more__panel">
+              {moreNav.map((key) => (
+                <li>
+                  <a href={linkFor(key)} aria-current={isCurrent(key) ? 'page' : undefined}>
+                    {tr(navKey[key])}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </details>
+        </li>
+      </ul>
+    </nav>
+
+    <div class="site-header__actions">
+      <a class="lang-switch" href={switchHref} hreflang={other} lang={other} aria-label={tr('a11y.langSwitch')}>
+        <span aria-hidden="true">{tr(`lang.short.${other}`)}</span>
+      </a>
+      <a
+        class="icon-link"
+        href={REPO.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={`${tr('nav.githubLabel')} ${tr('a11y.newTab')}`}
+      >
+        <Icon name="github" size={19} />
+      </a>
+      <a
+        class="donate-pill"
+        href={DONATE_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={`${tr('donate.label')} ${tr('a11y.newTab')}`}
+      >
+        <Icon name="heart" size={15} />
+        <span>{tr('donate.button')}</span>
+      </a>
+
+      <details class="mobile-nav" data-disclosure data-mobile-nav>
+        <summary class="mobile-nav__toggle" aria-label={tr('nav.menu')}>
+          <span class="mobile-nav__open">
+            <Icon name="menu" size={20} />
+          </span>
+          <span class="mobile-nav__shut">
+            <Icon name="close" size={20} />
+          </span>
+        </summary>
+        <nav class="mobile-nav__panel" aria-label={tr('a11y.mobileNav')}>
+          <ul role="list" class="mobile-nav__list">
+            {[...primaryNav, ...moreNav].map((key, i) => (
+              <li>
+                <a href={linkFor(key)} aria-current={isCurrent(key) ? 'page' : undefined}>
+                  <span class="mobile-nav__num" aria-hidden="true">
+                    {String(i + 1).padStart(2, '0')}
+                  </span>
+                  {tr(navKey[key])}
+                </a>
+              </li>
+            ))}
+          </ul>
+          <div class="mobile-nav__foot">
+            <a class="mobile-nav__lang" href={switchHref} hreflang={other} lang={other}>
+              {tr(`lang.${other}`)}
+            </a>
+            <a href={REPO.url} target="_blank" rel="noopener noreferrer">
+              <Icon name="github" size={18} />
+              GitHub<span class="visually-hidden"> {tr('a11y.newTab')}</span>
+            </a>
+            <a class="mobile-nav__donate" href={DONATE_URL} target="_blank" rel="noopener noreferrer">
+              <Icon name="heart" size={16} />
+              {tr('donate.cta')}
+              <span class="visually-hidden"> {tr('a11y.newTab')}</span>
+            </a>
+          </div>
+        </nav>
+      </details>
+    </div>
+  </div>
+</header>
+
+<script>
+  import '~/scripts/nav';
+</script>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    height: var(--header-h);
+    border-bottom: 1px solid transparent;
+    transition: border-color var(--t-med);
+  }
+  /* the blur sits on a pseudo-element: backdrop-filter on the header itself would
+     become the containing block of the fixed mobile panel */
+  .site-header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(to bottom, rgb(5 15 21 / 0.92), rgb(5 15 21 / 0.78));
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+  }
+  .site-header:global(.is-scrolled) {
+    border-bottom-color: var(--line);
+  }
+  :global(html.nav-open) .site-header::before {
+    background: var(--bg);
+  }
+  .site-header__inner {
+    display: flex;
+    align-items: center;
+    gap: var(--s-4);
+    height: 100%;
+  }
+  .site-header__brand {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--tap);
+    margin-right: auto;
+    color: var(--text);
+    text-decoration: none;
+    border-radius: var(--r-sm);
+  }
+
+  /* ---------- desktop nav: a pill rail, as in the Nexus reference ---------- */
+  .desk-nav {
+    display: none;
+  }
+  .desk-nav__list {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 4px;
+    border: 1px solid var(--line);
+    border-radius: var(--r-pill);
+    background: rgb(255 255 255 / 0.02);
+  }
+  .nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    min-height: 36px;
+    padding: 0 0.85rem;
+    border-radius: var(--r-pill);
+    color: var(--soft);
+    font-size: 0.9063rem;
+    font-weight: 480;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      color var(--t-fast),
+      background-color var(--t-fast);
+  }
+  .nav-link:hover {
+    color: var(--text);
+    background: rgb(255 255 255 / 0.06);
+  }
+  .nav-link[aria-current],
+  .nav-link.is-active {
+    color: var(--gate-ink);
+    background: var(--gate-wash);
+  }
+  .nav-link:focus-visible {
+    outline-offset: 1px;
+    border-radius: var(--r-pill);
+  }
+
+  .more {
+    position: relative;
+  }
+  .more__summary {
+    list-style: none;
+  }
+  .more__summary::-webkit-details-marker {
+    display: none;
+  }
+  .more[open] .more__summary :global(svg) {
+    transform: rotate(180deg);
+  }
+  .more__summary :global(svg) {
+    transition: transform var(--t-med) var(--ease-out);
+  }
+  .more__panel {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 10px);
+    min-width: 15rem;
+    padding: var(--s-2);
+    border: 1px solid var(--line-2);
+    border-radius: var(--r-md);
+    background: rgb(10 30 39 / 0.97);
+    box-shadow: var(--shadow-2);
+    backdrop-filter: blur(16px);
+  }
+  .more__panel a {
+    display: flex;
+    align-items: center;
+    min-height: var(--tap);
+    padding: 0 var(--s-4);
+    border-radius: var(--r-sm);
+    color: var(--soft);
+    text-decoration: none;
+    font-size: 0.9375rem;
+  }
+  .more__panel a:hover,
+  .more__panel a[aria-current] {
+    background: rgb(255 255 255 / 0.05);
+    color: var(--text);
+  }
+  .more__panel a[aria-current] {
+    color: var(--gate-ink);
+  }
+
+  /* ---------- actions ---------- */
+  .site-header__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+  }
+  .lang-switch,
+  .icon-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: var(--tap);
+    height: var(--tap);
+    border: 1px solid var(--line-2);
+    border-radius: var(--r-pill);
+    color: var(--soft);
+    text-decoration: none;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    letter-spacing: 0.08em;
+    transition:
+      color var(--t-fast),
+      border-color var(--t-fast),
+      background-color var(--t-fast);
+  }
+  .lang-switch:hover,
+  .icon-link:hover {
+    color: var(--text);
+    border-color: var(--line-3);
+    background: rgb(255 255 255 / 0.05);
+  }
+  .lang-switch:focus-visible,
+  .icon-link:focus-visible,
+  .donate-pill:focus-visible {
+    border-radius: var(--r-pill);
+  }
+  .donate-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    height: var(--tap);
+    padding: 0 1.05rem;
+    border: 1px solid rgb(245 196 81 / 0.5);
+    border-radius: var(--r-pill);
+    background: var(--gate-wash);
+    color: var(--gate-ink);
+    font-size: 0.9063rem;
+    font-weight: 560;
+    text-decoration: none;
+    transition:
+      background-color var(--t-fast),
+      border-color var(--t-fast),
+      box-shadow var(--t-med);
+  }
+  .donate-pill:hover {
+    border-color: var(--gate);
+    background: rgb(245 196 81 / 0.2);
+    color: #fff3d6;
+    box-shadow: 0 0 22px -6px rgb(245 196 81 / 0.5);
+  }
+
+  /* ---------- mobile nav: a native <details>, so it works without JS ---------- */
+  .mobile-nav__toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--tap);
+    height: var(--tap);
+    border: 1px solid var(--line-2);
+    border-radius: var(--r-pill);
+    color: var(--text);
+    list-style: none;
+    cursor: pointer;
+  }
+  .mobile-nav__toggle::-webkit-details-marker {
+    display: none;
+  }
+  .mobile-nav__toggle:focus-visible {
+    border-radius: var(--r-pill);
+  }
+  .mobile-nav__shut,
+  .mobile-nav[open] .mobile-nav__open {
+    display: none;
+  }
+  .mobile-nav[open] .mobile-nav__shut {
+    display: inline-flex;
+  }
+  .mobile-nav__open {
+    display: inline-flex;
+  }
+  .mobile-nav__panel {
+    position: fixed;
+    inset: var(--header-h) 0 0 0;
+    z-index: 49;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: var(--s-4) var(--gutter) var(--s-12);
+    background: var(--bg);
+    border-top: 1px solid var(--line);
+  }
+  .mobile-nav__list {
+    display: grid;
+  }
+  .mobile-nav__list a {
+    display: flex;
+    align-items: baseline;
+    gap: var(--s-4);
+    min-height: 52px;
+    padding: var(--s-3) 0;
+    border-bottom: 1px solid var(--line);
+    color: var(--text);
+    font-family: var(--font-display);
+    font-size: 1.75rem;
+    line-height: 1.1;
+    text-decoration: none;
+  }
+  .mobile-nav__list a[aria-current] {
+    color: var(--gate-ink);
+  }
+  .mobile-nav__num {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    color: var(--faint);
+    min-width: 1.6rem;
+  }
+  .mobile-nav__foot {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-3);
+    margin-top: var(--s-8);
+  }
+  .mobile-nav__foot a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: var(--tap);
+    padding: 0 1.1rem;
+    border: 1px solid var(--line-2);
+    border-radius: var(--r-pill);
+    color: var(--soft);
+    text-decoration: none;
+  }
+  .mobile-nav__foot .mobile-nav__donate {
+    border-color: rgb(245 196 81 / 0.5);
+    background: var(--gate-wash);
+    color: var(--gate-ink);
+  }
+
+  /* ---------- breakpoints ---------- */
+  @media (max-width: 479px) {
+    .donate-pill span {
+      display: none;
+    }
+    .donate-pill {
+      width: var(--tap);
+      padding: 0;
+      justify-content: center;
+    }
+    .icon-link {
+      display: none;
+    }
+  }
+  @media (min-width: 1080px) {
+    .desk-nav {
+      display: block;
+    }
+    .mobile-nav {
+      display: none;
+    }
+    .site-header__brand {
+      margin-right: 0;
+    }
+    .desk-nav {
+      margin-inline: auto;
+    }
+  }
+</style>

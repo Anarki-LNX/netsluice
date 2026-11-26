@@ -1,0 +1,195 @@
+---
+import PageLayout from '~/layouts/PageLayout.astro';
+import SectionHeader from '~/components/SectionHeader.astro';
+import ScreenshotFrame from '~/components/ScreenshotFrame.astro';
+import HardwareTable from '~/components/HardwareTable.astro';
+import CtaButton from '~/components/CtaButton.astro';
+import Callout from '~/components/Callout.astro';
+import Icon, { type IconName } from '~/components/Icon.astro';
+import { maybeCopy } from '~/i18n/copy';
+import type { Feature } from '~/data/copy/types';
+import { localeStaticPaths, t, type Locale } from '~/i18n';
+
+export const getStaticPaths = localeStaticPaths;
+const locale = Astro.params.lang as Locale;
+const tr = t(locale);
+const copy = maybeCopy(locale);
+const c = copy?.features;
+const meta = copy?.meta.features;
+const icon: Record<Feature['id'], IconName> = {
+  filter: 'filter',
+  overview: 'activity',
+  devices: 'devices',
+  map: 'globe',
+  kids: 'clock',
+  dns: 'lock',
+  notify: 'info',
+  backup: 'hard-drive',
+  updates: 'refresh',
+  https: 'shield',
+  leds: 'cpu',
+  appearance: 'settings',
+  export: 'download',
+  languages: 'languages',
+};
+---
+
+<PageLayout
+  locale={locale}
+  title={meta?.title ?? tr('nav.features')}
+  heading={c?.title}
+  description={meta?.description ?? tr('nav.features')}
+  lead={c?.intro}
+  num="F"
+  label={tr('nav.features')}
+  tone="in"
+>
+  {!c ? (
+    <section class="section section--tight">
+      <div class="container">
+        {/* TODO(copy) */}
+        <Callout locale={locale}>
+          <p>{tr('common.todo')}</p>
+        </Callout>
+      </div>
+    </section>
+  ) : (
+    <>
+      <section class="section section--tight">
+        <div class="container">
+          <ol role="list" class="feat">
+            {c.items.map((f, i) => (
+              <li id={f.id} class:list={['feat__item', { 'feat__item--shot': !!f.screenshot }]} data-reveal>
+                <div class="feat__text">
+                  <p class="label">
+                    <span class="num">{String(i + 1).padStart(2, '0')}</span>
+                  </p>
+                  <h2 class="feat__title">
+                    <span class="feat__icon">
+                      <Icon name={icon[f.id]} size={20} />
+                    </span>
+                    {f.title}
+                  </h2>
+                  <p class="feat__summary">{f.summary}</p>
+                  {f.details.length > 0 && (
+                    <ul class="feat__details">
+                      {f.details.map((d) => (
+                        <li>{d}</li>
+                      ))}
+                    </ul>
+                  )}
+                  {f.caveat && (
+                    <Callout locale={locale} type="warn">
+                      <p>{f.caveat}</p>
+                    </Callout>
+                  )}
+                  {f.doc && (
+                    <a class="feat__doc" href={`/${locale}/docs/${f.doc}/`}>
+                      {tr('cta.readMore')} <Icon name="arrow-right" size={15} />
+                    </a>
+                  )}
+                </div>
+                {f.screenshot && (
+                  <div class="feat__shot">
+                    <ScreenshotFrame
+                      locale={locale}
+                      shotKey={f.screenshot}
+                      caption={copy?.common.screenshots[f.screenshot].caption}
+                    />
+                  </div>
+                )}
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+      <section class="section">
+        <div class="container">
+          <SectionHeader num="L" label={tr('table.status')} title={c.limits.title} lead={c.limits.intro} />
+          <HardwareTable
+            locale={locale}
+            caption={c.limits.title}
+            headers={{ name: tr('table.item'), status: tr('table.status'), note: tr('table.note') }}
+            rows={c.limits.rows.map((r) => ({ name: r.item, status: r.status, note: r.note }))}
+          />
+          <div class="feat__cta">
+            <CtaButton cta={c.demo} locale={locale} variant="primary" />
+          </div>
+        </div>
+      </section>
+    </>
+  )}
+</PageLayout>
+
+<style>
+  .feat {
+    display: grid;
+  }
+  .feat__item {
+    display: grid;
+    gap: var(--s-8);
+    padding-block: var(--s-12);
+    border-bottom: 1px solid var(--line);
+    scroll-margin-top: calc(var(--header-h) + 1rem);
+  }
+  .feat__item:first-child {
+    padding-top: 0;
+  }
+  .feat__text {
+    display: grid;
+    gap: var(--s-4);
+    align-content: start;
+    justify-items: start;
+    max-width: 40rem;
+  }
+  .feat__title {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    font-size: clamp(1.75rem, 1.4rem + 1.4vw, 2.5rem);
+  }
+  .feat__icon {
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    width: 2.5rem;
+    height: 2.5rem;
+    border: 1px solid rgb(78 168 255 / 0.35);
+    border-radius: var(--r-sm);
+    background: var(--in-wash);
+    color: var(--in-ink);
+  }
+  .feat__summary {
+    color: var(--soft);
+    font-size: var(--fs-lead);
+    line-height: 1.55;
+  }
+  .feat__details {
+    display: grid;
+    gap: var(--s-2);
+    padding-left: 1.2em;
+    color: var(--muted);
+  }
+  .feat__details li::marker {
+    color: var(--gate);
+  }
+  .feat__doc {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: var(--tap);
+  }
+  .feat__cta {
+    margin-top: var(--s-8);
+  }
+  @media (min-width: 1080px) {
+    .feat__item--shot {
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+      align-items: start;
+      gap: var(--s-12);
+    }
+    .feat__item--shot:nth-child(even) .feat__shot {
+      order: -1;
+    }
+  }
+</style>

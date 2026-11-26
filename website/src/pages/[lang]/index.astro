@@ -1,0 +1,491 @@
+---
+import Base from '~/layouts/Base.astro';
+import HeroCanvas from '~/components/HeroCanvas.astro';
+import Button from '~/components/Button.astro';
+import CtaButton from '~/components/CtaButton.astro';
+import SectionHeader from '~/components/SectionHeader.astro';
+import ScreenshotFrame from '~/components/ScreenshotFrame.astro';
+import FeatureCard from '~/components/FeatureCard.astro';
+import SluiceDiagram from '~/components/SluiceDiagram.astro';
+import Steps from '~/components/Steps.astro';
+import Step from '~/components/Step.astro';
+import CodeBlock from '~/components/CodeBlock.astro';
+import HardwareTable from '~/components/HardwareTable.astro';
+import ReleaseCard from '~/components/ReleaseCard.astro';
+import DonateBlock from '~/components/DonateBlock.astro';
+import Callout from '~/components/Callout.astro';
+import type { IconName } from '~/components/Icon.astro';
+import { getReleaseData } from '~/lib/releases';
+import { maybeCopy } from '~/i18n/copy';
+import type { Feature } from '~/data/copy/types';
+import { localeStaticPaths, t, localizePath, routes, type Locale } from '~/i18n';
+
+export const getStaticPaths = localeStaticPaths;
+const locale = Astro.params.lang as Locale;
+const tr = t(locale);
+const copy = maybeCopy(locale);
+const home = copy?.home;
+const data = await getReleaseData();
+
+const headline = home?.hero.headline ?? tr('meta.tagline');
+// "Your Network. Your Rules." → second sentence set in italic
+const [head1, ...headRest] = headline.split(/(?<=[.!?])\s+/);
+const head2 = headRest.join(' ');
+
+const featureIcon: Record<Feature['id'], IconName> = {
+  filter: 'filter',
+  overview: 'activity',
+  devices: 'devices',
+  map: 'globe',
+  kids: 'clock',
+  dns: 'lock',
+  notify: 'info',
+  backup: 'hard-drive',
+  updates: 'refresh',
+  https: 'shield',
+  leds: 'cpu',
+  appearance: 'settings',
+  export: 'download',
+  languages: 'languages',
+};
+const tones = ['in', 'gate', 'ok', 'water'] as const;
+const highlights = (home?.highlights.features ?? [])
+  .map((id) => copy?.features.items.find((f) => f.id === id))
+  .filter((f): f is Feature => !!f);
+const meta = copy?.meta.home;
+const description =
+  meta?.description ??
+  // TODO(copy): meta.home.description
+  (locale === 'de'
+    ? 'NetSluice: ein quelloffener DNS-Netzwerkfilter mit eigener Oberfläche für den Deeper Connect Mini.'
+    : 'NetSluice: an open-source DNS network filter with its own interface for the Deeper Connect Mini.');
+---
+
+<Base
+  locale={locale}
+  title={meta?.title ?? `NetSluice · ${tr('meta.tagline')}`}
+  description={description}
+  softwareJsonLd
+  version={data.latest?.version}
+  versionUrl={data.latest?.htmlUrl}
+>
+  <!-- 00 · hero -->
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="hero__sky" aria-hidden="true"></div>
+    <div class="container hero__grid">
+      <div class="hero__content">
+        <p class="label hero__eyebrow">
+          <span class="num">01</span> · {home?.hero.eyebrow ?? 'Open source · DNS'}
+        </p>
+        <h1 id="hero-title" class="hero__title">
+          <span>{head1}</span>
+          {head2 && <em class="serif-italic hero__accent">{head2}</em>}
+        </h1>
+        {home ? <p class="lead hero__sub">{home.hero.subline}</p> : <p class="lead hero__sub">{description}</p>}
+        <div class="hero__ctas">
+          {/* CTAs as set in the design brief: features · get · docs (copy's hero CTAs are not used here) */}
+          <Button href={localizePath(routes.features, locale)} variant="primary" size="lg" icon="arrow-right">
+            {tr('cta.features')}
+          </Button>
+          <Button href={localizePath(routes.downloads, locale)} size="lg" icon="arrow-right">
+            {tr('cta.get')}
+          </Button>
+          <Button href={localizePath(routes.docs, locale)} variant="ghost" size="lg" icon="arrow-right">
+            {tr('cta.docs')}
+          </Button>
+        </div>
+        {home?.hero.note && <p class="hero__note">{home.hero.note}</p>}
+      </div>
+      <div class="hero__visual">
+        <HeroCanvas />
+      </div>
+    </div>
+  </section>
+
+  {!home && (
+    <section class="section section--tight">
+      <div class="container">
+        {/* TODO(copy): src/data/copy/index.ts (getCopy) is not there yet; sections below fill in automatically. */}
+        <Callout locale={locale} type="info">
+          <p>{tr('common.todo')}</p>
+        </Callout>
+      </div>
+    </section>
+  )}
+
+  {home && (
+    <>
+      {/* 01 · in ten seconds */}
+      <section class="ten" aria-labelledby="ten-title">
+        <div class="container">
+          <h2 id="ten-title" class="visually-hidden">
+            {home.tenSeconds.title}
+          </h2>
+          <p class="label ten__label" aria-hidden="true">
+            <span class="num">02</span> · {home.tenSeconds.title}
+          </p>
+          <dl class="ten__grid">
+            {home.tenSeconds.items.map((it, i) => (
+              <div class="ten__item" data-reveal>
+                <dt class="label">
+                  <span class="num">{String(i + 1).padStart(2, '0')}</span> {it.label}
+                </dt>
+                <dd>{it.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </section>
+
+      {/* 03 · the real interface */}
+      <section class="section shot" aria-labelledby="sluice-title">
+        <div class="container">
+          <SectionHeader
+            num="03"
+            label={copy?.common.demoLabel}
+            title={home.sluice.title}
+            id="sluice-title"
+            lead={home.sluice.text}
+          />
+          <ScreenshotFrame locale={locale} shotKey="overview" caption={copy?.common.screenshots.overview.caption} />
+          <div class="shot__more">
+            <Button href={localizePath(routes.demo, locale)} icon="arrow-right">
+              {tr('cta.demo')}
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* 04 · features */}
+      <section class="section" aria-labelledby="features-title">
+        <div class="container">
+          <SectionHeader
+            num="04"
+            label={tr('nav.features')}
+            title={home.highlights.title}
+            id="features-title"
+            lead={home.highlights.intro}
+          />
+          <ul role="list" class="grid3">
+            {highlights.map((f, i) => (
+              <li>
+                <FeatureCard
+                  num={String(i + 1).padStart(2, '0')}
+                  icon={featureIcon[f.id]}
+                  tone={tones[i % tones.length]}
+                  title={f.title}
+                  text={f.summary}
+                  href={`${localizePath(routes.features, locale)}#${f.id}`}
+                  linkText={tr('cta.readMore')}
+                />
+              </li>
+            ))}
+          </ul>
+          <div class="more">
+            <CtaButton cta={home.highlights.more} locale={locale} />
+          </div>
+        </div>
+      </section>
+
+      {/* 05 · how it works */}
+      <section class="section" aria-labelledby="how-title">
+        <div class="container">
+          <SectionHeader
+            num="05"
+            label={tr('nav.howItWorks')}
+            title={home.howItWorks.title}
+            id="how-title"
+            lead={home.howItWorks.intro}
+          />
+          <SluiceDiagram locale={locale} />
+          <div class="how__steps">
+            <Steps>
+              {home.howItWorks.steps.map((s, i) => (
+                <Step num={i + 1} title={s.title} text={s.text}>
+                  {s.code && <CodeBlock code={s.code} locale={locale} lang="shell" />}
+                </Step>
+              ))}
+            </Steps>
+          </div>
+          <div class="more">
+            <CtaButton cta={home.howItWorks.more} locale={locale} />
+          </div>
+        </div>
+      </section>
+
+      {/* 06 · privacy */}
+      <section class="section privacy" aria-labelledby="privacy-title">
+        <div class="container privacy__grid">
+          <SectionHeader num="06" label={tr('nav.privacy')} title={home.privacy.title} id="privacy-title" />
+          <div class="privacy__text" data-reveal>
+            <p class="lead">{home.privacy.text}</p>
+            <CtaButton cta={home.privacy.more} locale={locale} variant="ghost" />
+          </div>
+        </div>
+      </section>
+
+      {/* 07 · honest status */}
+      <section class="section" aria-labelledby="status-title">
+        <div class="container">
+          <SectionHeader
+            num="07"
+            label={tr('table.status')}
+            title={home.status.title}
+            id="status-title"
+            lead={home.status.intro}
+          />
+          <HardwareTable
+            locale={locale}
+            caption={home.status.title}
+            headers={{ name: tr('table.item'), status: tr('table.status'), note: tr('table.note') }}
+            rows={home.status.rows.map((r) => ({ name: r.item, status: r.status, note: r.note }))}
+          />
+          <p class="status__note">{home.status.note}</p>
+          <div class="more">
+            <CtaButton cta={home.status.more} locale={locale} />
+          </div>
+        </div>
+      </section>
+
+      {/* 08 · release + open source */}
+      <section class="section" aria-labelledby="oss-title">
+        <div class="container oss">
+          <div class="oss__text">
+            <SectionHeader
+              num="08"
+              label="MIT"
+              title={home.openSource.title}
+              id="oss-title"
+              lead={home.openSource.text}
+            />
+            <ol role="list" class="oss__points">
+              {home.openSource.points.map((p, i) => (
+                <li data-reveal>
+                  <span class="label">
+                    <span class="num">{String(i + 1).padStart(2, '0')}</span>
+                  </span>
+                  <span>{p}</span>
+                </li>
+              ))}
+            </ol>
+            <div class="oss__ctas">
+              <CtaButton cta={home.openSource.repo} locale={locale} />
+              <CtaButton cta={home.openSource.contribute} locale={locale} variant="ghost" />
+            </div>
+          </div>
+          <ReleaseCard locale={locale} data={data} />
+        </div>
+      </section>
+    </>
+  )}
+
+  <DonateBlock locale={locale} title={copy?.donate.title} text={copy?.donate.text} />
+</Base>
+
+<style>
+  /* ---------- hero ---------- */
+  .hero {
+    position: relative;
+    overflow: hidden;
+    padding-top: clamp(2.5rem, 1rem + 5vw, 5rem);
+  }
+  .hero__sky {
+    position: absolute;
+    inset: -20% -10% auto auto;
+    width: min(1200px, 120vw);
+    aspect-ratio: 1;
+    background:
+      radial-gradient(closest-side at 62% 50%, rgb(40 90 190 / 0.22), transparent 70%),
+      radial-gradient(closest-side at 30% 70%, rgb(103 216 232 / 0.05), transparent);
+    pointer-events: none;
+  }
+  .hero__grid {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    gap: var(--s-6);
+  }
+  .hero__content {
+    display: grid;
+    justify-items: start;
+    gap: var(--s-6);
+    padding-top: var(--s-4);
+  }
+  .hero__eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  .hero__eyebrow::before {
+    content: '';
+    width: 1.75rem;
+    height: 1px;
+    margin-right: 0.6rem;
+    background: linear-gradient(to right, transparent, var(--gate));
+  }
+  .hero__title {
+    display: grid;
+    font-size: clamp(3.1rem, 1.6rem + 6vw, 6.25rem);
+    line-height: 0.98;
+    letter-spacing: -0.025em;
+  }
+  .hero__accent {
+    color: var(--muted);
+  }
+  .hero__sub {
+    max-width: 32rem;
+  }
+  .hero__ctas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-3);
+    margin-top: var(--s-2);
+  }
+  .hero__note {
+    color: var(--faint);
+    font-size: 0.875rem;
+    max-width: 32rem;
+  }
+  .hero__visual {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1.08;
+    max-height: 560px;
+    margin-inline: auto;
+  }
+  @media (min-width: 600px) {
+    .hero__visual {
+      aspect-ratio: 16 / 11;
+      max-height: 520px;
+    }
+  }
+  @media (min-width: 1080px) {
+    .hero__grid {
+      grid-template-columns: minmax(0, 37rem) minmax(0, 1fr);
+      align-items: center;
+      gap: var(--s-4);
+      min-height: min(calc(100vh - var(--header-h) - 4rem), 760px);
+    }
+    .hero__visual {
+      aspect-ratio: auto;
+      height: clamp(540px, 72vh, 740px);
+      max-height: none;
+      width: calc(100% + var(--gutter) + max(0px, (100vw - var(--container) - 2 * var(--gutter)) / 2));
+      margin-right: calc(-1 * var(--gutter));
+    }
+  }
+
+  /* ---------- ten seconds ---------- */
+  .ten {
+    padding-block: var(--s-12);
+    border-block: 1px solid var(--line);
+    background: linear-gradient(to bottom, rgb(255 255 255 / 0.015), transparent);
+  }
+  .ten__label {
+    margin-bottom: var(--s-6);
+  }
+  .ten__grid {
+    display: grid;
+    gap: var(--s-6);
+    margin: 0;
+  }
+  @media (min-width: 640px) {
+    .ten__grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (min-width: 1080px) {
+    .ten__grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  .ten__item {
+    display: grid;
+    gap: var(--s-2);
+    padding-left: var(--s-4);
+    border-left: 1px solid rgb(245 196 81 / 0.35);
+  }
+  .ten__item dd {
+    margin: 0;
+    color: var(--text);
+    font-size: 1.0625rem;
+    line-height: 1.45;
+  }
+
+  /* ---------- shared ---------- */
+  .grid3 {
+    display: grid;
+    gap: var(--s-5);
+  }
+  @media (min-width: 720px) {
+    .grid3 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (min-width: 1080px) {
+    .grid3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  .more,
+  .shot__more {
+    margin-top: var(--s-8);
+  }
+  .how__steps {
+    margin-top: var(--s-12);
+    max-width: 48rem;
+  }
+  .privacy__grid {
+    display: grid;
+    gap: var(--s-4);
+  }
+  .privacy__text {
+    display: grid;
+    gap: var(--s-6);
+    justify-items: start;
+  }
+  @media (min-width: 960px) {
+    .privacy__grid {
+      grid-template-columns: 1fr 1fr;
+      gap: var(--s-16);
+      align-items: center;
+    }
+    .privacy__grid :global(.sh) {
+      margin-bottom: 0;
+    }
+  }
+  .status__note {
+    margin-top: var(--s-5);
+    color: var(--muted);
+    font-size: var(--fs-small);
+    max-width: 48rem;
+  }
+  .oss {
+    display: grid;
+    gap: var(--s-12);
+  }
+  @media (min-width: 1080px) {
+    .oss {
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+      align-items: start;
+    }
+  }
+  .oss__points {
+    display: grid;
+    border-top: 1px solid var(--line);
+  }
+  .oss__points li {
+    display: grid;
+    grid-template-columns: 3rem 1fr;
+    gap: var(--s-3);
+    padding: var(--s-4) 0;
+    border-bottom: 1px solid var(--line);
+    color: var(--soft);
+  }
+  .oss__ctas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-3);
+    margin-top: var(--s-8);
+  }
+</style>
