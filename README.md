@@ -21,7 +21,7 @@ interface that runs in your browser with made-up data.
 
 | | |
 |---|---|
-| ![World map of where the network talks to](docs/screenshots/map.png) | ![Devices sorted by activity](docs/screenshots/devices.png) |
+| ![World map of where the network talks to](docs/screenshots/map.png) | ![Devices, the one stopped most often first](docs/screenshots/devices.png) |
 | ![Filter lists with one switch each](docs/screenshots/filters.png) | ![Settings](docs/screenshots/settings.png) |
 
 The pictures show the demo with made-up data. You can run it yourself, without
@@ -185,13 +185,23 @@ how to change them and how to test.
 
 ## Privacy
 
-NetSluice sees which device on your network asks for which host. That stays
-on the device unless you turn on messages to your phone, which leave through
-the service you choose. At home this is your call. If other people use the
-network, tell them.
+NetSluice sees which device on your network asks for which host. The request
+log, the counters, the device list and your settings stay on the device. At
+home this is your call. If other people use the network, tell them.
 
-About once a day the device asks GitHub whether there is a new version. GitHub
-sees your address for that and nothing else.
+Some things leave the device by design. What goes where, and when:
+
+| What | Where to | When |
+|---|---|---|
+| Lookups the filter lets through | the upstream resolver you chose in the settings | for every such lookup |
+| A stopped name, to place it on the world map | Quad9's unfiltered resolver `9.9.9.10`, as a plain, unencrypted DNS query | the first time a name is stopped, then at most once an hour per name |
+| A question for your own public address, to place your home on the map | Google's name server `216.239.32.10`, as a plain DNS query for `o-o.myaddr.l.google.com` | at start and about every six hours |
+| A look for a new version | GitHub. It sees your address and the installed version, which the request carries as `User-Agent: NetSluice/<version>` | about once a day |
+| Updates, filter lists, system packages | GitHub, the maintainers of the lists you switched on, the Debian and Armbian package sources | when they are fetched |
+| Messages to your phone | the ntfy server or webhook you entered, including device and host names | only if you switch them on |
+
+The two map lookups are plain DNS, so Quad9 and Google see your public address
+and the names asked for, and anyone on the way can read them.
 
 ## Licence and warranty
 

@@ -43,10 +43,10 @@ Das Anfrageprotokoll, die Zähler, die Geräteliste, die Zeitpläne und deine Ei
 | Was | Wohin | Wann |
 |---|---|---|
 | Anfragen, die der Filter durchlässt | der Auflöser, den du gewählt hast | jedes Mal, wenn ein Gerät eine Adresse nachschlägt, die nicht im Zwischenspeicher liegt |
-| Aufgehaltene Adressen, um sie auf der Weltkarte einzuordnen | der ungefilterte Auflöser von Quad9 (`9.9.9.10`), als gewöhnliche DNS-Anfrage | für eine aufgehaltene Adresse, höchstens einmal pro Stunde je Adresse |
-| Eine Frage nach deiner eigenen öffentlichen Adresse, um dein Zuhause auf der Karte einzuordnen | der Nameserver von Google, als gewöhnliche DNS-Anfrage | beim Start und etwa alle sechs Stunden |
+| Aufgehaltene Adressen, um sie auf der Weltkarte einzuordnen | der ungefilterte Auflöser von Quad9 (`9.9.9.10`), als gewöhnliche, unverschlüsselte DNS-Anfrage | für eine aufgehaltene Adresse, höchstens einmal pro Stunde je Adresse |
+| Eine Frage nach deiner eigenen öffentlichen Adresse, um dein Zuhause auf der Karte einzuordnen | der Nameserver von Google (`216.239.32.10`), als gewöhnliche, unverschlüsselte DNS-Anfrage | beim Start und etwa alle sechs Stunden |
 | Filterlisten | die Betreiber der Listen, die du eingeschaltet hast | wenn die Listen aufgefrischt werden |
-| Nachsehen nach einer neuen Version | GitHub. Es sieht deine Adresse und die installierte Version | etwa einmal am Tag |
+| Nachsehen nach einer neuen Version | GitHub. Es sieht deine Adresse und die installierte Version (als `User-Agent: NetSluice/<version>` mitgeschickt) | etwa einmal am Tag |
 | Das Update selbst | GitHub | wenn du eins installierst, oder täglich, wenn du das eingeschaltet hast |
 | Systemupdates | die Paketquellen des Systems (Debian, Armbian) | wenn du danach suchst oder sie installierst, oder jede Nacht, wenn du das eingeschaltet hast |
 | Meldungen | der ntfy-Server oder Webhook, den du eingetragen hast | nur, wenn du sie eingeschaltet hast |

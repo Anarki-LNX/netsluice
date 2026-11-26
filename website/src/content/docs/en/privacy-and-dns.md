@@ -43,10 +43,10 @@ The request log, the counters, the device list, the schedules and your settings.
 | What | Where to | When |
 |---|---|---|
 | Lookups the filter lets through | the resolver you chose | every time a device looks up a name that is not in the cache |
-| Stopped names, to place them on the world map | Quad9's unfiltered resolver (`9.9.9.10`), as a plain DNS query | for a stopped name, at most once an hour per name |
-| A question for your own public address, to place your home on the map | Google's name server, as a plain DNS query | at the start and about every six hours |
+| Stopped names, to place them on the world map | Quad9's unfiltered resolver (`9.9.9.10`), as a plain, unencrypted DNS query | for a stopped name, at most once an hour per name |
+| A question for your own public address, to place your home on the map | Google's name server (`216.239.32.10`), as a plain, unencrypted DNS query | at the start and about every six hours |
 | Filter lists | the maintainers of the lists you switched on | when lists are refreshed |
-| A look for a new version | GitHub. It sees your address and the installed version | about once a day |
+| A look for a new version | GitHub. It sees your address and the installed version (sent as `User-Agent: NetSluice/<version>`) | about once a day |
 | The update itself | GitHub | when you install one, or daily if you switched that on |
 | System updates | the package sources of the system (Debian, Armbian) | when you look for or install them, or every night if you switched that on |
 | Messages | the ntfy server or webhook you entered | only if you switched them on |

@@ -134,6 +134,11 @@ console shows no CSP errors, the network tab shows no request to `/api`, `/contr
 
 ## 7. Automatic refresh after a release (optional, off until you do this)
 
+Status 2026-11-27: prepared, **not installed** on the server. Step 1 is done (green run on
+`main`, artifact present). The script was tested on a desktop against a scratch folder: it found
+run 45875776146, downloaded and unpacked the artifact and switched the symlink. What is left is
+steps 2 and 3, which need your token and your approval.
+
 1. Push `website/` and `.github/workflows/website.yml`; wait for a green **Website** run on `main`
    (Actions tab). It uploads the artifact `netsluice-website-site`.
 2. GitHub → Settings → Developer settings → Fine-grained tokens → new token: owner `Anarki-LNX`,
