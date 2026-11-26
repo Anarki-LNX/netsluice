@@ -1,0 +1,37 @@
+---
+// The decorative hero drawing (src/scripts/hero.ts). aria-hidden: it shows the
+// idea of the sluice, not data.
+interface Props {
+  class?: string | undefined;
+}
+const { class: cls } = Astro.props;
+---
+
+<div class:list={['hc', cls]} aria-hidden="true">
+  <canvas class="hc__canvas" data-hero-canvas></canvas>
+</div>
+
+<script>
+  import '~/scripts/hero';
+</script>
+
+<style>
+  .hc {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+  .hc__canvas {
+    --hero-start: 0.04;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    transition: opacity 900ms var(--ease-out);
+  }
+  .hc__canvas:global(.is-ready) {
+    opacity: 1;
+  }
+</style>

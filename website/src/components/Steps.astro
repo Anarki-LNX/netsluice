@@ -1,0 +1,24 @@
+---
+import Step from './Step.astro';
+
+// Numbered install steps. Either pass `steps` (title + text), or put <Step> elements
+// in the slot when a step needs extra content such as a CodeBlock.
+interface Props {
+  steps?: { title: string; text?: string }[];
+  headingLevel?: 2 | 3 | undefined;
+}
+const { steps = [], headingLevel = 3 } = Astro.props;
+---
+
+<ol class="steps" role="list">
+  {steps.map((s, i) => (
+    <Step num={i + 1} title={s.title} text={s.text} headingLevel={headingLevel} />
+  ))}
+  <slot />
+</ol>
+
+<style>
+  .steps {
+    display: grid;
+  }
+</style>

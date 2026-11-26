@@ -1,0 +1,180 @@
+---
+// The language choice at "/". No automatic redirect: the visitor chooses.
+// src/scripts/lang-suggest.ts may highlight the card that matches the browser.
+import Base from '~/layouts/Base.astro';
+import Logo from '~/components/Logo.astro';
+import Icon from '~/components/Icon.astro';
+import { ui } from '~/i18n';
+
+const cards = [
+  { lang: 'en', href: '/en/', name: 'English', tag: ui.en['meta.tagline'], enter: 'Continue in English' },
+  { lang: 'de', href: '/de/', name: 'Deutsch', tag: ui.de['meta.tagline'], enter: 'Auf Deutsch weiter' },
+] as const;
+---
+
+<Base
+  locale={null}
+  title="NetSluice · Choose your language / Sprache wählen"
+  description="NetSluice: an open-source DNS network filter for the Deeper Connect Mini. Ein quelloffener DNS-Netzwerkfilter für den Deeper Connect Mini."
+  chrome={false}
+>
+  <div class="choose">
+    <div class="lightlines" aria-hidden="true"></div>
+    <div class="choose__glow" aria-hidden="true"></div>
+    <div class="container choose__inner">
+      <Logo size={44} />
+      <h1 class="choose__title">
+        <span lang="en">Choose your language</span>
+        <span class="choose__sep" aria-hidden="true">
+          /
+        </span>
+        <span lang="de">Sprache wählen</span>
+      </h1>
+      <ul role="list" class="choose__cards">
+        {cards.map((c, i) => (
+          <li>
+            <a class="choose__card" href={c.href} hreflang={c.lang} lang={c.lang} data-lang-card={c.lang}>
+              <span class="label">
+                <span class="num">{String(i + 1).padStart(2, '0')}</span> · {c.lang.toUpperCase()}
+              </span>
+              <span class="choose__name">{c.name}</span>
+              <span class="choose__tag">{c.tag}</span>
+              <span class="choose__enter">
+                {c.enter} <Icon name="arrow-right" size={16} />
+              </span>
+              <span class="choose__hint" data-lang-hint hidden>
+                {c.lang === 'de' ? 'Vorschlag für deinen Browser' : 'Suggested for your browser'}
+              </span>
+            </a>
+          </li>
+        ))}
+      </ul>
+      <p class="choose__note">
+        <span lang="en">Open source · MIT · no cookies, no tracking</span>
+        <span aria-hidden="true"> · </span>
+        <span lang="de">Open Source · MIT · keine Cookies, kein Tracking</span>
+      </p>
+    </div>
+  </div>
+</Base>
+
+<script>
+  import '~/scripts/lang-suggest';
+</script>
+
+<style>
+  .choose {
+    position: relative;
+    display: grid;
+    min-height: 100vh;
+    min-height: 100dvh;
+    place-items: center;
+    overflow: hidden;
+    padding-block: var(--s-16);
+  }
+  .choose__glow {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: min(900px, 120vw);
+    aspect-ratio: 1;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background:
+      radial-gradient(closest-side, rgb(78 168 255 / 0.12), transparent 70%),
+      radial-gradient(closest-side, rgb(245 196 81 / 0.05), transparent);
+    pointer-events: none;
+  }
+  .choose__inner {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    justify-items: center;
+    gap: var(--s-8);
+    text-align: center;
+  }
+  .choose__title {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0 0.4em;
+    font-size: clamp(2.25rem, 1.5rem + 3vw, 3.75rem);
+  }
+  .choose__sep {
+    color: var(--gate);
+  }
+  .choose__cards {
+    display: grid;
+    gap: var(--s-5);
+    width: 100%;
+    max-width: 48rem;
+  }
+  @media (min-width: 640px) {
+    .choose__cards {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  .choose__card {
+    position: relative;
+    display: grid;
+    justify-items: start;
+    gap: var(--s-3);
+    height: 100%;
+    padding: clamp(1.5rem, 1rem + 2vw, 2.25rem);
+    border: 1px solid var(--line-2);
+    border-radius: var(--r-lg);
+    background: radial-gradient(100% 80% at 0% 0%, rgb(103 216 232 / 0.06), transparent 60%), var(--panel);
+    color: var(--text);
+    text-align: left;
+    text-decoration: none;
+    box-shadow: var(--shadow-1);
+    transition:
+      border-color var(--t-med),
+      transform var(--t-med) var(--ease-out),
+      box-shadow var(--t-med);
+  }
+  .choose__card:hover {
+    border-color: rgb(245 196 81 / 0.55);
+    color: var(--text);
+    transform: translateY(-2px);
+    box-shadow:
+      var(--shadow-2),
+      0 0 40px -12px rgb(245 196 81 / 0.35);
+  }
+  .choose__card:focus-visible {
+    border-radius: var(--r-lg);
+  }
+  .choose__card:global(.is-suggested) {
+    border-color: rgb(92 227 154 / 0.5);
+  }
+  .choose__name {
+    font-family: var(--font-display);
+    font-size: clamp(2.5rem, 2rem + 2vw, 3.5rem);
+    line-height: 1;
+  }
+  .choose__tag {
+    color: var(--soft);
+  }
+  .choose__enter {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: var(--s-2);
+    color: var(--in-ink);
+    font-weight: 540;
+  }
+  .choose__hint {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    color: var(--ok-ink);
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .choose__note {
+    color: var(--faint);
+    font-size: 0.875rem;
+  }
+</style>

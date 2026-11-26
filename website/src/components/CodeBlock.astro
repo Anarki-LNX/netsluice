@@ -1,0 +1,186 @@
+---
+import Icon from './Icon.astro';
+import { type Locale, t } from '~/i18n';
+
+// A command or file with a copy button. The text is rendered escaped (no set:html).
+// The button only appears with JavaScript (it needs the clipboard); without JS the
+// text is still selectable.
+interface Props {
+  code: string;
+  locale: Locale;
+  /** shown in the bar, e.g. "bash", "shell", "text" */
+  lang?: string | undefined;
+  caption?: string | undefined;
+  /** prompt-style single line, centered, as in the Parseable hero */
+  inline?: boolean | undefined;
+}
+const { code, locale, lang, caption, inline = false } = Astro.props;
+const tr = t(locale);
+---
+
+<figure class:list={['cb', { 'cb--inline': inline }]} data-copy-root>
+  <div class="cb__frame">
+    {!inline && (
+      <div class="cb__bar">
+        <span class="cb__dots" aria-hidden="true">
+          <i />
+          <i />
+          <i />
+        </span>
+        {lang && <span class="label cb__lang">{lang}</span>}
+      </div>
+    )}
+    <pre class="cb__pre" tabindex="0"><code data-copy-source>{code}</code></pre>
+    <button
+      type="button"
+      class="cb__btn"
+      data-copy-button
+      data-label-copied={tr('code.copied')}
+      data-label-failed={tr('code.failed')}
+      aria-label={tr('code.copyLabel')}
+      hidden
+    >
+      <span class="cb__ico cb__ico--copy">
+        <Icon name="copy" size={16} />
+      </span>
+      <span class="cb__ico cb__ico--done">
+        <Icon name="check" size={16} />
+      </span>
+      <span class="cb__btntext" data-copy-text>
+        {tr('code.copy')}
+      </span>
+    </button>
+    <span class="visually-hidden" aria-live="polite" data-copy-status></span>
+  </div>
+  {caption && <figcaption class="cb__cap">{caption}</figcaption>}
+</figure>
+
+<script>
+  import '~/scripts/copy';
+</script>
+
+<style>
+  .cb {
+    margin: 0;
+    min-width: 0;
+  }
+  .cb__frame {
+    position: relative;
+    border: 1px solid var(--line-2);
+    border-radius: var(--r-md);
+    background: var(--bg-deep);
+    box-shadow: var(--shadow-1);
+    overflow: hidden;
+  }
+  .cb__bar {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    height: 2.5rem;
+    padding: 0 var(--s-4);
+    border-bottom: 1px solid var(--line);
+    background: rgb(255 255 255 / 0.02);
+  }
+  .cb__dots {
+    display: inline-flex;
+    gap: 6px;
+  }
+  .cb__dots i {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: rgb(255 255 255 / 0.12);
+  }
+  .cb__dots i:nth-child(1) {
+    background: rgb(78 168 255 / 0.7);
+  }
+  .cb__dots i:nth-child(2) {
+    background: rgb(245 196 81 / 0.75);
+  }
+  .cb__dots i:nth-child(3) {
+    background: rgb(92 227 154 / 0.7);
+  }
+  .cb__lang {
+    color: var(--faint);
+  }
+  .cb__pre {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    padding: var(--s-5) var(--s-6);
+    padding-right: 7.5rem;
+  }
+  .cb__pre:focus-visible {
+    outline-offset: -3px;
+  }
+  .cb__btn {
+    position: absolute;
+    top: 0.3rem;
+    right: 0.4rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: var(--tap);
+    padding: 0 0.9rem;
+    border: 1px solid transparent;
+    border-radius: var(--r-pill);
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.8125rem;
+    font-weight: 520;
+    transition:
+      color var(--t-fast),
+      background-color var(--t-fast),
+      border-color var(--t-fast);
+  }
+  .cb__btn:hover {
+    color: var(--text);
+    background: rgb(255 255 255 / 0.06);
+    border-color: var(--line-2);
+  }
+  .cb__btn:focus-visible {
+    border-radius: var(--r-pill);
+  }
+  .cb__ico--done,
+  .cb__btn.is-done .cb__ico--copy {
+    display: none;
+  }
+  .cb__btn.is-done .cb__ico--done {
+    display: inline-flex;
+  }
+  .cb__btn.is-done {
+    color: var(--ok-ink);
+  }
+  .cb__ico {
+    display: inline-flex;
+  }
+
+  /* inline: one command, centered, the copy button attached as in reference 2 */
+  .cb--inline .cb__frame {
+    display: flex;
+    align-items: stretch;
+    background: rgb(3 10 15 / 0.75);
+    backdrop-filter: blur(10px);
+  }
+  .cb--inline .cb__pre {
+    flex: 1;
+    padding: 0.85rem 1.1rem;
+    display: flex;
+    align-items: center;
+  }
+  .cb--inline .cb__pre::before {
+    content: '$';
+    margin-right: 0.7rem;
+    color: var(--gate);
+  }
+  .cb--inline .cb__btn {
+    position: static;
+    margin: 0.25rem;
+    border-color: var(--line-2);
+  }
+  .cb__cap {
+    margin-top: var(--s-2);
+    color: var(--muted);
+    font-size: 0.875rem;
+  }
+</style>

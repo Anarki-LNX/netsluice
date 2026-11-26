@@ -1,0 +1,225 @@
+---
+import PageLayout from '~/layouts/PageLayout.astro';
+import SectionHeader from '~/components/SectionHeader.astro';
+import SluiceDiagram from '~/components/SluiceDiagram.astro';
+import Steps from '~/components/Steps.astro';
+import FeatureCard from '~/components/FeatureCard.astro';
+import CodeBlock from '~/components/CodeBlock.astro';
+import Callout from '~/components/Callout.astro';
+import { maybeCopy } from '~/i18n/copy';
+import { localeStaticPaths, t, type Locale } from '~/i18n';
+
+export const getStaticPaths = localeStaticPaths;
+const locale = Astro.params.lang as Locale;
+const tr = t(locale);
+const copy = maybeCopy(locale);
+const c = copy?.howItWorks;
+const meta = copy?.meta.howItWorks;
+const tones = ['in', 'gate', 'ok', 'water', 'in'] as const;
+---
+
+<PageLayout
+  locale={locale}
+  title={meta?.title ?? tr('nav.howItWorks')}
+  heading={c?.title}
+  description={meta?.description ?? tr('nav.howItWorks')}
+  lead={c?.intro}
+  num="H"
+  label={tr('nav.howItWorks')}
+  tone="gate"
+>
+  {!c ? (
+    <section class="section section--tight">
+      <div class="container">
+        {/* TODO(copy) */}
+        <SluiceDiagram locale={locale} />
+      </div>
+    </section>
+  ) : (
+    <>
+      <section class="section section--tight">
+        <div class="container">
+          <SectionHeader num="01" label={tr('diagram.sluice')} title={c.lookup.title} />
+          <SluiceDiagram locale={locale} />
+          <div class="hw__steps">
+            <Steps steps={c.lookup.steps} />
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container hw__two">
+          <SectionHeader num="02" label="microSD" title={c.boot.title} lead={c.boot.text} />
+          <ol role="list" class="hw__points">
+            {c.boot.points.map((p, i) => (
+              <li data-reveal>
+                <span class="label">
+                  <span class="num">{String(i + 1).padStart(2, '0')}</span>
+                </span>
+                <span>{p}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container">
+          <SectionHeader num="03" label="LED" title={c.firstStart.title} lead={c.firstStart.intro} />
+          <div class="hw__steps">
+            <Steps steps={c.firstStart.steps} />
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container">
+          <SectionHeader num="04" label="Debian · Armbian" title={c.parts.title} lead={c.parts.intro} />
+          <ul role="list" class="hw__grid">
+            {c.parts.items.map((p, i) => (
+              <li>
+                <FeatureCard
+                  num={String(i + 1).padStart(2, '0')}
+                  title={p.title}
+                  text={p.text}
+                  tone={tones[i % tones.length]}
+                />
+              </li>
+            ))}
+          </ul>
+          <div class="hw__diagram">
+            <CodeBlock code={c.parts.diagram} locale={locale} lang="text" caption={c.parts.diagramCaption} />
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="data-flows">
+        <div class="container">
+          <SectionHeader num="05" label={tr('nav.privacy')} title={c.dataFlows.title} lead={c.dataFlows.intro} />
+          <div class="flows" data-reveal>
+            <table>
+              <caption class="visually-hidden">{c.dataFlows.title}</caption>
+              <thead>
+                <tr>
+                  <th scope="col">{c.dataFlows.columns.what}</th>
+                  <th scope="col">{c.dataFlows.columns.to}</th>
+                  <th scope="col">{c.dataFlows.columns.when}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {c.dataFlows.rows.map((r) => (
+                  <tr>
+                    <th scope="row">{r.what}</th>
+                    <td>{r.to}</td>
+                    <td>{r.when}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p class="hw__note">{c.dataFlows.note}</p>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container">
+          <SectionHeader num="06" label="GitHub" title={c.updates.title} />
+          <div class="hw__steps">
+            <Steps steps={c.updates.steps} />
+          </div>
+          <Callout locale={locale} type="warn" title={c.homeOnly.title}>
+            <p>{c.homeOnly.text}</p>
+          </Callout>
+        </div>
+      </section>
+    </>
+  )}
+</PageLayout>
+
+<style>
+  .hw__steps {
+    margin-top: var(--s-12);
+    max-width: 48rem;
+  }
+  .hw__two {
+    display: grid;
+    gap: var(--s-8);
+  }
+  @media (min-width: 1080px) {
+    .hw__two {
+      grid-template-columns: 1fr 1fr;
+      gap: var(--s-16);
+      align-items: start;
+    }
+  }
+  .hw__points {
+    display: grid;
+    border-top: 1px solid var(--line);
+  }
+  .hw__points li {
+    display: grid;
+    grid-template-columns: 3rem 1fr;
+    gap: var(--s-3);
+    padding: var(--s-4) 0;
+    border-bottom: 1px solid var(--line);
+    color: var(--soft);
+  }
+  .hw__grid {
+    display: grid;
+    gap: var(--s-5);
+  }
+  @media (min-width: 720px) {
+    .hw__grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (min-width: 1080px) {
+    .hw__grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  .hw__diagram {
+    margin-top: var(--s-10);
+  }
+  .flows {
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+  }
+  .flows table {
+    width: 100%;
+    min-width: 40rem;
+    border-collapse: collapse;
+    font-size: var(--fs-small);
+  }
+  .flows th,
+  .flows td {
+    padding: var(--s-4) var(--s-5);
+    border-bottom: 1px solid var(--line);
+    text-align: left;
+    vertical-align: top;
+  }
+  .flows tbody tr:last-child > * {
+    border-bottom: 0;
+  }
+  .flows thead th {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--fs-label);
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .flows tbody th {
+    color: var(--text);
+    font-weight: 520;
+  }
+  .flows td {
+    color: var(--soft);
+  }
+  .hw__note {
+    margin: var(--s-5) 0 0;
+    color: var(--muted);
+    max-width: 48rem;
+  }
+</style>

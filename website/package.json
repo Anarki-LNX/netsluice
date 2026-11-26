@@ -1,0 +1,38 @@
+{
+  "name": "netsluice-website",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "description": "Public website for NetSluice (netsluice.loopout.tech)",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "demo:sync": "node scripts/sync-demo.mjs",
+    "prebuild": "node scripts/sync-demo.mjs",
+    "build": "astro build",
+    "check:security": "node scripts/check-security.mjs",
+    "preview": "astro preview",
+    "check": "astro check",
+    "test": "vitest run",
+    "format": "prettier --write .",
+    "lint": "prettier --check ."
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "^3.7.6",
+    "@fontsource-variable/geist": "^5.3.0",
+    "@fontsource-variable/geist-mono": "^5.3.0",
+    "@fontsource/instrument-serif": "^5.3.0",
+    "astro": "^7.4.13",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.12",
+    "prettier": "^3.10.1",
+    "prettier-plugin-astro": "^1.1.2",
+    "typescript": "^6.0.3",
+    "vitest": "^5.1.2"
+  }
+}

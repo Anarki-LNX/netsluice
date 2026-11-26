@@ -1,0 +1,167 @@
+---
+import PageLayout from '~/layouts/PageLayout.astro';
+import SectionHeader from '~/components/SectionHeader.astro';
+import HardwareTable from '~/components/HardwareTable.astro';
+import KeyValueTable from '~/components/KeyValueTable.astro';
+import FeatureCard from '~/components/FeatureCard.astro';
+import CodeBlock from '~/components/CodeBlock.astro';
+import Callout from '~/components/Callout.astro';
+import CtaButton from '~/components/CtaButton.astro';
+import { maybeCopy } from '~/i18n/copy';
+import type { StatusRow } from '~/data/copy/types';
+import { localeStaticPaths, t, type Locale } from '~/i18n';
+
+export const getStaticPaths = localeStaticPaths;
+const locale = Astro.params.lang as Locale;
+const tr = t(locale);
+const copy = maybeCopy(locale);
+const c = copy?.hardware;
+const meta = copy?.meta.hardware;
+const rows = (r: StatusRow[]) => r.map((x) => ({ name: x.item, status: x.status, note: x.note }));
+const headers = c
+  ? { name: c.compatibility.columns.item, status: c.compatibility.columns.status, note: c.compatibility.columns.note }
+  : { name: tr('table.item'), status: tr('table.status'), note: tr('table.note') };
+---
+
+<PageLayout
+  locale={locale}
+  title={meta?.title ?? tr('nav.hardware')}
+  heading={c?.title}
+  description={meta?.description ?? tr('nav.hardware')}
+  lead={c?.intro}
+  num="HW"
+  label="Deeper Connect Mini · mini_v21"
+  tone="water"
+>
+  {!c ? (
+    <section class="section section--tight">
+      <div class="container">
+        {/* TODO(copy) */}
+        <Callout locale={locale}>
+          <p>{tr('common.todo')}</p>
+        </Callout>
+      </div>
+    </section>
+  ) : (
+    <>
+      <section class="section section--tight">
+        <div class="container">
+          <SectionHeader
+            num="01"
+            label={tr('table.status')}
+            title={c.compatibility.title}
+            lead={c.compatibility.intro}
+          />
+          <HardwareTable
+            locale={locale}
+            caption={c.compatibility.title}
+            headers={headers}
+            rows={rows(c.compatibility.rows)}
+          />
+        </div>
+      </section>
+      <section class="section">
+        <div class="container hwp__two">
+          <div>
+            <SectionHeader num="02" label="RK3328" title={c.specs.title} />
+            <KeyValueTable
+              rows={c.specs.rows}
+              columns={{ label: c.specs.columns.part, value: c.specs.columns.value }}
+            />
+          </div>
+          <div>
+            <SectionHeader num="03" label="Armbian" title={c.measured.title} lead={c.measured.note} />
+            <KeyValueTable rows={c.measured.rows} mono />
+          </div>
+        </div>
+      </section>
+      <section class="section">
+        <div class="container">
+          <SectionHeader num="04" label={tr('status.tested')} title={c.functions.title} />
+          <HardwareTable locale={locale} caption={c.functions.title} headers={headers} rows={rows(c.functions.rows)} />
+          <div class="hwp__gap">
+            <SectionHeader
+              num="05"
+              label={tr('status.notImplemented')}
+              title={c.limitations.title}
+              lead={c.limitations.intro}
+            />
+            <HardwareTable
+              locale={locale}
+              caption={c.limitations.title}
+              headers={headers}
+              rows={rows(c.limitations.rows)}
+            />
+          </div>
+        </div>
+      </section>
+      <section class="section">
+        <div class="container">
+          <SectionHeader num="06" label="U-Boot" title={c.boot.title} lead={c.boot.text} />
+          <CodeBlock code={c.boot.code} locale={locale} lang="text" />
+          <div class="hwp__gap">
+            <SectionHeader num="07" label="NanoPi R2S" title={c.differences.title} lead={c.differences.intro} />
+            <ul role="list" class="hwp__grid">
+              {c.differences.items.map((d, i) => (
+                <li>
+                  <FeatureCard num={String(i + 1).padStart(2, '0')} title={d.title} text={d.text} tone="gate" />
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </section>
+      <section class="section">
+        <div class="container container--narrow">
+          <SectionHeader num="08" label="scripts/probe" title={c.probe.title} lead={c.probe.text} />
+          <div class="hwp__stack">
+            <CodeBlock code={c.probe.command} locale={locale} lang="shell" />
+            <p class="muted">{c.probe.expectedIntro}</p>
+            <CodeBlock code={c.probe.expected} locale={locale} lang="text" />
+            <Callout locale={locale} type="warn">
+              <p>{c.probe.warning}</p>
+            </Callout>
+            <Callout locale={locale} type="info" title={c.serial.title}>
+              <p>{c.serial.text}</p>
+            </Callout>
+          </div>
+        </div>
+      </section>
+      <section class="section">
+        <div class="container container--narrow">
+          <SectionHeader num="09" label="GitHub" title={c.report.title} lead={c.report.text} />
+          <CtaButton cta={c.report.cta} locale={locale} variant="primary" />
+        </div>
+      </section>
+    </>
+  )}
+</PageLayout>
+
+<style>
+  .hwp__two {
+    display: grid;
+    gap: var(--s-12);
+  }
+  @media (min-width: 1080px) {
+    .hwp__two {
+      grid-template-columns: 1.3fr 1fr;
+      align-items: start;
+    }
+  }
+  .hwp__gap {
+    margin-top: var(--s-20);
+  }
+  .hwp__grid {
+    display: grid;
+    gap: var(--s-5);
+  }
+  @media (min-width: 900px) {
+    .hwp__grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  .hwp__stack {
+    display: grid;
+    gap: var(--s-5);
+  }
+</style>

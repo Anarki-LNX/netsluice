@@ -1,0 +1,272 @@
+---
+import { Picture, getImage } from 'astro:assets';
+import Icon from './Icon.astro';
+import { shots, type ShotKey } from './screenshots';
+import { type Locale, t } from '~/i18n';
+import { maybeCopy } from '~/i18n/copy';
+
+// The real screenshots as a grid. Every picture links to its full-size file, so
+// it works without JavaScript; with JS a keyboard-friendly lightbox opens instead.
+interface Props {
+  locale: Locale;
+  keys?: ShotKey[] | undefined;
+  /** the first picture loads eagerly (it may be above the fold) */
+  eagerFirst?: boolean | undefined;
+}
+const { locale, keys, eagerFirst = false } = Astro.props;
+const tr = t(locale);
+const texts = maybeCopy(locale)?.common.screenshots;
+const altOf = (s: (typeof shots)[number]) => texts?.[s.key].alt ?? s.alt[locale];
+const capOf = (s: (typeof shots)[number]) => texts?.[s.key].caption ?? s.caption[locale];
+const list = keys ? shots.filter((s) => keys.includes(s.key)) : shots;
+const full = await Promise.all(
+  list.map((s) => getImage({ src: s.src[locale], format: 'webp', width: s.src[locale].width, quality: 85 })),
+);
+---
+
+<div class="gallery" data-gallery>
+  <ul role="list" class="gallery__grid">
+    {list.map((s, i) => (
+      <li class:list={['gallery__item', { 'gallery__item--wide': i === 0 && list.length > 2 }]} data-reveal>
+        <a
+          class="gallery__link"
+          href={full[i]?.src}
+          data-lb
+          data-lb-w={s.src[locale].width}
+          data-lb-h={s.src[locale].height}
+          data-lb-alt={altOf(s)}
+          data-lb-caption={capOf(s)}
+        >
+          <Picture
+            src={s.src[locale]}
+            alt={altOf(s)}
+            formats={['avif', 'webp']}
+            widths={[480, 800, 1200, 1440]}
+            sizes={
+              i === 0 && list.length > 2
+                ? '(min-width: 1240px) 1180px, 100vw'
+                : '(min-width: 1240px) 580px, (min-width: 720px) 50vw, 100vw'
+            }
+            loading={eagerFirst && i === 0 ? 'eager' : 'lazy'}
+            fetchpriority={eagerFirst && i === 0 ? 'high' : 'auto'}
+            class="gallery__img"
+          />
+          <span class="gallery__zoom" aria-hidden="true">
+            <Icon name="expand" size={16} />
+          </span>
+          <span class="visually-hidden">{tr('gallery.open')}</span>
+        </a>
+        <p class="gallery__cap">
+          <span class="label">{String(i + 1).padStart(2, '0')}</span>
+          <span>{capOf(s)}</span>
+          <span class="gallery__demo">{tr('demo.caption')}</span>
+        </p>
+      </li>
+    ))}
+  </ul>
+
+  <dialog class="lb" data-lb-dialog aria-label={tr('gallery.label')} data-label-of={tr('gallery.of')}>
+    <div class="lb__inner">
+      <figure class="lb__fig">
+        <img class="lb__img" data-lb-img alt="" width="1440" height="960" decoding="async" />
+        <figcaption class="lb__cap">
+          <span data-lb-cap></span>
+          <span class="label" data-lb-count aria-live="polite"></span>
+          <span class="lb__demo">{tr('demo.badge')}</span>
+        </figcaption>
+      </figure>
+      <button type="button" class="lb__btn lb__prev" data-lb-prev aria-label={tr('gallery.prev')}>
+        <Icon name="chevron-left" size={22} />
+      </button>
+      <button type="button" class="lb__btn lb__next" data-lb-next aria-label={tr('gallery.next')}>
+        <Icon name="chevron-right" size={22} />
+      </button>
+      <button type="button" class="lb__btn lb__close" data-lb-close aria-label={tr('gallery.close')}>
+        <Icon name="close" size={22} />
+      </button>
+    </div>
+  </dialog>
+</div>
+
+<script>
+  import '~/scripts/lightbox';
+</script>
+
+<style>
+  .gallery__grid {
+    display: grid;
+    gap: var(--s-6);
+  }
+  @media (min-width: 720px) {
+    .gallery__grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .gallery__item--wide {
+      grid-column: 1 / -1;
+    }
+  }
+  .gallery__link {
+    position: relative;
+    display: block;
+    overflow: hidden;
+    border: 1px solid var(--line-2);
+    border-radius: var(--r-md);
+    background: var(--ground);
+    box-shadow: var(--shadow-2);
+    transition:
+      border-color var(--t-med),
+      box-shadow var(--t-med);
+  }
+  .gallery__link:hover {
+    border-color: rgb(103 216 232 / 0.35);
+    box-shadow: var(--shadow-2), var(--glow-water);
+  }
+  .gallery__link:focus-visible {
+    outline-offset: 4px;
+    border-radius: var(--r-md);
+  }
+  .gallery__link :global(.gallery__img) {
+    width: 100%;
+    height: auto;
+    transition: transform var(--t-slow) var(--ease-out);
+  }
+  .gallery__link:hover :global(.gallery__img) {
+    transform: scale(1.012);
+  }
+  .gallery__zoom {
+    position: absolute;
+    right: 0.75rem;
+    top: 0.75rem;
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 1px solid var(--line-2);
+    border-radius: 50%;
+    background: rgb(5 15 21 / 0.75);
+    color: var(--soft);
+    opacity: 0;
+    transition: opacity var(--t-med);
+  }
+  .gallery__link:hover .gallery__zoom,
+  .gallery__link:focus-visible .gallery__zoom {
+    opacity: 1;
+  }
+  .gallery__cap {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--s-3);
+    margin-top: var(--s-3);
+    color: var(--soft);
+    font-size: var(--fs-small);
+  }
+  .gallery__demo {
+    margin-left: auto;
+    color: var(--faint);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* ---------- lightbox ---------- */
+  .lb {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100dvh;
+    max-height: 100dvh;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: rgb(3 10 15 / 0.94);
+    color: var(--text);
+  }
+  .lb::backdrop {
+    background: rgb(3 10 15 / 0.7);
+    backdrop-filter: blur(6px);
+  }
+  .lb__inner {
+    position: relative;
+    display: grid;
+    place-items: center;
+    height: 100%;
+    padding: 4.5rem var(--gutter) 2rem;
+  }
+  .lb__fig {
+    display: grid;
+    gap: var(--s-3);
+    max-width: min(1440px, 100%);
+    max-height: 100%;
+  }
+  .lb__img {
+    max-width: 100%;
+    max-height: calc(100dvh - 10rem);
+    width: auto;
+    height: auto;
+    margin-inline: auto;
+    border: 1px solid var(--line-2);
+    border-radius: var(--r-md);
+    object-fit: contain;
+  }
+  .lb__cap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-4);
+    align-items: baseline;
+    justify-content: center;
+    font-size: var(--fs-small);
+    color: var(--soft);
+  }
+  .lb__demo {
+    color: var(--gate-ink);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .lb__btn {
+    position: absolute;
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border: 1px solid var(--line-2);
+    border-radius: 50%;
+    background: rgb(10 30 39 / 0.85);
+    color: var(--text);
+  }
+  .lb__btn:hover {
+    border-color: var(--line-3);
+    background: var(--panel-2);
+  }
+  .lb__btn:focus-visible {
+    border-radius: 50%;
+  }
+  .lb__close {
+    top: 1rem;
+    right: var(--gutter);
+  }
+  .lb__prev,
+  .lb__next {
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  .lb__prev {
+    left: 0.75rem;
+  }
+  .lb__next {
+    right: 0.75rem;
+  }
+  @media (max-width: 719px) {
+    .lb__prev,
+    .lb__next {
+      top: auto;
+      bottom: 1rem;
+      transform: none;
+    }
+    .lb__inner {
+      padding-bottom: 5rem;
+    }
+  }
+</style>

@@ -1,0 +1,29 @@
+---
+import Button from './Button.astro';
+import type { IconName } from './Icon.astro';
+import type { Cta } from '~/data/copy/types';
+import { hrefOf } from '~/i18n/copy';
+import { type Locale, t } from '~/i18n';
+
+// A call to action from the page copy, resolved to a link of this site or an outside link.
+interface Props {
+  cta: Cta;
+  locale: Locale;
+  variant?: 'primary' | 'secondary' | 'ghost' | 'donate' | undefined;
+  size?: 'sm' | 'md' | 'lg' | undefined;
+  icon?: IconName | undefined;
+}
+const { cta, locale, variant = 'secondary', size = 'md', icon } = Astro.props;
+const { href, external } = hrefOf(cta.to, locale);
+---
+
+<Button
+  href={href}
+  variant={variant}
+  size={size}
+  external={external}
+  newTabText={t(locale)('a11y.newTab')}
+  icon={external ? undefined : (icon ?? 'arrow-right')}
+>
+  {cta.label}
+</Button>

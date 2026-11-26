@@ -1,0 +1,176 @@
+---
+import { getCollection, render } from 'astro:content';
+import PageLayout from '~/layouts/PageLayout.astro';
+import Icon from '~/components/Icon.astro';
+import { FAQ_CATEGORIES, entrySlug, type FaqCategory } from '~/content.config';
+import { localeStaticPaths, t, type Locale } from '~/i18n';
+import { maybeCopy } from '~/i18n/copy';
+
+export const getStaticPaths = localeStaticPaths;
+const locale = Astro.params.lang as Locale;
+const tr = t(locale);
+const entries = (await getCollection('faq', (e) => e.data.lang === locale)).sort((a, b) => a.data.order - b.data.order);
+const rendered = await Promise.all(
+  entries.map(async (e) => ({ id: entrySlug(e.id), q: e.data.question, cat: e.data.category, ...(await render(e)) })),
+);
+// TODO(copy): category headings could come from getCopy(locale); these are neutral labels
+const catLabel: Record<FaqCategory, { en: string; de: string }> = {
+  basics: { en: 'Basics', de: 'Grundlagen' },
+  install: { en: 'Installation', de: 'Installation' },
+  use: { en: 'Everyday use', de: 'Im Alltag' },
+  updates: { en: 'Updates', de: 'Updates' },
+  security: { en: 'Security and privacy', de: 'Sicherheit und Datenschutz' },
+  project: { en: 'The project', de: 'Das Projekt' },
+};
+const copy = maybeCopy(locale);
+const labelOf = (c: FaqCategory) => copy?.common.faqCategories[c] ?? catLabel[c][locale];
+const groups = FAQ_CATEGORIES.map((c) => ({ c, items: rendered.filter((r) => r.cat === c) })).filter(
+  (g) => g.items.length,
+);
+const description =
+  copy?.meta.faq.description ??
+  (locale === 'de'
+    ? 'Kurze Antworten auf häufige Fragen zu NetSluice.'
+    : 'Short answers to common questions about NetSluice.');
+---
+
+<PageLayout
+  locale={locale}
+  title={copy?.meta.faq.title ?? tr('nav.faq')}
+  heading={copy?.faq.title}
+  description={description}
+  lead={copy?.faq.intro}
+  num="?"
+  label={tr('nav.faq')}
+>
+  <section class="section section--tight">
+    <div class="container faq">
+      <nav class="faq__jump" aria-label={tr('common.onThisPage')}>
+        <ul role="list">
+          {groups.map((g, i) => (
+            <li>
+              <a href={`#faq-${g.c}`}>
+                <span class="label">{String(i + 1).padStart(2, '0')}</span> {labelOf(g.c)}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+      <div class="faq__groups">
+        {groups.length === 0 && <p class="muted">{tr('common.todo')}</p>}
+        {groups.map((g, i) => (
+          <section class="faq__group" aria-labelledby={`faq-${g.c}`}>
+            <p class="label">
+              <span class="num">{String(i + 1).padStart(2, '0')}</span>
+            </p>
+            <h2 id={`faq-${g.c}`}>{labelOf(g.c)}</h2>
+            <div class="acc">
+              {g.items.map(({ id, q, Content }) => (
+                <details class="acc__item" id={id}>
+                  <summary class="acc__q">
+                    <span>{q}</span>
+                    <Icon name="chevron-down" size={18} class="acc__chev" />
+                  </summary>
+                  <div class="acc__a prose">
+                    <Content />
+                  </div>
+                </details>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    </div>
+  </section>
+</PageLayout>
+
+<style>
+  .faq {
+    display: grid;
+    gap: var(--s-10);
+  }
+  .faq__jump ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+  }
+  .faq__jump a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: var(--tap);
+    padding: 0 1rem;
+    border: 1px solid var(--line-2);
+    border-radius: var(--r-pill);
+    color: var(--soft);
+    font-size: var(--fs-small);
+    text-decoration: none;
+  }
+  .faq__jump a:hover {
+    border-color: var(--line-3);
+    color: var(--text);
+  }
+  .faq__groups {
+    display: grid;
+    gap: var(--s-16);
+  }
+  .faq__group h2 {
+    margin: var(--s-2) 0 var(--s-6);
+    font-size: clamp(1.75rem, 1.4rem + 1.4vw, 2.5rem);
+  }
+  .acc {
+    border-top: 1px solid var(--line);
+  }
+  .acc__item {
+    border-bottom: 1px solid var(--line);
+  }
+  .acc__q {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-4);
+    min-height: 3.75rem;
+    padding: var(--s-4) var(--s-1);
+    color: var(--text);
+    font-size: 1.0938rem;
+    font-weight: 520;
+    list-style: none;
+    cursor: pointer;
+  }
+  .acc__q::-webkit-details-marker {
+    display: none;
+  }
+  .acc__q:hover {
+    color: var(--gate-ink);
+  }
+  .acc__q :global(.acc__chev) {
+    flex: none;
+    color: var(--muted);
+    transition: transform var(--t-med) var(--ease-out);
+  }
+  .acc__item[open] :global(.acc__chev) {
+    transform: rotate(180deg);
+    color: var(--gate);
+  }
+  .acc__a {
+    padding: 0 var(--s-1) var(--s-6);
+  }
+  @media (min-width: 1080px) {
+    .faq {
+      grid-template-columns: 15rem minmax(0, 1fr);
+      gap: var(--s-16);
+    }
+    .faq__jump {
+      position: sticky;
+      top: calc(var(--header-h) + 2rem);
+      align-self: start;
+    }
+    .faq__jump ul {
+      flex-direction: column;
+    }
+    .faq__jump a {
+      border: 0;
+      padding: 0;
+    }
+  }
+</style>

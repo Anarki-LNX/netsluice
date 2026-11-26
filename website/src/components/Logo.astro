@@ -1,0 +1,54 @@
+---
+// The product's own mark (gate in gold, blue in, green out) with a site wordmark.
+interface Props {
+  size?: number | undefined;
+  wordmark?: boolean | undefined;
+  class?: string | undefined;
+}
+const { size = 30, wordmark = true, class: cls } = Astro.props;
+---
+
+<span class:list={['logo', cls]}>
+  <svg
+    class="logo__mark"
+    width={size}
+    height={size}
+    viewBox="0 0 64 64"
+    fill="none"
+    aria-hidden="true"
+    focusable="false"
+  >
+    <rect x="5" y="5" width="54" height="54" rx="12" stroke="#F5C451" stroke-width="4"></rect>
+    <path d="M14 32H26" stroke="#4EA8FF" stroke-width="6" stroke-linecap="round"></path>
+    <path d="M38 32H50" stroke="#5CE39A" stroke-width="6" stroke-linecap="round"></path>
+    <path d="M32 17V47" stroke="#F5C451" stroke-width="6" stroke-linecap="round"></path>
+  </svg>
+  {wordmark && (
+    <span class="logo__word">
+      Net<span>Sluice</span>
+    </span>
+  )}
+</span>
+
+<style>
+  .logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    color: var(--text);
+  }
+  .logo__mark {
+    flex: none;
+    filter: drop-shadow(0 0 10px rgb(245 196 81 / 0.18));
+  }
+  .logo__word {
+    font-family: var(--font-body);
+    font-weight: 620;
+    font-size: 1.1875rem;
+    letter-spacing: -0.025em;
+    line-height: 1;
+  }
+  .logo__word span {
+    color: var(--gate-ink);
+  }
+</style>

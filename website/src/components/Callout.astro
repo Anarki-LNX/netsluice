@@ -1,0 +1,65 @@
+---
+import Icon from './Icon.astro';
+import { type Locale, t } from '~/i18n';
+
+interface Props {
+  type?: 'info' | 'warn' | 'danger' | undefined;
+  locale: Locale;
+  title?: string | undefined;
+}
+const { type = 'info', locale, title } = Astro.props;
+const tr = t(locale);
+const icon = type === 'info' ? 'info' : type === 'warn' ? 'alert' : 'x-octagon';
+const label = tr(type === 'info' ? 'callout.info' : type === 'warn' ? 'callout.warn' : 'callout.danger');
+---
+
+<aside class:list={['callout', `callout--${type}`]} aria-label={title ?? label}>
+  <span class="callout__icon">
+    <Icon name={icon} size={20} />
+  </span>
+  <div class="callout__body">
+    <p class="callout__title">{title ?? label}</p>
+    <div class="callout__text">
+      <slot />
+    </div>
+  </div>
+</aside>
+
+<style>
+  .callout {
+    --c: var(--in);
+    --ink: var(--in-ink);
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: var(--s-4);
+    padding: var(--s-5);
+    border: 1px solid color-mix(in srgb, var(--c) 35%, transparent);
+    border-left-width: 3px;
+    border-radius: var(--r-md);
+    background: color-mix(in srgb, var(--c) 8%, transparent);
+  }
+  .callout--warn {
+    --c: var(--gate);
+    --ink: var(--gate-ink);
+  }
+  .callout--danger {
+    --c: var(--no);
+    --ink: var(--no-ink);
+  }
+  .callout__icon {
+    color: var(--ink);
+    padding-top: 0.15rem;
+  }
+  .callout__title {
+    margin-bottom: var(--s-1);
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .callout__text {
+    color: var(--soft);
+    font-size: var(--fs-small);
+  }
+  .callout__text :global(> * + *) {
+    margin-top: 0.6em;
+  }
+</style>

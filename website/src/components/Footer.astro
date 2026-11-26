@@ -1,0 +1,261 @@
+---
+import Logo from './Logo.astro';
+import Icon from './Icon.astro';
+import { DONATE_URL, REPO, LOOPOUT } from '~/config/site';
+import { type Locale, t, localizePath, routes } from '~/i18n';
+
+interface Props {
+  locale: Locale;
+  /** newest release, e.g. "0.1.28"; passed in by the page/layout once release data is wired */
+  version?: string | undefined;
+  versionUrl?: string | undefined;
+}
+const { locale, version, versionUrl } = Astro.props;
+const tr = t(locale);
+const L = (p: string) => localizePath(p, locale);
+const nt = tr('a11y.newTab');
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="lightlines" aria-hidden="true"></div>
+  <div class="container site-footer__grid">
+    <div class="site-footer__brand">
+      <Logo size={34} />
+      <p class="site-footer__tag">{tr('meta.tagline')}</p>
+      <p class="site-footer__small">{tr('footer.madeBy')}</p>
+      {version && (
+        <p class="site-footer__version label">
+          {tr('footer.version')} ·{' '}
+          {versionUrl ? (
+            <a href={versionUrl} target="_blank" rel="noopener noreferrer">
+              v{version}
+              <span class="visually-hidden"> {nt}</span>
+            </a>
+          ) : (
+            <span>v{version}</span>
+          )}
+        </p>
+      )}
+      <a class="site-footer__donate" href={DONATE_URL} target="_blank" rel="noopener noreferrer">
+        <Icon name="heart" size={16} />
+        <span>{tr('donate.cta')}</span>
+        <span class="visually-hidden"> {nt}</span>
+      </a>
+    </div>
+
+    <nav class="site-footer__nav" aria-label={tr('a11y.footerNav')}>
+      <div>
+        <h2 class="label">{tr('footer.project')}</h2>
+        <ul role="list">
+          <li>
+            <a href={L(routes.features)}>{tr('nav.features')}</a>
+          </li>
+          <li>
+            <a href={L(routes.howItWorks)}>{tr('nav.howItWorks')}</a>
+          </li>
+          <li>
+            <a href={L(routes.hardware)}>{tr('nav.hardware')}</a>
+          </li>
+          <li>
+            <a href={L(routes.demo)}>{tr('nav.demo')}</a>
+          </li>
+          <li>
+            <a href={L(routes.about)}>{tr('nav.about')}</a>
+          </li>
+          <li>
+            <a href={L(routes.support)}>{tr('nav.support')}</a>
+          </li>
+        </ul>
+      </div>
+      <div>
+        <h2 class="label">{tr('footer.docs')}</h2>
+        <ul role="list">
+          <li>
+            <a href={L(routes.gettingStarted)}>{tr('nav.gettingStarted')}</a>
+          </li>
+          <li>
+            <a href={L(routes.docs)}>{tr('nav.docs')}</a>
+          </li>
+          <li>
+            <a href={L(routes.downloads)}>{tr('nav.downloads')}</a>
+          </li>
+          <li>
+            <a href={L(routes.changelog)}>{tr('nav.changelog')}</a>
+          </li>
+          <li>
+            <a href={L(routes.faq)}>{tr('nav.faq')}</a>
+          </li>
+          <li>
+            <a href={L(routes.contributing)}>{tr('nav.contributing')}</a>
+          </li>
+        </ul>
+      </div>
+      <div>
+        <h2 class="label">GitHub</h2>
+        <ul role="list">
+          <li>
+            <a href={REPO.url} target="_blank" rel="noopener noreferrer">
+              {tr('cta.github')}
+              <span class="visually-hidden"> {nt}</span>
+            </a>
+          </li>
+          <li>
+            <a href={REPO.releases} target="_blank" rel="noopener noreferrer">
+              {tr('footer.releases')}
+              <span class="visually-hidden"> {nt}</span>
+            </a>
+          </li>
+          <li>
+            <a href={REPO.issues} target="_blank" rel="noopener noreferrer">
+              {tr('footer.issues')}
+              <span class="visually-hidden"> {nt}</span>
+            </a>
+          </li>
+          <li>
+            <a href={REPO.thirdParty} target="_blank" rel="noopener noreferrer">
+              {tr('footer.thirdParty')}
+              <span class="visually-hidden"> {nt}</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+      <div>
+        <h2 class="label">{tr('footer.legal')}</h2>
+        <ul role="list">
+          <li>
+            <a href={L(routes.security)}>{tr('nav.security')}</a>
+          </li>
+          <li>
+            <a href={L(routes.privacy)}>{tr('footer.privacy')}</a>
+          </li>
+          <li>
+            <a href={L(routes.license)}>{tr('footer.license')}</a>
+          </li>
+          <li>
+            <a href={LOOPOUT.imprint} target="_blank" rel="noopener noreferrer">
+              {tr('footer.imprint')}
+              <span class="visually-hidden"> {nt}</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+  </div>
+
+  <div class="container site-footer__base">
+    <p>{tr('footer.trademark')}</p>
+    <p class="site-footer__meta">
+      <span>© {year} LOOP OUT TECH · MIT</span>
+      <span>{tr('footer.noCookies')}</span>
+    </p>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    position: relative;
+    margin-top: var(--s-16);
+    padding-top: var(--s-16);
+    border-top: 1px solid var(--line);
+    background: radial-gradient(80% 60% at 15% 0%, rgb(103 216 232 / 0.05), transparent 60%), var(--bg-deep);
+    color: var(--muted);
+    font-size: var(--fs-small);
+  }
+  .site-footer__grid {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    gap: var(--s-12);
+    padding-bottom: var(--s-12);
+  }
+  .site-footer__brand {
+    display: grid;
+    justify-items: start;
+    align-content: start;
+    gap: var(--s-3);
+  }
+  .site-footer__tag {
+    margin-top: var(--s-2);
+    font-family: var(--font-display);
+    font-size: 1.75rem;
+    line-height: 1.1;
+    color: var(--text);
+  }
+  .site-footer__small {
+    max-width: 22rem;
+  }
+  .site-footer__version a,
+  .site-footer__version span {
+    color: var(--gate-ink);
+    text-transform: none;
+  }
+  .site-footer__donate {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: var(--tap);
+    margin-top: var(--s-2);
+    padding: 0 1.1rem;
+    border: 1px solid rgb(245 196 81 / 0.5);
+    border-radius: var(--r-pill);
+    background: var(--gate-wash);
+    color: var(--gate-ink);
+    font-weight: 540;
+    text-decoration: none;
+  }
+  .site-footer__donate:hover {
+    border-color: var(--gate);
+    color: #fff3d6;
+  }
+  .site-footer__nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s-8) var(--s-6);
+  }
+  .site-footer__nav h2 {
+    margin-bottom: var(--s-3);
+    font-family: var(--font-mono);
+    font-size: var(--fs-label);
+    line-height: 1.4;
+  }
+  .site-footer__nav a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--tap);
+    color: var(--soft);
+    text-decoration: none;
+  }
+  .site-footer__nav a:hover {
+    color: var(--text);
+    text-decoration: underline;
+  }
+  .site-footer__base {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    gap: var(--s-3);
+    padding-block: var(--s-6) var(--s-10);
+    border-top: 1px solid var(--line);
+    font-size: 0.875rem;
+    color: var(--faint);
+  }
+  .site-footer__base p:first-child {
+    max-width: 60rem;
+    color: var(--muted);
+  }
+  .site-footer__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2) var(--s-6);
+  }
+
+  @media (min-width: 900px) {
+    .site-footer__grid {
+      grid-template-columns: minmax(16rem, 1fr) 2.2fr;
+    }
+    .site-footer__nav {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+</style>

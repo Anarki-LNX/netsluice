@@ -1,0 +1,280 @@
+#!/usr/bin/env python3
+"""Fetch the newest website build from GitHub Actions and switch to it. Runs ON THE VPS.
+
+    netsluice-web-pull            check, and deploy when there is a newer build
+    netsluice-web-pull --check    only report what would happen (no change on disk)
+
+Started by netsluice-web-pull.timer as the user netsluice-web (owner of /opt/netsluice-web).
+The server builds nothing: CI (.github/workflows/website.yml) builds and checks the site on
+main and uploads it as the artifact "netsluice-website-site"; this script downloads that
+artifact, checks it, unpacks it next to the live build and swaps the "current" symlink
+atomically. If https://netsluice.loopout.tech/build.json does not show the new build
+afterwards, it switches back and exits non-zero.
+
+GitHub is never given access to this server. The only secret here is a read-only GitHub
+token (GitHub requires one to download artifacts, even of public repositories), read from
+the environment (EnvironmentFile=/etc/netsluice-web/pull.env, root 600). It is sent only to
+api.github.com, never to the download host, and never printed. Python standard library only.
+"""
+import fcntl
+import io
+import json
+import os
+import re
+import shutil
+import ssl
+import stat
+import sys
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+import zipfile
+
+REPO = os.environ.get("NSW_REPO", "Anarki-LNX/netsluice")
+WORKFLOW = os.environ.get("NSW_WORKFLOW", "website.yml")
+ARTIFACT = os.environ.get("NSW_ARTIFACT", "netsluice-website-site")
+BRANCH = os.environ.get("NSW_BRANCH", "main")
+DIR = os.environ.get("NSW_DIR", "/opt/netsluice-web")
+KEEP = max(2, int(os.environ.get("NSW_KEEP", "5")))
+HEALTH = os.environ.get("NSW_HEALTH_URL", "https://netsluice.loopout.tech/build.json")
+TOKEN = os.environ.get("GITHUB_TOKEN", "").strip()
+
+API = "https://api.github.com"
+EVENTS = {"push", "schedule", "workflow_dispatch", "release"}
+MAX_ZIP = 150 * 1024 * 1024
+MAX_UNPACKED = 400 * 1024 * 1024
+MAX_FILES = 20000
+ID_RE = re.compile(r"^[0-9A-Za-z][0-9A-Za-z._-]{0,79}$")
+CTX = ssl.create_default_context()
+
+
+def log(msg):
+    print(msg, flush=True)
+
+
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *args, **kwargs):
+        return None
+
+
+OPENER = urllib.request.build_opener(NoRedirect, urllib.request.HTTPSHandler(context=CTX))
+
+
+def api(path):
+    """GET from api.github.com with the token; JSON answer."""
+    req = urllib.request.Request(API + path, headers={
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "User-Agent": "netsluice-web-pull",
+        **({"Authorization": "Bearer " + TOKEN} if TOKEN else {}),
+    })
+    try:
+        with OPENER.open(req, timeout=30) as r:
+            return json.load(r)
+    except urllib.error.HTTPError as e:
+        if e.code in (403, 429) and (e.headers.get("x-ratelimit-remaining") == "0" or e.headers.get("retry-after")):
+            raise SystemExit("GitHub rate limit reached; trying again on the next run")
+        raise SystemExit(f"GitHub answered HTTP {e.code} for {path.split('?')[0]}")
+    except (urllib.error.URLError, TimeoutError) as e:
+        raise SystemExit(f"GitHub not reachable: {getattr(e, 'reason', e)}")
+
+
+def download_artifact(artifact_id, limit):
+    """The zip of one artifact. The API answers with a redirect to a short-lived storage URL;
+    that one is fetched without the token."""
+    req = urllib.request.Request(f"{API}/repos/{REPO}/actions/artifacts/{artifact_id}/zip", headers={
+        "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28",
+        "User-Agent": "netsluice-web-pull", "Authorization": "Bearer " + TOKEN})
+    try:
+        OPENER.open(req, timeout=30)
+        raise SystemExit("GitHub did not redirect to the artifact download")
+    except urllib.error.HTTPError as e:
+        if e.code not in (301, 302, 303, 307, 308):
+            raise SystemExit(f"artifact download: HTTP {e.code} (is GITHUB_TOKEN set and valid?)")
+        where = e.headers.get("Location", "")
+    u = urllib.parse.urlsplit(where)
+    if u.scheme != "https" or not u.hostname or not (u.hostname.endswith(".blob.core.windows.net") or u.hostname.endswith(".githubusercontent.com") or u.hostname.endswith(".actions.githubusercontent.com")):
+        raise SystemExit(f"unexpected artifact host: {u.hostname}")
+    with urllib.request.urlopen(urllib.request.Request(where, headers={"User-Agent": "netsluice-web-pull"}), timeout=120, context=CTX) as r:
+        data = r.read(limit + 1)
+    if len(data) > limit:
+        raise SystemExit("artifact larger than allowed")
+    return data
+
+
+def newest_build():
+    runs = api(f"/repos/{REPO}/actions/workflows/{WORKFLOW}/runs?status=success&exclude_pull_requests=true&per_page=20").get("workflow_runs", [])
+    for run in sorted(runs, key=lambda r: r.get("run_number", 0), reverse=True):
+        head = (run.get("head_repository") or {}).get("full_name")
+        if head != REPO or run.get("event") not in EVENTS:
+            continue
+        if run.get("event") != "release" and run.get("head_branch") != BRANCH:
+            continue
+        arts = api(f"/repos/{REPO}/actions/runs/{run['id']}/artifacts?name={urllib.parse.quote(ARTIFACT)}").get("artifacts", [])
+        arts = [a for a in arts if a.get("name") == ARTIFACT and not a.get("expired")]
+        if arts:
+            return run, arts[0]
+    return None, None
+
+
+def read_state():
+    try:
+        with open(os.path.join(DIR, "state.json")) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def write_state(state):
+    tmp = os.path.join(DIR, ".state.tmp")
+    with open(tmp, "w") as f:
+        json.dump(state, f, indent=2)
+    os.replace(tmp, os.path.join(DIR, "state.json"))
+
+
+def unpack(data, target):
+    """Unpack the zip into target, refusing anything that is not a plain file inside it."""
+    with zipfile.ZipFile(io.BytesIO(data)) as z:
+        members = z.infolist()
+        if len(members) > MAX_FILES:
+            raise SystemExit("artifact has too many files")
+        if sum(m.file_size for m in members) > MAX_UNPACKED:
+            raise SystemExit("artifact unpacks too large")
+        os.makedirs(target, mode=0o755)
+        root = os.path.realpath(target)
+        for m in members:
+            name = m.filename
+            mode = (m.external_attr >> 16) & 0o170000
+            if name.startswith(("/", "\\")) or "\\" in name or ".." in name.split("/") or mode == stat.S_IFLNK or "\0" in name:
+                raise SystemExit(f"refused path in artifact: {name!r}")
+            if any(part.startswith(".") for part in name.split("/") if part):
+                raise SystemExit(f"hidden file in artifact: {name!r}")
+            dest = os.path.realpath(os.path.join(target, name))
+            if not dest.startswith(root + os.sep):
+                raise SystemExit(f"refused path in artifact: {name!r}")
+            if m.is_dir():
+                os.makedirs(dest, mode=0o755, exist_ok=True)
+                continue
+            os.makedirs(os.path.dirname(dest), mode=0o755, exist_ok=True)
+            with z.open(m) as src, open(dest, "xb") as out:
+                shutil.copyfileobj(src, out)
+            os.chmod(dest, 0o644)
+    for d, dirs, _ in os.walk(target):
+        os.chmod(d, 0o755)
+
+
+def current_id():
+    try:
+        return os.readlink(os.path.join(DIR, "current")).removeprefix("releases/")
+    except OSError:
+        return ""
+
+
+def switch(build_id):
+    before = current_id()
+    tmp = os.path.join(DIR, ".current.tmp")
+    try:
+        os.unlink(tmp)
+    except FileNotFoundError:
+        pass
+    os.symlink(f"releases/{build_id}", tmp)
+    os.replace(tmp, os.path.join(DIR, "current"))      # atomic
+    if before and before != build_id:
+        with open(os.path.join(DIR, "previous"), "w") as f:
+            f.write(before + "\n")
+    log(f"current → releases/{build_id} (before: {before or 'none'})")
+    return before
+
+
+def prune():
+    keep = {current_id()}
+    try:
+        keep.add(open(os.path.join(DIR, "previous")).read().strip())
+    except OSError:
+        pass
+    builds = sorted(os.listdir(os.path.join(DIR, "releases")), reverse=True)
+    for old in builds[KEEP:]:
+        if old not in keep and ID_RE.match(old):
+            shutil.rmtree(os.path.join(DIR, "releases", old))
+            log(f"removed releases/{old}")
+
+
+def live_built_at():
+    try:
+        req = urllib.request.Request(HEALTH, headers={"User-Agent": "netsluice-web-pull", "Cache-Control": "no-cache"})
+        with urllib.request.urlopen(req, timeout=10, context=CTX) as r:
+            return json.load(r).get("builtAt")
+    except Exception:  # noqa: BLE001 - any failure means "not healthy"
+        return None
+
+
+def main():
+    check_only = "--check" in sys.argv[1:]
+    if not TOKEN:
+        raise SystemExit("GITHUB_TOKEN is not set (see /etc/netsluice-web/pull.env)")
+    if not os.path.isdir(os.path.join(DIR, "releases")):
+        raise SystemExit(f"{DIR}/releases does not exist")
+    lock = open(os.path.join(DIR, ".lock"), "w")
+    fcntl.flock(lock, fcntl.LOCK_EX)                     # shared with deploy.sh / rollback.sh
+
+    run, art = newest_build()
+    if not run:
+        log("no successful build with a site artifact on GitHub")
+        return 0
+    state = read_state()
+    if state.get("run") == run["id"] or state.get("failed_run") == run["id"]:
+        log(f"up to date (run {run['id']})")
+        return 0
+    if art.get("size_in_bytes", 0) > MAX_ZIP:
+        raise SystemExit("artifact larger than allowed")
+    log(f"new build: run {run['id']} ({run['event']}, {run['head_sha'][:7]}), artifact {art['id']}")
+    if check_only:
+        return 0
+
+    created = re.sub(r"[^0-9TZ]", "", run.get("created_at", ""))[:16] or time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
+    build_id = f"{created}-run{run['id']}"
+    if not ID_RE.match(build_id):
+        raise SystemExit("bad build id")
+    incoming = os.path.join(DIR, f".incoming-{build_id}")
+    shutil.rmtree(incoming, ignore_errors=True)
+    try:
+        unpack(download_artifact(art["id"], MAX_ZIP), incoming)
+        with open(os.path.join(incoming, "build.json")) as f:
+            info = json.load(f)
+        if not os.path.isfile(os.path.join(incoming, "index.html")):
+            raise SystemExit("artifact has no index.html")
+        if info.get("site") != "netsluice-website":
+            raise SystemExit("artifact is not the NetSluice website")
+        if run["event"] != "release" and info.get("commit") != run["head_sha"]:
+            raise SystemExit("artifact was built from another commit than the run names")
+        if (info.get("releases") or {}).get("source") == "none":
+            raise SystemExit("artifact has no release data; keeping the current build")
+        final = os.path.join(DIR, "releases", build_id)
+        if os.path.exists(final):
+            raise SystemExit(f"releases/{build_id} exists already")
+        os.rename(incoming, final)
+    finally:
+        shutil.rmtree(incoming, ignore_errors=True)
+
+    before = switch(build_id)
+    if not HEALTH:                                       # NSW_HEALTH_URL= (empty): no check through Caddy
+        write_state({"run": run["id"], "build": build_id, "commit": info.get("commit"), "deployedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
+        prune()
+        log(f"live (not verified): {build_id}")
+        return 0
+    for _ in range(6):
+        if live_built_at() == info.get("builtAt"):
+            write_state({"run": run["id"], "build": build_id, "commit": info.get("commit"), "deployedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
+            prune()
+            log(f"live: {build_id}")
+            return 0
+        time.sleep(10)
+    if before:
+        switch(before)
+    write_state({**state, "failed_run": run["id"]})
+    raise SystemExit(f"{HEALTH} did not show the new build; switched back to {before or 'nothing'}")
+
+
+if __name__ == "__main__":
+    sys.exit(main())

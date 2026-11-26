@@ -1,0 +1,152 @@
+---
+import '@fontsource/instrument-serif/400.css';
+import '@fontsource/instrument-serif/400-italic.css';
+import '@fontsource-variable/geist/wght.css';
+import '@fontsource-variable/geist-mono/wght.css';
+import '~/styles/global.css';
+
+// The two files every page needs first; the same files the CSS above points to,
+// so Vite gives them the same hashed URL and the preload is reused.
+import serifUrl from '@fontsource/instrument-serif/files/instrument-serif-latin-400-normal.woff2?url';
+import geistUrl from '@fontsource-variable/geist/files/geist-latin-wght-normal.woff2?url';
+
+import Header from '~/components/Header.astro';
+import Footer from '~/components/Footer.astro';
+import { SITE_URL, REPO } from '~/config/site';
+import { type Locale, t, alternatePath, locales } from '~/i18n';
+
+interface Props {
+  /** null for the language-choice page at "/" (no header language, bilingual) */
+  locale: Locale | null;
+  title: string;
+  description: string;
+  /** absolute site path of a social image; defaults to the generic card */
+  ogImage?: string | undefined;
+  ogImageAlt?: string | undefined;
+  noindex?: boolean | undefined;
+  /** false: no hreflang alternates (e.g. 404) */
+  alternates?: boolean | undefined;
+  /** show header and footer */
+  chrome?: boolean | undefined;
+  /** newest release version for the footer, once release data is wired */
+  version?: string | undefined;
+  versionUrl?: string | undefined;
+  /** add the SoftwareApplication JSON-LD (home page) */
+  softwareJsonLd?: boolean | undefined;
+  bodyClass?: string | undefined;
+}
+
+const {
+  locale,
+  title,
+  description,
+  ogImage = '/og/netsluice-og.png',
+  ogImageAlt,
+  noindex = false,
+  alternates = true,
+  chrome = true,
+  version,
+  versionUrl,
+  softwareJsonLd = false,
+  bodyClass,
+} = Astro.props;
+
+const lang: Locale = locale ?? 'en';
+const tr = t(lang);
+const pathname = Astro.url.pathname;
+const canonical = new URL(pathname, SITE_URL).href;
+const fullTitle = title.includes('NetSluice') ? title : `${title} · NetSluice`;
+const ogUrl = new URL(ogImage, SITE_URL).href;
+const alts =
+  alternates && locale
+    ? locales.map((l) => ({ hreflang: l, href: new URL(alternatePath(pathname, l), SITE_URL).href }))
+    : alternates && locale === null
+      ? locales.map((l) => ({ hreflang: l, href: new URL(`/${l}/`, SITE_URL).href }))
+      : [];
+
+const jsonLd = softwareJsonLd
+  ? {
+      '@context': 'https://schema.org',
+      '@type': 'SoftwareApplication',
+      name: 'NetSluice',
+      description,
+      url: new URL(`/${lang}/`, SITE_URL).href,
+      applicationCategory: 'NetworkingApplication',
+      operatingSystem: 'Debian (Armbian) on Deeper Connect Mini',
+      license: 'https://opensource.org/licenses/MIT',
+      codeRepository: REPO.url,
+      isAccessibleForFree: true,
+      inLanguage: ['en', 'de'],
+      ...(version ? { softwareVersion: version } : {}),
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
+      author: { '@type': 'Organization', name: 'LOOP OUT TECH', url: 'https://loopout.tech' },
+    }
+  : null;
+const jsonLdText = jsonLd ? JSON.stringify(jsonLd).replace(/</g, '\\u003c') : '';
+---
+
+<!doctype html>
+<html lang={lang} dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    {noindex && <meta name="robots" content="noindex" />}
+    {alts.map((a) => (
+      <link rel="alternate" hreflang={a.hreflang} href={a.href} />
+    ))}
+    {alts.length > 0 && <link rel="alternate" hreflang="x-default" href={new URL('/', SITE_URL).href} />}
+
+    <link rel="preload" href={serifUrl} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={geistUrl} as="font" type="font/woff2" crossorigin />
+
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#050f15" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="NetSluice" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogUrl} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={ogImageAlt ?? tr('meta.ogAlt')} />
+    <meta property="og:locale" content={lang === 'de' ? 'de_DE' : 'en_US'} />
+    {locale && <meta property="og:locale:alternate" content={lang === 'de' ? 'en_US' : 'de_DE'} />}
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={fullTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogUrl} />
+    <meta name="twitter:image:alt" content={ogImageAlt ?? tr('meta.ogAlt')} />
+
+    {jsonLd && <script type="application/ld+json" is:inline set:html={jsonLdText} />}
+  </head>
+  <body class={bodyClass}>
+    <a class="skip-link" href="#main">
+      {tr('a11y.skip')}
+    </a>
+    {chrome && locale && <Header locale={locale} />}
+    <main id="main" tabindex="-1">
+      <slot />
+    </main>
+    {chrome && locale && <Footer locale={locale} version={version} versionUrl={versionUrl} />}
+    <script>
+      import '~/scripts/reveal';
+    </script>
+  </body>
+</html>
+
+<style>
+  main {
+    display: block;
+    outline: none;
+  }
+</style>

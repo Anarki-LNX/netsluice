@@ -1,0 +1,14 @@
+# /etc/systemd/system/netsluice-web-pull.timer
+# Every 15 minutes: one API request when nothing changed. A new release reaches the
+# site within about 20 minutes (CI build ~3 min + up to 15 min wait).
+[Unit]
+Description=NetSluice website: look for a newer CI build every 15 minutes
+
+[Timer]
+OnBootSec=5min
+OnCalendar=*:04,19,34,49
+RandomizedDelaySec=60
+Persistent=true
+
+[Install]
+WantedBy=timers.target

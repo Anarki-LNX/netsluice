@@ -1,0 +1,423 @@
+---
+import type { MarkdownHeading } from 'astro';
+import Base from './Base.astro';
+import Icon from '~/components/Icon.astro';
+import DonateBlock from '~/components/DonateBlock.astro';
+import { getDocLinks, groupBySection } from './docs-nav';
+import { REPO } from '~/config/site';
+import { type Locale, t, formatDate, localizePath, routes } from '~/i18n';
+import { maybeCopy } from '~/i18n/copy';
+import type { DocSection } from '~/content.config';
+
+// Documentation: a sidebar with the sections (reference 2), the article, an
+// on-page table of contents and previous/next. On phones the sidebar folds into
+// a <details> above the article, so it works without JavaScript.
+interface Props {
+  locale: Locale;
+  title: string;
+  description: string;
+  /** slug of the current doc; undefined on the docs index */
+  slug?: string | undefined;
+  headings?: MarkdownHeading[] | undefined;
+  updated?: Date | undefined;
+  /** path in the repository for "edit this page", e.g. website/src/content/docs/en/ssh.md */
+  sourcePath?: string | undefined;
+  version?: string | undefined;
+}
+const { locale, title, description, slug, headings = [], updated, sourcePath, version } = Astro.props;
+const tr = t(locale);
+const sections = maybeCopy(locale)?.common.docSections;
+const sectionLabel = (s: DocSection) => sections?.[s] ?? tr(`docs.section.${s}`);
+const links = await getDocLinks(locale);
+const groups = groupBySection(links);
+const idx = slug ? links.findIndex((l) => l.slug === slug) : -1;
+const prev = idx > 0 ? links[idx - 1] : undefined;
+const next = idx >= 0 ? links[idx + 1] : slug === undefined ? links[0] : undefined;
+const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
+const docsHome = localizePath(routes.docs, locale);
+const current = links[idx];
+const currentSection = current?.section;
+---
+
+<Base locale={locale} title={title} description={description} version={version}>
+  <div class="docs container">
+    <aside class="docs__side">
+      <details class="docs__nav" open data-docs-nav>
+        <summary class="docs__navtoggle">
+          <Icon name="book" size={17} />
+          <span>{tr('docs.toggle')}</span>
+          <Icon name="chevron-down" size={16} class="docs__chev" />
+        </summary>
+        <nav aria-label={tr('a11y.docsNav')}>
+          <a class="docs__home" href={docsHome} aria-current={slug === undefined ? 'page' : undefined}>
+            {tr('docs.index')}
+          </a>
+          {groups.map((g, gi) => (
+            <div class="docs__group">
+              <p class="docs__grouplabel label">
+                <span class="num">{String(gi + 1).padStart(2, '0')}</span> · {sectionLabel(g.section)}
+              </p>
+              <ul role="list">
+                {g.links.map((l) => (
+                  <li>
+                    <a href={l.href} aria-current={l.slug === slug ? 'page' : undefined}>
+                      {l.title}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </nav>
+      </details>
+    </aside>
+
+    <article class="docs__main">
+      <nav class="docs__crumbs label" aria-label={tr('a11y.breadcrumb')}>
+        <a href={docsHome}>{tr('nav.docs')}</a>
+        {currentSection && (
+          <>
+            <span aria-hidden="true">/</span>
+            <span>{sectionLabel(currentSection)}</span>
+          </>
+        )}
+      </nav>
+      <header class="docs__head">
+        <h1>{title}</h1>
+        <p class="lead">{description}</p>
+      </header>
+
+      {toc.length > 2 && (
+        <details class="docs__toc-mobile">
+          <summary>
+            {tr('docs.toc')}
+            <Icon name="chevron-down" size={16} />
+          </summary>
+          <ul role="list">
+            {toc.map((h) => (
+              <li class:list={[`d${h.depth}`]}>
+                <a href={`#${h.slug}`}>{h.text}</a>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+
+      <div class="prose docs__prose">
+        <slot />
+      </div>
+
+      <footer class="docs__foot">
+        {(updated || sourcePath) && (
+          <p class="docs__meta">
+            {updated && (
+              <span>
+                {tr('docs.updated')}:{' '}
+                <time datetime={updated.toISOString()}>{formatDate(updated.toISOString(), locale)}</time>
+              </span>
+            )}
+            {sourcePath && (
+              <a href={`${REPO.url}/blob/main/${sourcePath}`} target="_blank" rel="noopener noreferrer">
+                {tr('docs.edit')}
+                <span class="visually-hidden"> {tr('a11y.newTab')}</span>
+              </a>
+            )}
+          </p>
+        )}
+        {(prev || next) && (
+          <nav class="docs__pager" aria-label={`${tr('docs.prev')} / ${tr('docs.next')}`}>
+            {prev ? (
+              <a class="docs__pg docs__pg--prev" href={prev.href} rel="prev">
+                <span class="label">
+                  <Icon name="arrow-left" size={14} /> {tr('docs.prev')}
+                </span>
+                <span class="docs__pgtitle">{prev.title}</span>
+              </a>
+            ) : (
+              <span />
+            )}
+            {next && (
+              <a class="docs__pg docs__pg--next" href={next.href} rel="next">
+                <span class="label">
+                  {tr('docs.next')} <Icon name="arrow-right" size={14} />
+                </span>
+                <span class="docs__pgtitle">{next.title}</span>
+              </a>
+            )}
+          </nav>
+        )}
+      </footer>
+    </article>
+
+    {toc.length > 2 && (
+      <aside class="docs__toc" aria-labelledby="toc-title">
+        <p class="label" id="toc-title">
+          {tr('docs.toc')}
+        </p>
+        <ul role="list">
+          {toc.map((h) => (
+            <li class:list={[`d${h.depth}`]}>
+              <a href={`#${h.slug}`}>{h.text}</a>
+            </li>
+          ))}
+        </ul>
+      </aside>
+    )}
+  </div>
+  <DonateBlock locale={locale} />
+</Base>
+
+<script>
+  import '~/scripts/docs';
+</script>
+
+<style>
+  .docs {
+    display: grid;
+    gap: var(--s-6);
+    padding-top: var(--s-6);
+  }
+
+  /* ---------- sidebar ---------- */
+  .docs__nav {
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    background: rgb(255 255 255 / 0.015);
+  }
+  .docs__navtoggle {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    min-height: var(--tap);
+    padding: 0 var(--s-4);
+    color: var(--soft);
+    font-weight: 520;
+    list-style: none;
+    cursor: pointer;
+  }
+  .docs__navtoggle::-webkit-details-marker {
+    display: none;
+  }
+  .docs__navtoggle :global(.docs__chev) {
+    margin-left: auto;
+    transition: transform var(--t-med);
+  }
+  .docs__nav[open] :global(.docs__chev) {
+    transform: rotate(180deg);
+  }
+  .docs__nav nav {
+    padding: var(--s-2) var(--s-3) var(--s-4);
+  }
+  .docs__home,
+  .docs__group a {
+    display: flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 0.35rem var(--s-3);
+    border-radius: var(--r-sm);
+    color: var(--soft);
+    font-size: 0.9375rem;
+    line-height: 1.35;
+    text-decoration: none;
+  }
+  .docs__home:hover,
+  .docs__group a:hover {
+    background: rgb(255 255 255 / 0.04);
+    color: var(--text);
+  }
+  .docs__home[aria-current],
+  .docs__group a[aria-current] {
+    background: var(--gate-wash);
+    color: var(--gate-ink);
+    box-shadow: inset 2px 0 0 var(--gate);
+  }
+  .docs__group {
+    margin-top: var(--s-5);
+  }
+  .docs__grouplabel {
+    padding: 0 var(--s-3) var(--s-2);
+  }
+
+  /* ---------- article ---------- */
+  .docs__main {
+    min-width: 0;
+  }
+  .docs__crumbs {
+    display: flex;
+    gap: var(--s-2);
+    margin-bottom: var(--s-4);
+  }
+  .docs__crumbs a {
+    color: var(--muted);
+    text-decoration: none;
+  }
+  .docs__crumbs a:hover {
+    color: var(--text);
+  }
+  .docs__head {
+    display: grid;
+    gap: var(--s-4);
+    padding-bottom: var(--s-8);
+    margin-bottom: var(--s-8);
+    border-bottom: 1px solid var(--line);
+  }
+  .docs__head h1 {
+    font-size: clamp(2.5rem, 1.9rem + 2.6vw, 4rem);
+  }
+  .docs__toc-mobile {
+    margin-bottom: var(--s-8);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+  }
+  .docs__toc-mobile summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: var(--tap);
+    padding: 0 var(--s-4);
+    color: var(--soft);
+    list-style: none;
+    cursor: pointer;
+  }
+  .docs__toc-mobile summary::-webkit-details-marker {
+    display: none;
+  }
+  .docs__toc-mobile ul {
+    padding: 0 var(--s-4) var(--s-4);
+  }
+  .docs__toc-mobile a,
+  .docs__toc a {
+    display: block;
+    padding: 0.3rem 0;
+    color: var(--muted);
+    font-size: 0.875rem;
+    line-height: 1.4;
+    text-decoration: none;
+  }
+  .docs__toc-mobile a:hover,
+  .docs__toc a:hover,
+  .docs__toc a.is-current {
+    color: var(--text);
+  }
+  .docs__toc a.is-current {
+    box-shadow: inset 2px 0 0 var(--gate);
+  }
+  .d3 a {
+    padding-left: var(--s-4) !important;
+  }
+  .docs__prose {
+    max-width: 46rem;
+  }
+  .docs__foot {
+    display: grid;
+    gap: var(--s-8);
+    margin-top: var(--s-16);
+  }
+  .docs__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2) var(--s-6);
+    color: var(--faint);
+    font-size: 0.875rem;
+  }
+  .docs__meta a {
+    color: var(--muted);
+  }
+  .docs__pager {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--s-4);
+  }
+  .docs__pg {
+    display: grid;
+    gap: var(--s-2);
+    padding: var(--s-5);
+    border: 1px solid var(--line-2);
+    border-radius: var(--r-md);
+    color: var(--text);
+    text-decoration: none;
+    transition: border-color var(--t-fast);
+  }
+  .docs__pg:hover {
+    border-color: rgb(245 196 81 / 0.5);
+    color: var(--text);
+  }
+  .docs__pg .label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+  .docs__pg--next {
+    grid-column: 2;
+    text-align: right;
+    justify-items: end;
+  }
+  .docs__pgtitle {
+    font-weight: 540;
+  }
+
+  /* ---------- toc ---------- */
+  .docs__toc {
+    display: none;
+  }
+
+  @media (max-width: 559px) {
+    .docs__pager {
+      grid-template-columns: 1fr;
+    }
+    .docs__pg--next {
+      grid-column: 1;
+    }
+  }
+
+  @media (min-width: 960px) {
+    .docs {
+      grid-template-columns: 15.5rem minmax(0, 1fr);
+      gap: var(--s-12);
+      padding-top: var(--s-10);
+    }
+    .docs__side {
+      position: sticky;
+      top: calc(var(--header-h) + 1.5rem);
+      align-self: start;
+      max-height: calc(100vh - var(--header-h) - 3rem);
+      overflow-y: auto;
+      scrollbar-width: thin;
+    }
+    .docs__nav {
+      border: 0;
+      background: none;
+    }
+    .docs__navtoggle {
+      display: none;
+    }
+    .docs__nav nav {
+      padding: 0;
+    }
+  }
+  @media (min-width: 1240px) {
+    .docs {
+      grid-template-columns: 15.5rem minmax(0, 1fr) 13rem;
+    }
+    .docs__toc {
+      display: block;
+      position: sticky;
+      top: calc(var(--header-h) + 1.5rem);
+      align-self: start;
+      padding-left: var(--s-4);
+      border-left: 1px solid var(--line);
+    }
+    .docs__toc .label {
+      margin-bottom: var(--s-3);
+    }
+    .docs__toc a {
+      padding-left: var(--s-3);
+    }
+    .docs__toc .d3 a {
+      padding-left: var(--s-6) !important;
+    }
+    .docs__toc-mobile {
+      display: none;
+    }
+  }
+</style>

@@ -1,0 +1,146 @@
+---
+import { Picture } from 'astro:assets';
+import { shot, type ShotKey } from './screenshots';
+import { type Locale, t } from '~/i18n';
+import { maybeCopy } from '~/i18n/copy';
+
+// One real screenshot in a quiet browser frame. The address in the bar is text only.
+interface Props {
+  locale: Locale;
+  shotKey?: ShotKey | undefined;
+  eager?: boolean | undefined;
+  caption?: string | undefined;
+}
+const { locale, shotKey = 'overview', eager = false, caption } = Astro.props;
+const tr = t(locale);
+const s = shot(shotKey);
+const texts = maybeCopy(locale)?.common.screenshots[shotKey];
+const captionText = caption ?? texts?.caption ?? s.caption[locale];
+// copy captions already carry "Demo · invented data"; otherwise a label says so
+---
+
+<figure class="sf" data-reveal>
+  <div class="sf__glow" aria-hidden="true"></div>
+  <div class="sf__window">
+    <div class="sf__bar" aria-hidden="true">
+      <span class="sf__dots">
+        <i></i>
+        <i></i>
+        <i></i>
+      </span>
+      <span class="sf__url">netsluice.local</span>
+      <span class="sf__badge">{tr('demo.badge')}</span>
+    </div>
+    <Picture
+      src={s.src[locale]}
+      alt={texts?.alt ?? s.alt[locale]}
+      formats={['avif', 'webp']}
+      widths={[640, 960, 1280, 1440]}
+      sizes="(min-width: 1240px) 1180px, 100vw"
+      loading={eager ? 'eager' : 'lazy'}
+      fetchpriority={eager ? 'high' : 'auto'}
+      class="sf__img"
+    />
+  </div>
+  <figcaption class="sf__cap">
+    {!captionText.includes('Demo') && (
+      <span class="label">
+        <span class="num">{tr('demo.caption')}</span>
+      </span>
+    )}
+    <span>{captionText}</span>
+  </figcaption>
+</figure>
+
+<style>
+  .sf {
+    position: relative;
+    margin: 0;
+  }
+  .sf__glow {
+    position: absolute;
+    inset: 8% 6% -4%;
+    z-index: 0;
+    border-radius: 50%;
+    background:
+      radial-gradient(closest-side, rgb(78 168 255 / 0.18), transparent),
+      radial-gradient(closest-side at 70% 60%, rgb(92 227 154 / 0.1), transparent);
+    filter: blur(40px);
+    pointer-events: none;
+  }
+  .sf__window {
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
+    border: 1px solid var(--line-2);
+    border-radius: clamp(12px, 1.5vw, 20px);
+    background: var(--ground);
+    box-shadow:
+      0 0 0 1px rgb(0 0 0 / 0.5),
+      0 40px 120px -40px rgb(0 0 0 / 0.9),
+      0 0 0 6px rgb(255 255 255 / 0.015);
+  }
+  .sf__bar {
+    display: flex;
+    align-items: center;
+    gap: var(--s-4);
+    height: 2.5rem;
+    padding: 0 var(--s-4);
+    border-bottom: 1px solid var(--line);
+    background: rgb(255 255 255 / 0.025);
+  }
+  .sf__dots {
+    display: inline-flex;
+    gap: 6px;
+  }
+  .sf__dots i {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: rgb(255 255 255 / 0.14);
+  }
+  .sf__url {
+    flex: 0 1 22rem;
+    margin-inline: auto;
+    padding: 0.25rem 0.9rem;
+    border-radius: var(--r-pill);
+    background: rgb(0 0 0 / 0.25);
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .sf__badge {
+    color: var(--gate-ink);
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .sf :global(.sf__img) {
+    width: 100%;
+    height: auto;
+  }
+  .sf__cap {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    gap: var(--s-3);
+    align-items: baseline;
+    margin-top: var(--s-4);
+    color: var(--muted);
+    font-size: var(--fs-small);
+  }
+  @media (max-width: 559px) {
+    .sf__url {
+      display: none;
+    }
+    .sf__badge {
+      margin-left: auto;
+    }
+  }
+</style>

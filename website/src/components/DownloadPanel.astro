@@ -1,0 +1,294 @@
+---
+import Icon from './Icon.astro';
+import CodeBlock from './CodeBlock.astro';
+import type { ReleaseData } from '~/lib/release-types';
+import { formatBytes } from '~/lib/releases';
+import { REPO } from '~/config/site';
+import { type Locale, t, formatDate } from '~/i18n';
+
+// The download centre: the newest card image and the newest version are two
+// different things and are shown as such. SHA-256 only; nothing here claims a signature.
+interface Props {
+  locale: Locale;
+  data: ReleaseData;
+  /** short explanations from the page copy (agent 2) */
+  imageText?: string | undefined;
+  updateText?: string | undefined;
+  /** how to check the download per operating system (page copy) */
+  verify?:
+    | {
+        title: string;
+        intro: string;
+        platforms: { os: string; command: string; note: string }[];
+        noSignature: string;
+      }
+    | undefined;
+  /** one sentence relating the newest image to the newest version (page copy) */
+  relation?: string | undefined;
+}
+const { locale, data, imageText, updateText, verify, relation } = Astro.props;
+const tr = t(locale);
+const nt = tr('a11y.newTab');
+const img = data.latestImage;
+const latest = data.latest;
+const verifyCmd = img?.image ? `sha256sum -c ${img.image.name}.sha256` : 'sha256sum -c netsluice-*.img.xz.sha256';
+---
+
+{data.source === 'none' || !latest ? (
+  <div class="dp dp--none">
+    <p>{tr('release.unavailable')}</p>
+    <a class="dp__btn" href={REPO.releases} target="_blank" rel="noopener noreferrer">
+      {tr('cta.allReleases')}
+      <Icon name="arrow-up-right" size={16} />
+      <span class="visually-hidden"> {nt}</span>
+    </a>
+  </div>
+) : (
+  <div class="dp">
+    {relation && <p class="dp__relation">{relation}</p>}
+    {img?.image && (
+      <article class="dp__card dp__card--image" aria-labelledby="dp-image">
+        <p class="label">
+          <span class="num">01</span> · {tr('release.image')}
+        </p>
+        <h2 id="dp-image" class="dp__title">
+          {tr('release.latestImage')} <span class="dp__ver">v{img.version}</span>
+        </h2>
+        {imageText && <p class="dp__text">{imageText}</p>}
+        <dl class="dp__facts">
+          <div>
+            <dt>{tr('release.published')}</dt>
+            <dd>
+              <time datetime={img.publishedAt}>{formatDate(img.publishedAt, locale)}</time>
+            </dd>
+          </div>
+          <div>
+            <dt>{tr('release.size')}</dt>
+            <dd>{formatBytes(img.image.size, locale)}</dd>
+          </div>
+          <div class="dp__file">
+            <dt>{tr('release.assets')}</dt>
+            <dd>
+              <code>{img.image.name}</code>
+            </dd>
+          </div>
+        </dl>
+        <div class="dp__actions">
+          <a class="dp__btn dp__btn--primary" href={img.image.url} rel="noopener noreferrer">
+            <Icon name="download" size={18} />
+            {tr('release.download')}
+            <span class="dp__btnsize">{formatBytes(img.image.size, locale)}</span>
+          </a>
+          {img.checksumFile && (
+            <a class="dp__btn" href={img.checksumFile.url} rel="noopener noreferrer">
+              {tr('release.checksumFile')}
+            </a>
+          )}
+          <a class="dp__quiet" href={img.htmlUrl} target="_blank" rel="noopener noreferrer">
+            {tr('release.onGitHub')}
+            <Icon name="arrow-up-right" size={15} />
+            <span class="visually-hidden"> {nt}</span>
+          </a>
+        </div>
+        <div class="dp__verify">
+          <h3 class="dp__h3">{verify?.title ?? tr('release.verify')}</h3>
+          {img.sha256 && <CodeBlock code={img.sha256} locale={locale} lang={tr('release.checksum')} />}
+          {verify ? (
+            <>
+              <p class="dp__text">{verify.intro}</p>
+              {verify.platforms.map((p) => (
+                <CodeBlock code={p.command} locale={locale} lang={p.os} caption={p.note} />
+              ))}
+              <p class="dp__nosig">{verify.noSignature}</p>
+            </>
+          ) : (
+            <CodeBlock code={verifyCmd} locale={locale} lang="shell" />
+          )}
+        </div>
+      </article>
+    )}
+
+    <article class="dp__card" aria-labelledby="dp-latest">
+      <p class="label">
+        <span class="num">{img?.image ? '02' : '01'}</span> · {tr('release.updateArchive')}
+      </p>
+      <h2 id="dp-latest" class="dp__title">
+        {tr('release.latest')} <span class="dp__ver">v{latest.version}</span>
+      </h2>
+      {updateText && <p class="dp__text">{updateText}</p>}
+      <dl class="dp__facts">
+        <div>
+          <dt>{tr('release.published')}</dt>
+          <dd>
+            <time datetime={latest.publishedAt}>{formatDate(latest.publishedAt, locale)}</time>
+          </dd>
+        </div>
+        {latest.updateArchive && (
+          <div>
+            <dt>{tr('release.size')}</dt>
+            <dd>{formatBytes(latest.updateArchive.size, locale)}</dd>
+          </div>
+        )}
+        {!latest.image && (
+          <div>
+            <dt>{tr('release.image')}</dt>
+            <dd>{tr('release.noImage')}</dd>
+          </div>
+        )}
+      </dl>
+      <div class="dp__actions">
+        <a class="dp__btn" href={latest.htmlUrl} target="_blank" rel="noopener noreferrer">
+          {tr('release.onGitHub')}
+          <Icon name="arrow-up-right" size={16} />
+          <span class="visually-hidden"> {nt}</span>
+        </a>
+      </div>
+    </article>
+
+    {data.source === 'cache' && data.fetchedAt && (
+      <p class="dp__stale">
+        {tr('release.stale')} <time datetime={data.fetchedAt}>{formatDate(data.fetchedAt, locale)}</time>
+      </p>
+    )}
+  </div>
+)}
+
+<style>
+  .dp {
+    display: grid;
+    gap: var(--s-6);
+  }
+  .dp--none {
+    justify-items: start;
+    padding: var(--s-8);
+    border: 1px dashed var(--line-3);
+    border-radius: var(--r-lg);
+    color: var(--soft);
+  }
+  .dp__card {
+    display: grid;
+    gap: var(--s-4);
+    min-width: 0;
+    padding: clamp(1.5rem, 1rem + 2vw, 2.5rem);
+    border: 1px solid var(--line-2);
+    border-radius: var(--r-lg);
+    background: var(--panel);
+    box-shadow: var(--shadow-1);
+  }
+  .dp__card--image {
+    border-color: rgb(92 227 154 / 0.3);
+    background: radial-gradient(80% 100% at 100% 0%, rgb(92 227 154 / 0.08), transparent 60%), var(--panel);
+  }
+  .dp__title {
+    font-size: clamp(1.75rem, 1.3rem + 1.6vw, 2.5rem);
+  }
+  .dp__ver {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 0.5em;
+    letter-spacing: 0;
+    vertical-align: 0.3em;
+  }
+  .dp__text {
+    color: var(--soft);
+    max-width: 44rem;
+  }
+  .dp__facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+    gap: var(--s-4);
+    margin: 0;
+    padding-block: var(--s-4);
+    border-block: 1px solid var(--line);
+  }
+  .dp__facts dt {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--fs-label);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .dp__facts dd {
+    margin: 0.25rem 0 0;
+    color: var(--text);
+    overflow-wrap: anywhere;
+  }
+  .dp__file {
+    grid-column: 1 / -1;
+  }
+  .dp__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-3) var(--s-4);
+  }
+  .dp__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    min-height: var(--tap);
+    padding: 0 1.2rem;
+    border: 1px solid var(--line-3);
+    border-radius: var(--r-pill);
+    color: var(--text);
+    font-weight: 540;
+    text-decoration: none;
+  }
+  .dp__btn:hover {
+    border-color: rgb(255 255 255 / 0.45);
+    background: rgb(255 255 255 / 0.05);
+  }
+  .dp__btn--primary {
+    min-height: 52px;
+    padding: 0 1.5rem;
+    border-color: transparent;
+    background: var(--ok);
+    color: #04170d;
+    box-shadow: 0 10px 40px -14px rgb(92 227 154 / 0.6);
+  }
+  .dp__btn--primary:hover {
+    background: #7cf0b2;
+    color: #04170d;
+  }
+  .dp__btn:focus-visible {
+    border-radius: var(--r-pill);
+  }
+  .dp__btnsize {
+    padding-left: 0.6rem;
+    border-left: 1px solid rgb(4 23 13 / 0.25);
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    font-weight: 500;
+  }
+  .dp__quiet {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-height: var(--tap);
+    color: var(--muted);
+  }
+  .dp__verify {
+    display: grid;
+    gap: var(--s-3);
+    margin-top: var(--s-2);
+    min-width: 0;
+  }
+  .dp__h3 {
+    font-size: 1rem;
+    color: var(--soft);
+  }
+  .dp__relation {
+    color: var(--text);
+    font-size: var(--fs-lead);
+  }
+  .dp__nosig {
+    padding-left: var(--s-4);
+    border-left: 2px solid var(--gate);
+    color: var(--soft);
+    font-size: var(--fs-small);
+  }
+  .dp__stale {
+    color: var(--faint);
+    font-size: 0.875rem;
+  }
+</style>
